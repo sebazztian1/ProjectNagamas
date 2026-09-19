@@ -31,6 +31,15 @@
 
       <!-- Auth & Admin Navigation -->
       <div class="nav-right">
+        <!-- Live Chat Customer Service button -->
+        <button class="nav-chat-btn" @click="openChat" title="Chat dengan Customer Service">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          </svg>
+          <span>Chat CS</span>
+          <span v-if="customerUnreadCount > 0" class="nav-chat-badge">{{ customerUnreadCount }}</span>
+        </button>
+
         <!-- Admin Dashboard shortcut link -->
         <NuxtLink to="/admin" class="nav-admin-link" title="Buka Dashboard Admin">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -74,6 +83,7 @@
 <script setup lang="ts">
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+import { useCustomerChat } from '../composables/useCustomerChat'
 
 defineProps<{
   searchQuery?: string
@@ -85,6 +95,7 @@ defineEmits<{
 
 const { currentUser, logout } = useAuth()
 const { showToast } = useToast()
+const { openChat, customerUnreadCount } = useCustomerChat()
 
 const handleLogout = () => {
   logout()
@@ -202,6 +213,37 @@ const handleLogout = () => {
   background: #0f172a;
   color: #ffffff;
   border-color: #0f172a;
+}
+
+.nav-chat-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #15803d;
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  position: relative;
+}
+
+.nav-chat-btn:hover {
+  background: #15803d;
+  color: #ffffff;
+  border-color: #15803d;
+}
+
+.nav-chat-badge {
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 8px;
 }
 
 /* Auth Actions */

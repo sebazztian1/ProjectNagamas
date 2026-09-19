@@ -6,6 +6,9 @@
     <!-- Active Route Page View -->
     <NuxtPage />
 
+    <!-- Floating Customer to Admin Live Chat Mockup Widget -->
+    <CustomerChatWidget v-if="!isAdminRoute" />
+
     <!-- Global Toast Notifications -->
     <ToastNotification :toasts="toasts" @remove="removeToast" />
   </div>
@@ -14,6 +17,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import Navbar from './components/Navbar.vue'
+import CustomerChatWidget from './components/CustomerChatWidget.vue'
 import ToastNotification from './components/ToastNotification.vue'
 import { useToast } from './composables/useToast'
 
