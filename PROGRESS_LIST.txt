@@ -1,7 +1,7 @@
 ================================================================================
                     PROGRESS & TODO LIST PENGEMBANGAN WEBSITE
 ================================================================================
-Proyek          : Web Katalog, Request Produk & Live Chat Admin (Manual Order)
+Proyek          : Web Katalog, Wishlist, Request Produk & Live Chat Admin (Manual Order)
 Format Checklist: [ ] Belum Selesai | [/] Sedang Dikerjakan | [X] Selesai
 Tanggal Dibuat  : 2026-09-19
 ================================================================================
@@ -10,8 +10,9 @@ Tanggal Dibuat  : 2026-09-19
 FASE 1: PERENCANAAN, ANALISIS & DESAIN (UI/UX & DATABASE)
 --------------------------------------------------------------------------------
 [ ] 1.1 Analisis Kebutuhan & Alur Pengguna (User Flow)
-    [ ] Buat diagram alur Guest: browse katalog -> diarahkan login jika chat/request
-    [ ] Buat diagram alur Customer: register/login -> browse katalog -> chat by produk -> request produk -> order & kirim bukti transfer
+    [ ] Buat diagram alur Guest: browse katalog -> diarahkan login jika chat/request/simpan wishlist
+    [ ] Buat diagram alur Customer: register/login -> browse katalog -> simpan ke wishlist -> chat by produk -> request produk -> order & kirim bukti transfer
+    [ ] Buat alur interaksi Wishlist: tambah/hapus favorit, sinkronisasi state login, dan aksi langsung dari wishlist (Chat Admin / Beli Sekarang)
     [ ] Buat diagram alur Admin: kelola produk (stok/harga) -> terima notif & balas chat -> cek request produk -> verifikasi bukti transfer
     [ ] Buat diagram state order (Menunggu Pembayaran -> Bukti Diupload -> Diverifikasi Admin -> Selesai / Siap Diambil)
 
@@ -22,11 +23,14 @@ FASE 1: PERENCANAAN, ANALISIS & DESAIN (UI/UX & DATABASE)
     [ ] Tabel `chat_rooms`: id, customer_id, product_id, last_message, unread_admin_count, unread_customer_count, updated_at
     [ ] Tabel `chat_messages`: id, room_id, sender_id, sender_role, message_type (text/image), content/image_url, is_read, created_at
     [ ] Tabel `orders`: id, user_id, product_id, total_amount, transfer_receipt_url, order_status (pending/verified/rejected), notes, created_at
+    [ ] Tabel `wishlists`: id, user_id, product_id, created_at (dengan unique constraint user_id + product_id)
 
 [ ] 1.3 Desain Tampilan (Wireframe / Mockup UI/UX)
     [ ] Desain Halaman Login & Register (Input: Username, Password, No HP)
-    [ ] Desain Halaman Katalog Produk (Grid/List card produk, badge stok, harga)
-    [ ] Desain Halaman Detail Produk & Tombol "Chat Admin tentang Produk ini"
+    [ ] Desain Halaman Katalog Produk (Grid/List card produk, badge stok, harga, tombol wishlist/love)
+    [ ] Desain Halaman Detail & Modal Quick View Produk (Info lengkap, tombol wishlist, tombol "Chat Admin")
+    [ ] Desain Drawer / Halaman Wishlist Customer (Daftar produk favorit tersimpan, tombol hapus wishlist, tombol pintas Chat Admin & Beli)
+    [ ] Desain Counter Badge & Ikon Wishlist pada Navbar Customer
     [ ] Desain Form Request Produk Customer
     [ ] Desain Interface Live Chat Customer (dengan preview produk terkait & tombol upload gambar)
     [ ] Desain Halaman Form Pemesanan & Upload Bukti Transfer Bank
@@ -73,9 +77,9 @@ FASE 3: AUTENTIKASI & OTORISASI (AUTH & ROLES)
     [ ] Fitur Logout
 
 [ ] 3.3 Middleware Proteksi Route (Access Control)
-    [ ] Middleware `auth`: Batasi fitur Chat & Request Produk hanya untuk customer terdaftar
+    [ ] Middleware `auth`: Batasi fitur Chat, Request Produk, dan Sinkronisasi Wishlist hanya untuk customer terdaftar
     [ ] Middleware `admin`: Proteksi seluruh rute panel admin (/admin/*)
-    [ ] Redirect Guest ke halaman login disertai pesan notifikasi jika mencoba chat atau request
+    [ ] Redirect Guest ke halaman login disertai pesan notifikasi jika mencoba chat, request produk, atau menyimpan ke wishlist
 
 --------------------------------------------------------------------------------
 FASE 4: KATALOG & MANAJEMEN PRODUK
@@ -93,6 +97,15 @@ FASE 4: KATALOG & MANAJEMEN PRODUK
     [ ] Form edit produk (Update informasi, ganti foto produk)
     [ ] Fitur update cepat stok (Tersedia / Habis) dan perubahan harga produk
     [ ] Hapus produk (Soft delete atau hard delete)
+
+[ ] 4.3 Fitur Wishlist (Favorit Produk) Customer
+    [ ] Tombol toggle Love/Wishlist interaktif pada setiap card produk di katalog
+    [ ] Tombol Wishlist pada modal Quick View / Detail Produk
+    [ ] Drawer / Halaman Wishlist Customer (Menampilkan daftar produk yang disukai/disimpan)
+    [ ] Badge indikator jumlah item wishlist di Navbar (real-time counter)
+    [ ] Tombol aksi di daftar wishlist: Hapus item, Chat Admin via Live Chat/WhatsApp, dan Beli Sekarang
+    [ ] Proteksi status login: Notifikasi / modal peringatan login jika guest mencoba menyimpan wishlist
+    [ ] Persistensi data wishlist (tersimpan di local storage & database per akun customer)
 
 --------------------------------------------------------------------------------
 FASE 5: REQUEST PRODUK OLEH CUSTOMER & REVIEW ADMIN
@@ -166,7 +179,8 @@ FASE 8: PENGUJIAN (TESTING), KEAMANAN & OPTIMASI
     [ ] Rate limiting pada endpoint login, register, dan upload gambar
 
 [ ] 8.2 Pengujian Fungsional (User Testing)
-    [ ] Test skenario Guest mencoba akses chat & request produk (harus tertolak)
+    [ ] Test skenario Guest mencoba akses chat, request produk, dan simpan wishlist (harus tertolak/diarahkan login)
+    [ ] Test fitur Wishlist: tambah item, hapus item, cegah duplikasi, dan sinkronisasi saat relogin
     [ ] Test upload gambar pada: foto produk, lampiran chat, referensi request, bukti transfer
     [ ] Test real-time message & notifikasi admin saat chat masuk bersamaan
     [ ] Test perubahan stok produk (out of stock) & dampaknya di katalog/detail produk
@@ -201,6 +215,7 @@ FASE 9: DEPLOYMENT & HOSTING (WEB + DATABASE)
 [ ] 9.4 Post-Deployment Testing (Smoke Test)
     [ ] Uji coba Register & Login akun customer baru di website live
     [ ] Uji coba Admin login & upload produk baru beserta fotonya
+    [ ] Uji coba Customer menambahkan dan menghapus produk di Wishlist (serta cek counter di navbar)
     [ ] Uji coba Customer chat admin dari produk katalog (pastikan notif admin bunyi/muncul)
     [ ] Uji coba Customer kirim form request produk + gambar
     [ ] Uji coba Customer upload bukti transfer bank dan verifikasi oleh admin
