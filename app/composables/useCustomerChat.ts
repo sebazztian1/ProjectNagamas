@@ -21,7 +21,7 @@ export const useCustomerChat = () => {
     {
       id: 'msg-init-1',
       sender: 'admin',
-      text: 'Halo kak! Selamat datang di Toko Nagamas. Ada yang bisa kami bantu seputar produk, ukuran, atau pesanan Anda hari ini? 😊',
+      text: 'Halo kak! Selamat datang di dbb_luxe. Ada yang bisa kami bantu seputar produk, ukuran, atau pesanan Anda hari ini? 😊',
       timestamp: '10:15'
     },
     {
@@ -95,7 +95,7 @@ export const useCustomerChat = () => {
       return 'Tersedia garansi penukaran size dalam 7 hari kerja setelah barang diterima ya kak, asalkan tag label masih terpasang dan produk belum dicuci :)'
     }
 
-    return 'Terima kasih atas pertanyaannya kak! Pesan kakak sudah tercatat oleh tim Customer Support Nagamas. Kami siap membantu setiap kebutuhan belanja kakak 😊'
+    return 'Terima kasih atas pertanyaannya kak! Pesan kakak sudah tercatat oleh tim Customer Support dbb_luxe. Kami siap membantu setiap kebutuhan belanja kakak 😊'
   }
 
   // Customer sends message to Admin

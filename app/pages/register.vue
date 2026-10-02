@@ -14,7 +14,7 @@
 
       <!-- Header -->
       <div class="auth-header">
-        <div class="brand-badge">NAGAMAS</div>
+        <div class="brand-badge">DBB_LUXE</div>
         <h1 class="auth-title">Daftar Akun Baru</h1>
         <p class="auth-subtitle">Daftarkan akun untuk mendapatkan update katalog terbaru dan promo spesial.</p>
       </div>
@@ -123,7 +123,7 @@ import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 
 useHead({
-  title: 'Daftar Akun | Nagamas Catalogue'
+  title: 'Daftar Akun | dbb_luxe'
 })
 
 const { login } = useAuth()
@@ -261,17 +261,17 @@ const handleRegister = () => {
   width: 100%;
   padding: 10px 14px 10px 38px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--color-secondary, #E4E7EB);
   background: #ffffff;
   font-size: 0.88rem;
-  color: #0f172a;
+  color: var(--color-text, #1E293B);
   outline: none;
   transition: border-color 0.2s;
 }
 
 .input-wrap input:focus {
-  border-color: #0f172a;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+  border-color: var(--color-primary, #4A5D73);
+  box-shadow: 0 0 0 3px rgba(74, 93, 115, 0.12);
 }
 
 .toggle-eye {
@@ -280,7 +280,7 @@ const handleRegister = () => {
   background: none;
   border: none;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--color-text-muted, #64748B);
   font-weight: 600;
   cursor: pointer;
 }
@@ -296,19 +296,19 @@ const handleRegister = () => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: #475569;
+  color: var(--color-text-muted, #64748B);
   cursor: pointer;
 }
 
 .checkbox-label input {
-  accent-color: #0f172a;
+  accent-color: var(--color-primary, #4A5D73);
   width: 15px;
   height: 15px;
 }
 
 .submit-btn {
   margin-top: 6px;
-  background: #0f172a;
+  background: var(--color-primary, #4A5D73);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -316,27 +316,27 @@ const handleRegister = () => {
   font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: background 0.2s;
 }
 
 .submit-btn:hover:not(:disabled) {
-  opacity: 0.9;
+  background: var(--color-primary-hover, #384759);
 }
 
 .submit-btn:disabled {
-  background: #cbd5e1;
+  background: var(--color-secondary, #E4E7EB);
   cursor: not-allowed;
 }
 
 .bottom-switch {
   text-align: center;
   font-size: 0.85rem;
-  color: #64748b;
+  color: var(--color-text-muted, #64748B);
   margin-top: 8px;
 }
 
 .switch-link {
-  color: #0f172a;
+  color: var(--color-primary, #4A5D73);
   font-weight: 700;
   text-decoration: underline;
 }

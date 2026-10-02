@@ -5,7 +5,7 @@
       class="chat-launcher-btn" 
       :class="{ 'is-open': isChatOpen }"
       @click="toggleChat"
-      title="Chat dengan Admin Nagamas"
+      title="Chat dengan Admin dbb_luxe"
       aria-label="Buka Chat dengan Admin"
     >
       <div class="launcher-icon-wrap">
@@ -30,12 +30,12 @@
       <div class="chat-header">
         <div class="header-agent-info">
           <div class="agent-avatar-wrap">
-            <div class="agent-avatar">N</div>
+            <div class="agent-avatar">D</div>
             <span class="agent-online-dot"></span>
           </div>
           <div>
             <div class="agent-name-row">
-              <span class="agent-name">Admin Support Nagamas</span>
+              <span class="agent-name">Admin Support dbb_luxe</span>
               <span class="verified-tag">&#10003;</span>
             </div>
             <span class="agent-status">Online &bull; Siap Membantu</span>
@@ -74,7 +74,7 @@
       <!-- Messages Stream -->
       <div class="chat-body" ref="messagesBody">
         <div class="welcome-box">
-          <p class="welcome-heading">&#128075; Selamat datang di Live Chat Nagamas!</p>
+          <p class="welcome-heading">&#128075; Selamat datang di Live Chat dbb_luxe!</p>
           <p class="welcome-sub">Silakan tanyakan seputar stok produk, rekomendasi ukuran, proses pengiriman, atau status pesanan Anda.</p>
         </div>
 
@@ -90,7 +90,7 @@
           :class="msg.sender === 'user' ? 'user-msg' : 'admin-msg'"
         >
           <div class="chat-bubble">
-            <span v-if="msg.sender === 'admin'" class="bubble-sender-label">Admin Nagamas</span>
+            <span v-if="msg.sender === 'admin'" class="bubble-sender-label">Admin dbb_luxe</span>
             <p class="bubble-text">{{ msg.text }}</p>
             <div class="bubble-footer">
               <span class="bubble-time">{{ msg.timestamp }}</span>
@@ -147,7 +147,7 @@
           </button>
         </div>
         <div class="footer-help-note">
-          <span>Official Customer Service Nagamas</span>
+          <span>Official Customer Service dbb_luxe</span>
         </div>
       </form>
     </div>
@@ -235,7 +235,7 @@ const handleSubmitMessage = () => {
   inputText.value = ''
 
   sendCustomerMessage(text, (reply) => {
-    showToast('Pesan dari Admin Nagamas', reply.slice(0, 70) + '...', 'info')
+    showToast('Pesan dari Admin dbb_luxe', reply.slice(0, 70) + '...', 'info')
   })
 
   scrollToBottom()

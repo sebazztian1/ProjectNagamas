@@ -1,19 +1,22 @@
 ================================================================================
               PROGRESS & TODO LIST PENGEMBANGAN WEBSITE (REVISI V2)
 ================================================================================
-Proyek          : Web Jastip - Katalog Ready Stock, Jadwal/Trip Jastip, Wishlist,
-                  Request Produk, Live Chat Admin & Order Manual (tanpa Midtrans)
+Proyek          : Web Jastip dbb_luxe - Katalog Ready Stock, Jadwal/Trip Jastip,
+                  Wishlist, Request Produk, Live Chat Admin & Order Manual
 Format Checklist: [ ] Belum Selesai | [/] Sedang Dikerjakan | [X] Selesai
-Tanggal Dibuat  : 2026-09-19
-Revisi V2       : 2026-10-02
 ================================================================================
 
-RINGKASAN PERUBAHAN V2
+RINGKASAN PERUBAHAN V2 & WORKFLOW
+- Toko: dbb_luxe (Offline store: Pasar Baru Jakarta Pusat; Online: Jastip & Ready).
 - Barang dipisah menjadi dua jalur: READY STOCK (/ready) dan JASTIP (/jastip).
-- Admin membuat JADWAL JASTIP (trip): tanggal buka/tutup PO, negara, estimasi
-  tiba, fee, kurs, kuota. Produk jastip terikat ke trip.
+- Alur Pemesanan 2 Tahap (ACC Admin Sebelum Transfer):
+  1. Customer Checkout -> Status: Menunggu Persetujuan Admin (pending_approval).
+  2. Admin Review & ACC: Admin cek fisik stok Pasar Baru / slot bagasi koper luar negeri.
+     - Jika ACC: Status -> Menunggu Pembayaran (pending_payment). Countdown batas bayar 24 jam baru mulai berjalan di sini.
+     - Jika Ditolak: Status -> Ditolak (rejected) beserta alasan penolakan dari admin.
+  3. Customer Transfer & Upload Bukti -> Status: Bukti Diupload (payment_uploaded).
+  4. Admin Konfirmasi Pembayaran -> Status: Terverifikasi (verified).
 - Order dipecah menjadi `orders` + `order_items` (multi-item, ada quantity).
-- Status order diperluas sesuai alur jastip; mendukung DP/pelunasan.
 - Pembayaran manual: kode unik transfer, batas waktu bayar, riwayat pembayaran.
 - Request produk punya alur penawaran (quote) dari admin.
 - Notifikasi customer, pengaturan toko, audit log, dan keamanan bukti transfer.
@@ -103,8 +106,9 @@ orders
   order_type (ready/jastip), trip_id (nullable),
   subtotal, unique_code (3 digit), total_amount,
   payment_type (full/dp), dp_amount, paid_amount, remaining_amount,
-  order_status (pending_payment/payment_uploaded/verified/purchasing/arrived/
-  ready_pickup/completed/cancelled/expired),
+  order_status (pending_approval/pending_payment/payment_uploaded/verified/purchasing/
+  arrived/ready_pickup/completed/rejected/cancelled/expired),
+  rejection_reason (text, nullable), approved_at (timestamp, nullable),
   payment_deadline, fulfillment_method (pickup/shipping),
   shipping_address, shipping_cost, tracking_number (3 kolom terakhir opsional),
   customer_note, admin_note, created_at, updated_at
@@ -153,15 +157,15 @@ FASE 1: PERENCANAAN, ANALISIS & DESAIN (UI/UX & DATABASE)
 --------------------------------------------------------------------------------
 [ ] 1.1 Analisis Kebutuhan & Alur Pengguna (User Flow)
     [ ] Diagram alur Guest: browse /ready & /jastip -> diarahkan login jika chat/request/wishlist/order
-    [ ] Diagram alur Customer Ready: login -> browse /ready -> wishlist/chat -> checkout -> upload bukti -> ambil barang
-    [ ] Diagram alur Customer Jastip: login -> pilih trip open -> pilih produk -> checkout (DP/lunas) -> upload bukti -> pantau status -> barang tiba -> ambil
+    [ ] Diagram alur Customer Ready: login -> browse /ready -> checkout -> Menunggu ACC Admin -> Admin ACC -> bayar & upload bukti -> ambil barang di Pasar Baru
+    [ ] Diagram alur Customer Jastip: login -> pilih trip open -> pilih produk -> checkout (DP/lunas) -> Menunggu ACC Admin -> Admin ACC -> bayar & upload bukti -> pantau status -> barang tiba -> ambil
     [ ] Diagram alur Request Produk: customer request -> admin beri penawaran -> customer setuju -> otomatis jadi order
     [ ] Diagram alur Admin Trip: buat trip (draft) -> tambah produk -> buka PO -> tutup PO -> daftar belanja -> beli -> barang tiba -> update massal status -> notifikasi customer
-    [ ] Diagram alur Admin Order: terima order -> verifikasi pembayaran -> update status -> selesai
-    [ ] Diagram state order Ready: Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Siap Diambil -> Selesai (+ Dibatalkan/Kedaluwarsa)
-    [ ] Diagram state order Jastip: Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Sedang Dibelikan -> Barang Tiba -> Siap Diambil -> Selesai (+ Dibatalkan/Kedaluwarsa)
+    [ ] Diagram alur Admin Order: review order masuk -> ACC / Tolak -> jika ACC, terima upload bukti -> verifikasi pembayaran -> update status -> selesai
+    [ ] Diagram state order Ready: Menunggu Persetujuan (ACC) -> Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Siap Diambil -> Selesai (+ Ditolak Admin / Dibatalkan / Kedaluwarsa)
+    [ ] Diagram state order Jastip: Menunggu Persetujuan (ACC) -> Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Sedang Dibelikan -> Barang Tiba -> Siap Diambil -> Selesai (+ Ditolak Admin / Dibatalkan / Kedaluwarsa)
     [ ] Diagram state trip: Draft -> Open -> Closed -> Purchasing -> Arrived -> Completed (+ Cancelled)
-    [ ] Tetapkan aturan bisnis: batas bayar, kebijakan batal/refund, aturan DP, pengambilan barang
+    [ ] Tetapkan aturan bisnis: verifikasi ketersediaan (ACC), batas bayar 24 jam setelah ACC, kebijakan batal/refund, aturan DP, pengambilan barang di Pasar Baru
 
 [ ] 1.2 Perancangan Database (ERD & Tabel)
     [ ] Finalisasi ERD berdasarkan skema database V2 di atas
@@ -344,39 +348,52 @@ FASE 8: LIVE CHAT REAL-TIME BY PRODUK & NOTIFIKASI ADMIN
 --------------------------------------------------------------------------------
 FASE 9: CHECKOUT, ORDER & PEMBAYARAN MANUAL (NON-MIDTRANS)
 --------------------------------------------------------------------------------
-[ ] 9.1 Checkout & Pembuatan Order
+[ ] 9.1 Checkout & Pembuatan Order (Tahap 1: Pengajuan)
     [ ] Keranjang / pilih item (qty, variasi) dengan validasi stok (ready) atau status trip & kuota (jastip)
     [ ] Keranjang campur dipecah otomatis menjadi order ready & order jastip per trip
-    [ ] Generate `order_code` unik
-    [ ] Simpan `order_items` dengan snapshot nama & harga
+    [ ] Generate `order_code` unik (contoh: JST-20261002-001 / RDY-20261002-010)
+    [ ] Simpan `order_items` dengan snapshot nama produk & harga saat pemesanan
     [ ] Generate kode unik 3 digit pada total transfer
-    [ ] Set `payment_deadline` (default 24 jam, dari store_settings)
-    [ ] Pilihan DP atau lunas (khusus jastip) dengan perhitungan sisa pembayaran
-    [ ] Auto-expire order yang melewati batas bayar & kembalikan stok/kuota
+    [ ] Inisialisasi status order awal: `pending_approval` (Menunggu Persetujuan Admin)
+    [ ] Rekening dan instruksi transfer di-lock/ditahan hingga pesanan di-ACC admin
+    [ ] Pilihan skema pembayaran: DP 50% atau Pelunasan Penuh (khusus jastip)
 
-[ ] 9.2 Instruksi Pembayaran
-    [ ] Halaman instruksi: daftar rekening aktif / QRIS (dari `bank_accounts`)
-    [ ] Informasi pengambilan barang (ambil di toko; opsi pengiriman manual jika diaktifkan)
-    [ ] Ringkasan barang, total, kode unik, countdown batas bayar
+[ ] 9.2 Peninjauan & Persetujuan (ACC) oleh Admin (/admin/order)
+    [ ] Tab filter: "Perlu ACC" di dashboard admin
+    [ ] Admin memeriksa ketersediaan stok fisik di toko Pasar Baru atau sisa kuota koper traveler luar negeri
+    [ ] Aksi: "✓ ACC / Setujui Pesanan"
+        - Status order berubah menjadi `pending_payment`
+        - Batas waktu bayar (payment_deadline 24 jam) AKTIF dan mulai dihitung mundur
+        - Kirim notifikasi in-app / WhatsApp ke customer bahwa pesanan siap dibayar
+    [ ] Aksi: "✕ Tolak Pesanan"
+        - Modal input alasan penolakan (kuota penuh, barang discontinued, stok fisik Pasar Baru habis)
+        - Status order berubah menjadi `rejected`
+        - Catat `rejection_reason` dan kirim notifikasi penolakan ke customer (customer tidak perlu bayar)
 
-[ ] 9.3 Upload Bukti Transfer Customer
-    [ ] Form: nama pengirim, bank asal, nominal, upload bukti (JPG/PNG/WEBP), catatan
-    [ ] Hitung hash file untuk deteksi bukti ganda
-    [ ] Flag otomatis jika nominal tidak sama dengan tagihan
-    [ ] Upload pelunasan terpisah untuk order DP
-    [ ] Riwayat pesanan & tracking timeline (dari `order_status_logs`)
+[ ] 9.3 Instruksi Pembayaran (Terbuka Setelah Di-ACC)
+    [ ] Halaman instruksi: daftar rekening aktif BCA/Mandiri & QRIS resmi dbb_luxe
+    [ ] Ringkasan barang, total tagihan (+ kode unik 3 digit), countdown batas waktu bayar 24 jam
+    [ ] Informasi metode penyerahan barang: Ambil Mandiri di Toko Fisik (Pasar Baru) atau Pengiriman Manual
+    [ ] Auto-expire order jika melewati batas bayar 24 jam (`expired`) & kembalikan kuota/stok
 
-[ ] 9.4 Verifikasi Pembayaran oleh Admin
-    [ ] Daftar order + filter status/tipe/trip
-    [ ] Modal preview bukti transfer (zoom, resolusi penuh via signed URL)
-    [ ] Aksi: "Konfirmasi / Lunas" atau "Tolak (Bukti Tidak Sesuai)" + catatan
-    [ ] Update status order & tulis `order_status_logs`
-    [ ] Catat siapa & kapan memverifikasi (audit)
+[ ] 9.4 Upload Bukti Transfer Customer
+    [ ] Form: nama pengirim, bank asal, nominal transfer, unggah foto/screenshot struk
+    [ ] Validasi nominal sesuai tagihan persis (termasuk kode unik)
+    [ ] Upload bukti mengubah status order menjadi `payment_uploaded` (Menunggu Verifikasi)
+    [ ] Riwayat pesanan & tracking timeline stepper (dari `order_status_logs`)
 
-[ ] 9.5 Pembatalan & Refund Manual
-    [ ] Aturan batal: bebas sebelum diverifikasi; jastip tidak bisa batal setelah barang dibeli
-    [ ] Status & catatan refund manual oleh admin
-    [ ] Pengaturan pengiriman opsional: alamat, ongkir input admin, nomor resi
+[ ] 9.5 Verifikasi Pembayaran oleh Admin
+    [ ] Tab filter: "Cek Pembayaran" di dashboard admin
+    [ ] Modal preview bukti transfer (struk mutasi)
+    [ ] Cocokkan nominal + kode unik 3 digit dengan mutasi internet banking BCA/Mandiri
+    [ ] Aksi: "✓ Verifikasi & Tandai Lunas" -> status berubah menjadi `verified`
+    [ ] Aksi: "Tolak Bukti" -> status kembali ke `pending_payment`, customer diminta upload ulang bukti valid
+    [ ] Catat siapa & kapan memverifikasi (audit trail di `order_status_logs`)
+
+[ ] 9.6 Pembatalan & Refund Manual
+    [ ] Aturan batal: bebas sebelum di-ACC atau sebelum pembayaran diverifikasi; jastip tidak bisa dibatalkan setelah barang dibeli di luar negeri
+    [ ] Status & pencatatan refund manual jika barang tidak ditemukan di luar negeri (100% full refund)
+    [ ] Pengaturan pengiriman opsional: alamat, ongkir input manual admin, input nomor resi pengiriman
 
 --------------------------------------------------------------------------------
 FASE 10: TRACKING & NOTIFIKASI CUSTOMER

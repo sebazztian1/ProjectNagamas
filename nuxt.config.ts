@@ -4,7 +4,7 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   app: {
     head: {
-      title: 'Nagamas | Fashion, Bags & Accessories Catalogue',
+      title: 'dbb_luxe | Luxury Fashion & Authentic Jastip',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },

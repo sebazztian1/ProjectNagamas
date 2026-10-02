@@ -188,7 +188,7 @@ export const mockCustomerChats: CustomerChat[] = [
       {
         id: 'm-101',
         sender: 'user',
-        text: 'Halo admin Nagamas, salam kenal!',
+        text: 'Halo admin dbb_luxe, salam kenal!',
         timestamp: '14:10'
       },
       {
@@ -256,7 +256,7 @@ export const mockCustomerChats: CustomerChat[] = [
       {
         id: 'm-301',
         sender: 'user',
-        text: 'Selamat siang admin Nagamas!',
+        text: 'Selamat siang admin dbb_luxe!',
         timestamp: '12:15'
       },
       {
@@ -354,7 +354,7 @@ export const mockStockAdjustments: StockAdjustment[] = [
     newStock: 24,
     reason: 'Penerimaan stok baru dari penjahit/workshop',
     date: '02 Sep 2026, 10:30',
-    operator: 'Admin Nagamas'
+    operator: 'Admin dbb_luxe'
   },
   {
     id: 'adj-002',
@@ -378,7 +378,7 @@ export const mockStockAdjustments: StockAdjustment[] = [
     newStock: 15,
     reason: 'Restock batch kedua kulit espresso brown',
     date: '01 Sep 2026, 11:00',
-    operator: 'Admin Nagamas'
+    operator: 'Admin dbb_luxe'
   },
   {
     id: 'adj-004',
@@ -390,7 +390,7 @@ export const mockStockAdjustments: StockAdjustment[] = [
     newStock: 0,
     reason: 'Penyesuaian stok opname bulanan (stok habis)',
     date: '31 Agu 2026, 17:45',
-    operator: 'Admin Nagamas'
+    operator: 'Admin dbb_luxe'
   }
 ]
 
@@ -399,5 +399,5 @@ export const mockQuickReplies = [
   'Pesanan kakak sedang kami siapkan dan segera kami serahkan ke pihak ekspedisi.',
   'Nomor resi pengiriman sudah kami update di sistem ya kak, bisa dicek berkala.',
   'Mohon maaf saat ini stok produk tersebut sedang kosong dan dalam proses restock ya kak.',
-  'Terima kasih banyak sudah berbelanja di Nagamas! Semoga harimu menyenangkan.'
+  'Terima kasih banyak sudah berbelanja di dbb_luxe! Semoga harimu menyenangkan.'
 ]
