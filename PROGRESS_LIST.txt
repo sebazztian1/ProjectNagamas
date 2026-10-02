@@ -1,231 +1,498 @@
 ================================================================================
-                    PROGRESS & TODO LIST PENGEMBANGAN WEBSITE
+              PROGRESS & TODO LIST PENGEMBANGAN WEBSITE (REVISI V2)
 ================================================================================
-Proyek          : Web Katalog, Wishlist, Request Produk & Live Chat Admin (Manual Order)
+Proyek          : Web Jastip - Katalog Ready Stock, Jadwal/Trip Jastip, Wishlist,
+                  Request Produk, Live Chat Admin & Order Manual (tanpa Midtrans)
 Format Checklist: [ ] Belum Selesai | [/] Sedang Dikerjakan | [X] Selesai
 Tanggal Dibuat  : 2026-09-19
+Revisi V2       : 2026-10-02
 ================================================================================
+
+RINGKASAN PERUBAHAN V2
+- Barang dipisah menjadi dua jalur: READY STOCK (/ready) dan JASTIP (/jastip).
+- Admin membuat JADWAL JASTIP (trip): tanggal buka/tutup PO, negara, estimasi
+  tiba, fee, kurs, kuota. Produk jastip terikat ke trip.
+- Order dipecah menjadi `orders` + `order_items` (multi-item, ada quantity).
+- Status order diperluas sesuai alur jastip; mendukung DP/pelunasan.
+- Pembayaran manual: kode unik transfer, batas waktu bayar, riwayat pembayaran.
+- Request produk punya alur penawaran (quote) dari admin.
+- Notifikasi customer, pengaturan toko, audit log, dan keamanan bukti transfer.
+
+--------------------------------------------------------------------------------
+STRUKTUR HALAMAN (SITEMAP)
+--------------------------------------------------------------------------------
+PUBLIK / GUEST
+  /                      Beranda (banner trip yang sedang open + highlight ready)
+  /ready                 Katalog barang ready stock
+  /ready/[slug]          Detail produk ready
+  /jastip                Daftar jadwal/trip jastip (Open, Segera Tutup, Arsip)
+  /jastip/[trip-slug]    Detail trip + katalog produk yang bisa dititip
+  /jastip/[trip-slug]/[slug]  Detail produk jastip
+  /login, /register      Autentikasi
+  /faq, /syarat-ketentuan, /cara-order   Halaman statis
+
+CUSTOMER (wajib login)
+  /wishlist              Daftar favorit (ready & jastip)
+  /request               Form request produk + riwayat request
+  /chat                  Inbox chat customer; /chat/[room-id] room per produk
+  /checkout              Ringkasan order & instruksi pembayaran
+  /orders                Riwayat pesanan; /orders/[kode-order] detail + tracking
+  /orders/[kode-order]/bayar   Upload bukti transfer
+  /notifikasi            Daftar notifikasi
+  /akun                  Profil (username, no HP, ganti password)
+
+ADMIN (/admin/*)
+  /admin                 Dashboard ringkasan
+  /admin/produk          Kelola produk (ready & jastip)
+  /admin/trip            Kelola jadwal jastip (CRUD, status, tutup PO)
+  /admin/trip/[id]       Detail trip: produk, order, daftar belanja
+  /admin/order           Daftar pesanan + verifikasi pembayaran
+  /admin/chat            Inbox live chat
+  /admin/request         Request produk masuk + penawaran
+  /admin/customer        Daftar customer (opsional)
+  /admin/pengaturan      Pengaturan toko (rekening, fee default, kurs, jam buka)
+  /admin/log             Audit log (opsional)
+
+--------------------------------------------------------------------------------
+SKEMA DATABASE (MySQL) - VERSI BARU
+--------------------------------------------------------------------------------
+users
+  id, username (unique), password_hash, phone_number, role (customer/admin/staff),
+  is_active, created_at, updated_at
+
+categories
+  id, name, slug
+
+jastip_trips
+  id, title, slug, country, city_or_area, description, terms, cover_image_url,
+  currency, exchange_rate, fee_type (percent/flat), fee_value,
+  open_date, close_date, departure_date, estimated_arrival_date,
+  quota_total (nullable), status (draft/open/closed/purchasing/arrived/
+  completed/cancelled), created_by, created_at, updated_at
+
+products
+  id, name, slug, description, category_id,
+  product_type (ready/jastip), trip_id (nullable, wajib jika jastip),
+  price (harga jual rupiah), original_price, original_currency, source_store,
+  variants (JSON: ukuran/warna), image_url,
+  stock_status (in_stock/out_of_stock), stock_quantity (khusus ready),
+  quota (khusus jastip, nullable), max_qty_per_order,
+  is_active, deleted_at (soft delete), created_at, updated_at
+
+product_images
+  id, product_id, image_url, sort_order
+
+product_requests
+  id, user_id, product_name, description, reference_image_url, reference_link,
+  trip_id (nullable, trip tujuan jika ada),
+  status (pending/reviewed/quoted/accepted/available/rejected),
+  quoted_price, quote_note, quote_expires_at, admin_note,
+  created_at, updated_at
+
+chat_rooms
+  id, customer_id, product_id (nullable), last_message,
+  unread_admin_count, unread_customer_count, updated_at
+  (unique: customer_id + product_id)
+
+chat_messages
+  id, room_id, sender_id, sender_role, message_type (text/image),
+  content, image_url, is_read, created_at
+
+orders
+  id, order_code (unik, contoh JST-20261002-001), user_id,
+  order_type (ready/jastip), trip_id (nullable),
+  subtotal, unique_code (3 digit), total_amount,
+  payment_type (full/dp), dp_amount, paid_amount, remaining_amount,
+  order_status (pending_payment/payment_uploaded/verified/purchasing/arrived/
+  ready_pickup/completed/cancelled/expired),
+  payment_deadline, fulfillment_method (pickup/shipping),
+  shipping_address, shipping_cost, tracking_number (3 kolom terakhir opsional),
+  customer_note, admin_note, created_at, updated_at
+
+order_items
+  id, order_id, product_id, product_name_snapshot, variant_snapshot,
+  qty, price_at_order, subtotal
+
+order_status_logs
+  id, order_id, from_status, to_status, changed_by, note, proof_image_url
+  (foto struk/bukti pembelian dari admin, opsional), created_at
+
+payments
+  id, order_id, payment_kind (dp/full/remaining), bank_account_id,
+  sender_name, sender_bank, amount, receipt_url, receipt_hash,
+  status (pending/verified/rejected), admin_note,
+  verified_by, verified_at, created_at
+
+bank_accounts
+  id, bank_name, account_number, account_holder, qris_image_url (opsional),
+  is_active
+
+wishlists
+  id, user_id, product_id, created_at
+  (unique constraint: user_id + product_id)
+
+notifications
+  id, user_id, type, title, body, link_url, is_read, created_at
+
+store_settings
+  key, value (rekening default, fee default, kurs default, jam operasional,
+  status toko buka/tutup, kontak WhatsApp, durasi batas bayar)
+
+audit_logs (opsional)
+  id, user_id, action, entity_type, entity_id, detail (JSON), created_at
+
+Catatan relasi penting:
+- products.trip_id -> jastip_trips.id (hanya untuk product_type = jastip)
+- orders.trip_id -> jastip_trips.id; satu order hanya satu tipe (ready ATAU satu
+  trip). Keranjang campur dipecah otomatis menjadi dua order saat checkout.
+- Harga jastip = (original_price x exchange_rate) + fee, lalu disimpan sebagai
+  `price`; order_items menyimpan snapshot harga saat order.
 
 --------------------------------------------------------------------------------
 FASE 1: PERENCANAAN, ANALISIS & DESAIN (UI/UX & DATABASE)
 --------------------------------------------------------------------------------
 [ ] 1.1 Analisis Kebutuhan & Alur Pengguna (User Flow)
-    [ ] Buat diagram alur Guest: browse katalog -> diarahkan login jika chat/request/simpan wishlist
-    [ ] Buat diagram alur Customer: register/login -> browse katalog -> simpan ke wishlist -> chat by produk -> request produk -> order & kirim bukti transfer
-    [ ] Buat alur interaksi Wishlist: tambah/hapus favorit, sinkronisasi state login, dan aksi langsung dari wishlist (Chat Admin / Beli Sekarang)
-    [ ] Buat diagram alur Admin: kelola produk (stok/harga) -> terima notif & balas chat -> cek request produk -> verifikasi bukti transfer
-    [ ] Buat diagram state order (Menunggu Pembayaran -> Bukti Diupload -> Diverifikasi Admin -> Selesai / Siap Diambil)
+    [ ] Diagram alur Guest: browse /ready & /jastip -> diarahkan login jika chat/request/wishlist/order
+    [ ] Diagram alur Customer Ready: login -> browse /ready -> wishlist/chat -> checkout -> upload bukti -> ambil barang
+    [ ] Diagram alur Customer Jastip: login -> pilih trip open -> pilih produk -> checkout (DP/lunas) -> upload bukti -> pantau status -> barang tiba -> ambil
+    [ ] Diagram alur Request Produk: customer request -> admin beri penawaran -> customer setuju -> otomatis jadi order
+    [ ] Diagram alur Admin Trip: buat trip (draft) -> tambah produk -> buka PO -> tutup PO -> daftar belanja -> beli -> barang tiba -> update massal status -> notifikasi customer
+    [ ] Diagram alur Admin Order: terima order -> verifikasi pembayaran -> update status -> selesai
+    [ ] Diagram state order Ready: Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Siap Diambil -> Selesai (+ Dibatalkan/Kedaluwarsa)
+    [ ] Diagram state order Jastip: Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Sedang Dibelikan -> Barang Tiba -> Siap Diambil -> Selesai (+ Dibatalkan/Kedaluwarsa)
+    [ ] Diagram state trip: Draft -> Open -> Closed -> Purchasing -> Arrived -> Completed (+ Cancelled)
+    [ ] Tetapkan aturan bisnis: batas bayar, kebijakan batal/refund, aturan DP, pengambilan barang
 
 [ ] 1.2 Perancangan Database (ERD & Tabel)
-    [ ] Tabel `users`: id, username, password_hash, phone_number, role (customer/admin), created_at
-    [ ] Tabel `products`: id, name, description, price, stock_status (in_stock/out_of_stock), stock_quantity, image_url, created_at, updated_at
-    [ ] Tabel `product_requests`: id, user_id, product_name, description, reference_image_url, status (pending/reviewed/available/rejected), created_at
-    [ ] Tabel `chat_rooms`: id, customer_id, product_id, last_message, unread_admin_count, unread_customer_count, updated_at
-    [ ] Tabel `chat_messages`: id, room_id, sender_id, sender_role, message_type (text/image), content/image_url, is_read, created_at
-    [ ] Tabel `orders`: id, user_id, product_id, total_amount, transfer_receipt_url, order_status (pending/verified/rejected), notes, created_at
-    [ ] Tabel `wishlists`: id, user_id, product_id, created_at (dengan unique constraint user_id + product_id)
+    [ ] Finalisasi ERD berdasarkan skema database V2 di atas
+    [ ] Tentukan enum status dan index (order_code, trip.slug, product.slug, wishlist unik)
+    [ ] Tentukan strategi soft delete (products) dan snapshot harga (order_items)
 
 [ ] 1.3 Desain Tampilan (Wireframe / Mockup UI/UX)
-    [ ] Desain Halaman Login & Register (Input: Username, Password, No HP)
-    [ ] Desain Halaman Katalog Produk (Grid/List card produk, badge stok, harga, tombol wishlist/love)
-    [ ] Desain Halaman Detail & Modal Quick View Produk (Info lengkap, tombol wishlist, tombol "Chat Admin")
-    [ ] Desain Drawer / Halaman Wishlist Customer (Daftar produk favorit tersimpan, tombol hapus wishlist, tombol pintas Chat Admin & Beli)
-    [ ] Desain Counter Badge & Ikon Wishlist pada Navbar Customer
-    [ ] Desain Form Request Produk Customer
-    [ ] Desain Interface Live Chat Customer (dengan preview produk terkait & tombol upload gambar)
-    [ ] Desain Halaman Form Pemesanan & Upload Bukti Transfer Bank
-    [ ] Desain Dashboard Admin:
-        [ ] Panel Kelola Produk (Tambah, Edit stok, Edit harga, Upload foto)
-        [ ] Panel Live Chat Admin (Daftar percakapan, badge notifikasi unread, room chat)
-        [ ] Panel Daftar Request Produk Masuk
-        [ ] Panel Konfirmasi Bukti Transfer Pemesanan Customer
+    [ ] Halaman Login & Register (Username, Password, No HP)
+    [ ] Beranda (banner trip open + hitung mundur + highlight ready)
+    [ ] Halaman Katalog Ready (/ready): grid card, badge stok, harga, tombol wishlist
+    [ ] Halaman Daftar Trip Jastip (/jastip): kartu trip (negara, tanggal tutup PO, estimasi tiba, badge status, hitung mundur)
+    [ ] Halaman Detail Trip + katalog produk trip
+    [ ] Halaman Detail Produk & Quick View (badge "Ready" vs "Jastip - Tiba +- tanggal", tombol wishlist, Chat Admin, Beli/Titip)
+    [ ] Drawer/Halaman Wishlist (penanda tipe produk, tombol hapus, Chat Admin, Beli)
+    [ ] Counter badge wishlist & notifikasi di Navbar customer
+    [ ] Form Request Produk + riwayat request + tampilan penawaran
+    [ ] Interface Live Chat Customer (preview produk, upload gambar)
+    [ ] Halaman Checkout (ringkasan, pilih DP/lunas untuk jastip, instruksi rekening)
+    [ ] Halaman Upload Bukti Transfer & Riwayat/Tracking Order (timeline status)
+    [ ] Dashboard Admin:
+        [ ] Dashboard ringkas (order menunggu verifikasi, chat unread, request baru, omzet per trip)
+        [ ] Panel Kelola Produk (ready & jastip)
+        [ ] Panel Kelola Trip + detail trip (produk, order, daftar belanja)
+        [ ] Panel Order & Verifikasi Pembayaran
+        [ ] Panel Live Chat Admin
+        [ ] Panel Request Produk & penawaran
+        [ ] Panel Pengaturan Toko
+    [ ] Halaman statis: FAQ, Syarat & Ketentuan, Cara Order
 
 --------------------------------------------------------------------------------
 FASE 2: SETUP LINGKUNGAN, DATABASE & STORAGE GAMBAR
 --------------------------------------------------------------------------------
 [ ] 2.1 Setup Project & Dependencies
     [ ] Konfigurasi framework & struktur direktori (Nuxt / Node.js)
-    [ ] Setup icon, styling/CSS framework, dan helper format mata uang (Rupiah)
+    [ ] Setup icon, styling/CSS framework, helper format Rupiah, helper tanggal & zona waktu
+    [ ] Helper perhitungan harga jastip (harga asal x kurs + fee)
 
 [ ] 2.2 Setup Database & ORM / Driver
-    [ ] Inisialisasi Database (PostgreSQL / MySQL / Supabase)
-    [ ] Buat script migrasi tabel dan relasi foreign key
-    [ ] Buat database seeder untuk akun Admin default & sample produk
+    [ ] Inisialisasi MySQL (Prisma ORM / Drizzle ORM / mysql2)
+    [ ] Script migrasi seluruh tabel V2 beserta foreign key & index
+    [ ] Seeder: akun Admin default, kategori, rekening contoh, sample produk ready, sample trip + produk jastip, store_settings default
 
-[ ] 2.3 Setup Penyimpanan Gambar (Cloud Storage / Object Storage)
+[ ] 2.3 Setup Penyimpanan Gambar (Cloud/Object Storage)
     [ ] Setup storage provider (Supabase Storage / Cloudinary / AWS S3 / Firebase Storage)
-    [ ] Buat bucket/folder terpisah:
-        [ ] `products/` (gambar katalog produk)
-        [ ] `chat/` (gambar lampiran live chat)
-        [ ] `requests/` (gambar referensi request produk)
-        [ ] `receipts/` (gambar bukti transfer pembayaran)
-    [ ] Konfigurasi public read & permission upload
+    [ ] Bucket/folder terpisah:
+        [ ] `products/` (publik)
+        [ ] `trips/` (cover trip, publik)
+        [ ] `chat/` (lampiran chat, akses terbatas)
+        [ ] `requests/` (gambar referensi request, akses terbatas)
+        [ ] `receipts/` (bukti transfer, PRIVATE - signed URL, hanya admin & pemilik order)
+        [ ] `purchase-proofs/` (foto struk/bukti pembelian dari admin)
+    [ ] Konfigurasi permission upload dan public read hanya untuk folder yang memang publik
 
 --------------------------------------------------------------------------------
 FASE 3: AUTENTIKASI & OTORISASI (AUTH & ROLES)
 --------------------------------------------------------------------------------
 [ ] 3.1 Registrasi Akun Customer
     [ ] Form Register: Username, Password, Konfirmasi Password, Nomor HP (tanpa OTP)
-    [ ] Validasi nomor HP (format angka/standar Indonesia)
-    [ ] Hashing password aman (bcrypt/argon2)
-    [ ] Simpan user baru dengan default role: `customer`
+    [ ] Validasi nomor HP (format standar Indonesia) & username unik
+    [ ] Hashing password (bcrypt/argon2)
+    [ ] Simpan user dengan default role `customer`
 
 [ ] 3.2 Login & Session Management
-    [ ] Form Login: Username & Password
-    [ ] Autentikasi credential & generate session/token (JWT / Cookie session)
-    [ ] Redirect otomatis sesuai role (Admin ke Dashboard, Customer ke Beranda/Katalog)
-    [ ] Fitur Logout
+    [ ] Form Login & generate session/token (JWT / Cookie session)
+    [ ] Redirect sesuai role (Admin ke Dashboard, Customer ke Beranda)
+    [ ] Logout
+    [ ] Reset password manual oleh admin (atau tambah field email jika diputuskan)
+    [ ] Halaman Akun: ubah no HP & ganti password
 
-[ ] 3.3 Middleware Proteksi Route (Access Control)
-    [ ] Middleware `auth`: Batasi fitur Chat, Request Produk, dan Sinkronisasi Wishlist hanya untuk customer terdaftar
-    [ ] Middleware `admin`: Proteksi seluruh rute panel admin (/admin/*)
-    [ ] Redirect Guest ke halaman login disertai pesan notifikasi jika mencoba chat, request produk, atau menyimpan ke wishlist
-
---------------------------------------------------------------------------------
-FASE 4: KATALOG & MANAJEMEN PRODUK
---------------------------------------------------------------------------------
-[ ] 4.1 Katalog Produk untuk Customer & Guest
-    [ ] Tampilan daftar katalog (foto produk, nama, harga Rp, status ketersediaan)
-    [ ] Filter pencarian produk dan kategori
-    [ ] Tampilan detail produk (deskripsi lengkap, status stok: Ready / Kosong)
-    [ ] Tombol aksi pada detail produk:
-        [ ] "Chat Admin" (Mengarahkan ke room chat produk tersebut)
-        [ ] "Pesan / Beli Sekarang" (Mengarahkan ke pembayaran & upload bukti transfer)
-
-[ ] 4.2 Manajemen Produk oleh Admin
-    [ ] Form tambah produk baru (Nama, Deskripsi, Harga, Stok Awal, Upload Foto Produk)
-    [ ] Form edit produk (Update informasi, ganti foto produk)
-    [ ] Fitur update cepat stok (Tersedia / Habis) dan perubahan harga produk
-    [ ] Hapus produk (Soft delete atau hard delete)
-
-[ ] 4.3 Fitur Wishlist (Favorit Produk) Customer
-    [ ] Tombol toggle Love/Wishlist interaktif pada setiap card produk di katalog
-    [ ] Tombol Wishlist pada modal Quick View / Detail Produk
-    [ ] Drawer / Halaman Wishlist Customer (Menampilkan daftar produk yang disukai/disimpan)
-    [ ] Badge indikator jumlah item wishlist di Navbar (real-time counter)
-    [ ] Tombol aksi di daftar wishlist: Hapus item, Chat Admin via Live Chat/WhatsApp, dan Beli Sekarang
-    [ ] Proteksi status login: Notifikasi / modal peringatan login jika guest mencoba menyimpan wishlist
-    [ ] Persistensi data wishlist (tersimpan di local storage & database per akun customer)
+[ ] 3.3 Middleware Proteksi Route
+    [ ] Middleware `auth`: chat, request, wishlist, checkout, orders, notifikasi
+    [ ] Middleware `admin`: seluruh /admin/* (role admin/staff; pembatasan owner vs staff)
+    [ ] Redirect Guest ke login disertai pesan notifikasi (simpan URL tujuan untuk redirect balik)
 
 --------------------------------------------------------------------------------
-FASE 5: REQUEST PRODUK OLEH CUSTOMER & REVIEW ADMIN
+FASE 4: KATALOG READY STOCK & MANAJEMEN PRODUK
 --------------------------------------------------------------------------------
-[ ] 5.1 Fitur Request Produk Customer
-    [ ] Proteksi halaman: Wajib login (Guest diblokir/diarahkan login)
-    [ ] Form Request Produk:
-        [ ] Nama produk yang dicari/diinginkan
-        [ ] Keterangan / Deskripsi kebutuhan
-        [ ] Upload foto/gambar referensi produk (opsional/wajib)
-    [ ] Riwayat request produk yang pernah diajukan customer beserta statusnya
+[ ] 4.1 Katalog Ready Stock (/ready) untuk Customer & Guest
+    [ ] Daftar produk ready (foto, nama, harga Rp, status stok)
+    [ ] Filter kategori, pencarian, urutan harga/terbaru
+    [ ] Detail produk ready (deskripsi, variasi, stok: Ready / Kosong)
+    [ ] Tombol aksi: "Chat Admin" dan "Beli Sekarang" (guest diarahkan login)
 
-[ ] 5.2 Pengelolaan Request Produk oleh Admin
-    [ ] Halaman daftar semua request produk masuk dari customer
-    [ ] Filter request (Pending, Disetujui, Ditolak, Sudah Tersedia)
-    [ ] Detail request: data customer, no HP customer, deskripsi & preview gambar referensi
-    [ ] Aksi admin: Ubah status request & tombol pintas chat ke customer
-
---------------------------------------------------------------------------------
-FASE 6: LIVE CHAT REAL-TIME BY PRODUK & NOTIFIKASI ADMIN
---------------------------------------------------------------------------------
-[ ] 6.1 Arsitektur Real-time Chat
-    [ ] Setup WebSocket / Supabase Realtime / Socket.io engine
-    [ ] Buat mekanisme pengelompokan room chat: berdasarkan kombinasi (Customer + Produk)
-    [ ] Proteksi: Guest tidak dapat membuka room chat (harus login terlebih dahulu)
-
-[ ] 6.2 Antarmuka & Fungsionalitas Chat Customer
-    [ ] Header chat menampilkan cuplikan produk yang sedang ditanyakan (nama, foto, harga)
-    [ ] Pengiriman pesan teks real-time
-    [ ] Pengiriman pesan berupa gambar (upload dari perangkat, render preview sebelum kirim)
-    [ ] Tampilan bubble chat yang responsif dan waktu kirim (timestamp)
-    [ ] Status pengiriman pesan
-
-[ ] 6.3 Antarmuka Chat & Notifikasi untuk Admin
-    [ ] Daftar inbox percakapan customer terurut berdasarkan pesan terbaru
-    [ ] Indikator badge unread (jumlah pesan belum dibaca) per room chat
-    [ ] Notifikasi Real-time untuk Admin:
-        [ ] Badge counter total pesan masuk baru di navbar / menu sidebar admin
-        [ ] Sound notification / Web browser toast notification ketika ada pesan baru
-    [ ] Fitur admin membalas pesan teks & mengirim gambar
-    [ ] Tombol menandai pesan sudah dibaca (Mark as read)
+[ ] 4.2 Manajemen Produk oleh Admin (ready & jastip)
+    [ ] Form tambah produk (nama, deskripsi, kategori, tipe ready/jastip, harga, variasi, foto, multi-foto)
+    [ ] Untuk tipe ready: stok awal & update cepat stok (Tersedia/Habis)
+    [ ] Untuk tipe jastip: pilih trip, harga asal, mata uang, toko sumber, kuota, maks qty per order, harga jual terhitung otomatis
+    [ ] Form edit produk & ganti foto
+    [ ] Update cepat harga
+    [ ] Soft delete produk (data order lama tetap aman)
+    [ ] Duplikat produk dari trip sebelumnya ke trip baru
+    [ ] Fitur "pindahkan sisa barang trip ke ready stock"
 
 --------------------------------------------------------------------------------
-FASE 7: PEMESANAN & UPLOAD BUKTI TRANSFER BANK (NON-SHIPPING)
+FASE 5: JADWAL JASTIP (TRIP) & KATALOG JASTIP
 --------------------------------------------------------------------------------
-[ ] 7.1 Alur Pemesanan & Rekening Bank
-    [ ] Halaman instruksi pembayaran: Daftar nomor rekening bank & atas nama toko
-    [ ] Penjelasan informasi pengambilan barang (Manual / Ambil di Toko fisik, tanpa ekspedisi)
-    [ ] Ringkasan barang yang dipesan (Produk, Jumlah, Total Nominal)
+[ ] 5.1 Manajemen Trip oleh Admin (/admin/trip)
+    [ ] CRUD trip: judul, negara, kota/area, deskripsi, syarat khusus, cover, mata uang, kurs, tipe & nilai fee
+    [ ] Atur tanggal: buka PO, tutup PO, berangkat, estimasi tiba
+    [ ] Atur kuota total trip (opsional)
+    [ ] Alur status trip: draft -> open -> closed -> purchasing -> arrived -> completed (+ cancelled)
+    [ ] Tombol cepat "Tutup PO sekarang"
+    [ ] Auto-close saat close_date lewat atau kuota penuh (scheduled job / pengecekan saat request)
+    [ ] Tambah/kelola produk di dalam trip
 
-[ ] 7.2 Upload Bukti Transfer Customer
-    [ ] Form konfirmasi pembayaran:
-        [ ] Nama pengirim & Bank asal
-        [ ] Nominal transfer
-        [ ] Upload gambar foto/screenshot bukti transfer bank (JPG/PNG)
-        [ ] Catatan tambahan
-    [ ] Halaman riwayat pemesanan customer untuk memantau status verifikasi
+[ ] 5.2 Operasional Trip oleh Admin
+    [ ] Daftar belanja per trip (rekap qty per produk/toko, export CSV)
+    [ ] Daftar order per trip beserta status pembayaran
+    [ ] Update status massal order per trip (contoh: semua jadi "Barang Tiba") + kirim notifikasi ke customer
+    [ ] Upload foto struk/bukti pembelian per order/produk
+    [ ] Pengumuman / broadcast chat per trip (opsional)
 
-[ ] 7.3 Verifikasi Pembayaran oleh Admin
-    [ ] Panel daftar pesanan masuk beserta status verifikasi
-    [ ] Modal preview gambar bukti transfer bank (fitur zoom/lihat gambar resolusi penuh)
-    [ ] Aksi verifikasi: "Konfirmasi / Lunas" atau "Tolak (Bukti Tidak Sesuai)"
-    [ ] Catatan admin jika bukti transfer ditolak / instruksi pengambilan barang
-
---------------------------------------------------------------------------------
-FASE 8: PENGUJIAN (TESTING), KEAMANAN & OPTIMASI
---------------------------------------------------------------------------------
-[ ] 8.1 Validasi & Keamanan Input
-    [ ] Validasi tipe file & ukuran maksimal upload gambar (maks 2MB - 5MB, format jpg/jpeg/png/webp)
-    [ ] Sanitasi data input untuk mencegah XSS & SQL Injection
-    [ ] Rate limiting pada endpoint login, register, dan upload gambar
-
-[ ] 8.2 Pengujian Fungsional (User Testing)
-    [ ] Test skenario Guest mencoba akses chat, request produk, dan simpan wishlist (harus tertolak/diarahkan login)
-    [ ] Test fitur Wishlist: tambah item, hapus item, cegah duplikasi, dan sinkronisasi saat relogin
-    [ ] Test upload gambar pada: foto produk, lampiran chat, referensi request, bukti transfer
-    [ ] Test real-time message & notifikasi admin saat chat masuk bersamaan
-    [ ] Test perubahan stok produk (out of stock) & dampaknya di katalog/detail produk
-
-[ ] 8.3 Optimasi Performa & UI Responsif
-    [ ] Optimasi kompresi gambar sebelum disimpan / thumbnail preview
-    [ ] Responsivitas layout pada layar Smartphone, Tablet, dan Desktop
+[ ] 5.3 Halaman Jastip untuk Customer & Guest
+    [ ] /jastip: daftar trip (kartu: negara/bendera, tanggal tutup PO, estimasi tiba, badge Open/Segera Tutup/Closed, hitung mundur)
+    [ ] Arsip trip yang sudah closed/selesai (tanpa tombol beli)
+    [ ] /jastip/[trip-slug]: detail trip + katalog produk jastip + syarat trip
+    [ ] Detail produk jastip (harga, variasi, estimasi tiba, sisa kuota)
+    [ ] Tombol "Titip Sekarang" (nonaktif jika trip tidak open / kuota penuh)
+    [ ] Badge di card produk: "Ready" vs "Jastip - Tiba +- tanggal"
 
 --------------------------------------------------------------------------------
-FASE 9: DEPLOYMENT & HOSTING (WEB + DATABASE)
+FASE 6: WISHLIST CUSTOMER
 --------------------------------------------------------------------------------
-[ ] 9.1 Hosting Database & Cloud Storage
-    [ ] Pilih & setup provider database produksi (contoh: Supabase, Railway, Neon, AWS RDS, atau VPS)
-    [ ] Jalankan migrasi skema tabel di database produksi
-    [ ] Konfigurasi izin akses CORS & policy bucket storage gambar di server produksi
-    [ ] Buat akun admin pertama di database produksi
+[ ] 6.1 Fitur Wishlist
+    [ ] Tombol toggle Love pada card produk (ready & jastip) dan modal detail
+    [ ] Drawer/Halaman Wishlist dengan penanda tipe produk
+    [ ] Badge jumlah wishlist di Navbar (real-time counter)
+    [ ] Aksi: Hapus, Chat Admin (live chat/WhatsApp), Beli Sekarang
+    [ ] Tombol beli dinonaktifkan jika produk jastip & trip sudah tutup / ready habis
+    [ ] Modal peringatan login jika guest mencoba menyimpan
+    [ ] Persistensi: local storage + database per akun, gabung (merge) saat login, cegah duplikasi
 
-[ ] 9.2 Hosting Aplikasi Web (Frontend & Backend)
-    [ ] Konfigurasi environment variables (.env produksi):
+--------------------------------------------------------------------------------
+FASE 7: REQUEST PRODUK & PENAWARAN (QUOTE)
+--------------------------------------------------------------------------------
+[ ] 7.1 Request Produk Customer
+    [ ] Proteksi: wajib login
+    [ ] Form: nama produk, deskripsi, link referensi, upload gambar referensi, opsi trip tujuan (trip open) atau "belum tentu"
+    [ ] Riwayat request + status
+    [ ] Halaman penawaran: lihat harga & catatan dari admin, tombol Setuju / Tolak
+    [ ] Setelah setuju, otomatis dibuat order (masuk alur checkout & pembayaran)
+
+[ ] 7.2 Pengelolaan Request oleh Admin
+    [ ] Daftar request masuk + filter status (Pending, Reviewed, Quoted, Accepted, Available, Rejected)
+    [ ] Detail: data customer, no HP, deskripsi, preview gambar & link referensi
+    [ ] Aksi: isi harga penawaran, catatan, masa berlaku penawaran, ubah status
+    [ ] Tombol pintas chat ke customer
+    [ ] Opsi menjadikan request sebagai produk di trip
+
+--------------------------------------------------------------------------------
+FASE 8: LIVE CHAT REAL-TIME BY PRODUK & NOTIFIKASI ADMIN
+--------------------------------------------------------------------------------
+[ ] 8.1 Arsitektur Real-time Chat & Broadcasting (MySQL + Realtime Broadcaster)
+    [ ] Catatan Arsitektur:
+        - Database utama: MySQL menyimpan permanen `chat_rooms` dan `chat_messages`
+        - Engine broadcasting: Pusher Channels / Supabase Broadcast / Socket.io
+        - Alur kirim pesan:
+          1. Klien kirim chat via API (`/api/chat/send`)
+          2. Pesan divalidasi & disimpan ke MySQL (`is_read = false`)
+          3. Setelah insert berhasil, server trigger event ke channel `room-{id}`
+          4. Penerima yang subscribe menerima payload secara instan
+    [ ] Versi awal (MVP) boleh memakai polling sederhana; realtime broadcast menyusul
+    [ ] Setup Realtime Broadcaster
+    [ ] Room chat berdasarkan kombinasi (Customer + Produk)
+    [ ] Proteksi: Guest tidak dapat membuka room chat
+
+[ ] 8.2 Chat Customer
+    [ ] Header preview produk (nama, foto, harga, tipe ready/jastip)
+    [ ] Kirim pesan teks real-time
+    [ ] Kirim gambar (preview sebelum kirim)
+    [ ] Bubble responsif, timestamp, status pengiriman
+
+[ ] 8.3 Chat & Notifikasi Admin
+    [ ] Inbox percakapan terurut pesan terbaru
+    [ ] Badge unread per room + total di navbar/sidebar admin
+    [ ] Sound notification / browser toast saat ada pesan baru
+    [ ] Balas teks & gambar
+    [ ] Mark as read
+
+--------------------------------------------------------------------------------
+FASE 9: CHECKOUT, ORDER & PEMBAYARAN MANUAL (NON-MIDTRANS)
+--------------------------------------------------------------------------------
+[ ] 9.1 Checkout & Pembuatan Order
+    [ ] Keranjang / pilih item (qty, variasi) dengan validasi stok (ready) atau status trip & kuota (jastip)
+    [ ] Keranjang campur dipecah otomatis menjadi order ready & order jastip per trip
+    [ ] Generate `order_code` unik
+    [ ] Simpan `order_items` dengan snapshot nama & harga
+    [ ] Generate kode unik 3 digit pada total transfer
+    [ ] Set `payment_deadline` (default 24 jam, dari store_settings)
+    [ ] Pilihan DP atau lunas (khusus jastip) dengan perhitungan sisa pembayaran
+    [ ] Auto-expire order yang melewati batas bayar & kembalikan stok/kuota
+
+[ ] 9.2 Instruksi Pembayaran
+    [ ] Halaman instruksi: daftar rekening aktif / QRIS (dari `bank_accounts`)
+    [ ] Informasi pengambilan barang (ambil di toko; opsi pengiriman manual jika diaktifkan)
+    [ ] Ringkasan barang, total, kode unik, countdown batas bayar
+
+[ ] 9.3 Upload Bukti Transfer Customer
+    [ ] Form: nama pengirim, bank asal, nominal, upload bukti (JPG/PNG/WEBP), catatan
+    [ ] Hitung hash file untuk deteksi bukti ganda
+    [ ] Flag otomatis jika nominal tidak sama dengan tagihan
+    [ ] Upload pelunasan terpisah untuk order DP
+    [ ] Riwayat pesanan & tracking timeline (dari `order_status_logs`)
+
+[ ] 9.4 Verifikasi Pembayaran oleh Admin
+    [ ] Daftar order + filter status/tipe/trip
+    [ ] Modal preview bukti transfer (zoom, resolusi penuh via signed URL)
+    [ ] Aksi: "Konfirmasi / Lunas" atau "Tolak (Bukti Tidak Sesuai)" + catatan
+    [ ] Update status order & tulis `order_status_logs`
+    [ ] Catat siapa & kapan memverifikasi (audit)
+
+[ ] 9.5 Pembatalan & Refund Manual
+    [ ] Aturan batal: bebas sebelum diverifikasi; jastip tidak bisa batal setelah barang dibeli
+    [ ] Status & catatan refund manual oleh admin
+    [ ] Pengaturan pengiriman opsional: alamat, ongkir input admin, nomor resi
+
+--------------------------------------------------------------------------------
+FASE 10: TRACKING & NOTIFIKASI CUSTOMER
+--------------------------------------------------------------------------------
+[ ] 10.1 Notifikasi In-App Customer
+    [ ] Tabel & API `notifications`, badge di navbar, halaman daftar notifikasi
+    [ ] Trigger: pembayaran diverifikasi/ditolak, status order berubah, barang tiba, penawaran request masuk, balasan chat
+
+[ ] 10.2 Notifikasi Cadangan via WhatsApp
+    [ ] Tombol/link `wa.me` dengan template pesan otomatis (kode order & status)
+    [ ] Pengaturan nomor WhatsApp admin di store_settings
+
+--------------------------------------------------------------------------------
+FASE 11: DASHBOARD & OPERASIONAL ADMIN
+--------------------------------------------------------------------------------
+[ ] 11.1 Dashboard Admin
+    [ ] Ringkasan: order menunggu verifikasi, chat belum dibaca, request baru, trip aktif, omzet per trip
+    [ ] Laporan sederhana & export CSV
+
+[ ] 11.2 Pengaturan Toko
+    [ ] CRUD rekening bank / QRIS
+    [ ] Fee default, kurs default, durasi batas bayar, status toko buka/tutup, kontak WhatsApp
+
+[ ] 11.3 Konten & Kepercayaan
+    [ ] Halaman FAQ, Syarat & Ketentuan, Cara Order, kebijakan refund
+    [ ] Opsional: testimoni / galeri bukti pembelian
+    [ ] Opsional: audit log & manajemen staf (owner vs staff)
+
+--------------------------------------------------------------------------------
+FASE 12: PENGUJIAN (TESTING), KEAMANAN & OPTIMASI
+--------------------------------------------------------------------------------
+[ ] 12.1 Validasi & Keamanan Input
+    [ ] Validasi tipe & ukuran file (maks 2-5MB; jpg/jpeg/png/webp)
+    [ ] Sanitasi input (XSS & SQL Injection)
+    [ ] Rate limiting: login, register, upload, pembuatan order & request
+    [ ] Verifikasi otorisasi: customer hanya bisa akses order, chat, dan bukti transfer miliknya
+    [ ] Pastikan bucket `receipts/` private dan signed URL kedaluwarsa
+
+[ ] 12.2 Pengujian Fungsional
+    [ ] Guest mencoba chat/request/wishlist/checkout (harus diarahkan login)
+    [ ] Wishlist: tambah, hapus, cegah duplikasi, sinkron saat relogin, produk jastip trip tutup
+    [ ] Trip: buat, buka, tutup manual, auto-close tanggal & kuota penuh, produk tidak bisa dipesan setelah tutup
+    [ ] Checkout: ready vs jastip, keranjang campur terpecah, perhitungan harga/fee/kurs, kode unik, DP & pelunasan
+    [ ] Order expired otomatis & stok/kuota kembali
+    [ ] Verifikasi & tolak pembayaran, bukti ganda, nominal tidak cocok
+    [ ] Update status massal per trip & notifikasi customer
+    [ ] Alur request -> penawaran -> setuju -> order
+    [ ] Upload gambar: produk, trip, chat, request, bukti transfer
+    [ ] Real-time chat & notifikasi admin saat chat masuk bersamaan
+    [ ] Perubahan stok ready & dampaknya di katalog/detail
+
+[ ] 12.3 Optimasi Performa & UI Responsif
+    [ ] Kompresi gambar & thumbnail
+    [ ] Responsif di Smartphone, Tablet, Desktop
+    [ ] Index database untuk query katalog, trip, order
+
+--------------------------------------------------------------------------------
+FASE 13: DEPLOYMENT & HOSTING (WEB + DATABASE)
+--------------------------------------------------------------------------------
+[ ] 13.1 Hosting Database & Cloud Storage
+    [ ] Pilih & setup database produksi (Supabase, Railway, Neon, AWS RDS, atau VPS)
+    [ ] Jalankan migrasi skema V2 di produksi
+    [ ] Konfigurasi CORS & policy bucket (publik vs private)
+    [ ] Buat akun admin pertama & isi store_settings produksi
+
+[ ] 13.2 Hosting Aplikasi Web
+    [ ] Environment variables (.env produksi):
         [ ] `DATABASE_URL`
         [ ] `STORAGE_API_KEY` / `STORAGE_BUCKET_URL`
-        [ ] `JWT_SECRET` / Auth session keys
+        [ ] `JWT_SECRET` / session keys
+        [ ] `REALTIME_*` (key Pusher/Supabase/Socket.io)
         [ ] `BASE_URL`
-    [ ] Build test lokal untuk memastikan tidak ada build error (`npm run build`)
-    [ ] Deploy web ke hosting (contoh: Vercel, Netlify, Railway, Render, atau VPS)
+    [ ] Build test lokal (`npm run build`)
+    [ ] Deploy (Vercel, Netlify, Railway, Render, atau VPS)
+    [ ] Setup scheduled job untuk auto-close trip & auto-expire order
 
-[ ] 9.3 Konfigurasi Domain & Keamanan Server
-    [ ] Hubungkan Custom Domain toko (jika ada)
-    [ ] Pastikan sertifikat SSL (HTTPS) aktif untuk keamanan transfer data & gambar
-    [ ] Setup headers keamanan (Content Security Policy, CORS)
+[ ] 13.3 Domain & Keamanan Server
+    [ ] Custom domain (jika ada) & SSL/HTTPS aktif
+    [ ] Security headers (CSP, CORS)
 
-[ ] 9.4 Post-Deployment Testing (Smoke Test)
-    [ ] Uji coba Register & Login akun customer baru di website live
-    [ ] Uji coba Admin login & upload produk baru beserta fotonya
-    [ ] Uji coba Customer menambahkan dan menghapus produk di Wishlist (serta cek counter di navbar)
-    [ ] Uji coba Customer chat admin dari produk katalog (pastikan notif admin bunyi/muncul)
-    [ ] Uji coba Customer kirim form request produk + gambar
-    [ ] Uji coba Customer upload bukti transfer bank dan verifikasi oleh admin
-    [ ] Konfirmasi semua gambar tersimpan dan tampil dengan lancar tanpa broken image
+[ ] 13.4 Post-Deployment Testing (Smoke Test)
+    [ ] Register & login customer baru
+    [ ] Admin login, buat trip, tambah produk jastip + foto, tambah produk ready
+    [ ] Customer melihat /ready dan /jastip terpisah dengan benar
+    [ ] Customer wishlist (cek counter navbar)
+    [ ] Customer chat dari produk (notif admin muncul/bunyi)
+    [ ] Customer request produk + gambar, admin kirim penawaran
+    [ ] Customer checkout ready & jastip (DP), upload bukti, admin verifikasi
+    [ ] Admin update status trip & order, customer menerima notifikasi
+    [ ] Semua gambar tampil tanpa broken image; bukti transfer tidak bisa diakses publik
+
+--------------------------------------------------------------------------------
+SARAN URUTAN PENGERJAAN (MVP)
+--------------------------------------------------------------------------------
+Tahap 1 : Fase 2 -> 3 -> 4 (setup, auth, katalog ready, produk admin)
+Tahap 2 : Fase 9 untuk order ready (checkout, transfer manual, verifikasi)
+Tahap 3 : Fase 5 (trip & katalog jastip) lalu perluas Fase 9 untuk order jastip/DP
+Tahap 4 : Fase 8 (chat; mulai dari polling)
+Tahap 5 : Fase 6 & 7 (wishlist, request & penawaran)
+Tahap 6 : Fase 10 & 11 (notifikasi customer, dashboard, pengaturan)
+Tahap 7 : Fase 12 & 13 (testing, optimasi, deployment)
 
 ================================================================================
                               CATATAN TAMBAHAN
 ================================================================================
-- Layanan pengiriman barang tidak disediakan di sistem web. Seluruh transaksi
-  diselesaikan melalui konfirmasi bukti transfer dan pengambilan mandiri / offline.
-- Simpan file ini sebagai acuan berkala. Ubah tanda `[ ]` menjadi `[X]` setiap kali
-  sebuah tugas telah selesai diimplementasikan.
+- Pengiriman barang secara default tidak disediakan; transaksi diselesaikan lewat
+  konfirmasi bukti transfer dan pengambilan mandiri. Opsi pengiriman manual
+  (alamat, ongkir input admin, resi) bersifat opsional (Fase 9.5).
+- Bukti transfer bersifat sensitif: simpan di bucket private.
+- Simpan file ini sebagai acuan berkala. Ubah `[ ]` menjadi `[X]` setiap kali
+  tugas selesai diimplementasikan.
+- UX Keranjang Campur (Mixed Cart)
+    *Di dokumen tertulis bahwa keranjang campur dipecah menjadi dua order saat checkout.
+    *Tips: Saat koding nanti, Anda bisa memilih cara yang paling simpel di UI: jika customer sedang memilih barang jastip dari Trip Jepang, lalu ingin menambah barang dari Ready Stock, beri konfirmasi pop-up modal: "Pesanan Ready Stock dan Jastip akan dibuat menjadi tagihan terpisah ya".
+- Auto-Expire Batas Waktu Bayar 24 Jam
+    *Jika nanti di-deploy ke platform serverless (seperti Vercel) yang tidak punya server background 24 jam terus-menerus, Anda tidak wajib membuat cron job rumit di awal. Cukup buat pengecekan otomatis saat data dipanggil (lazy expiration): jika payment_deadline < NOW() dan status masih pending_payment, otomatis ubah statusnya menjadi expired.
+- Penyimpanan Gambar Bukti Transfer:
+    *Keputusan menjadikan bucket receipts/ sebagai Private sangat tepat untuk privasi rekening customer. Gunakan fitur Signed URL (URL dengan masa kedaluwarsa, misal aktif 10 menit) saat admin membuka modal verifikasi bukti transfer.
 ================================================================================
