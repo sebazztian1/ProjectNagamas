@@ -52,7 +52,7 @@
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -62,7 +62,7 @@
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -73,19 +73,19 @@
 .page-title {
   font-size: 1.85rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 6px;
 }
 
 .page-subtitle {
   font-size: 0.92rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.5;
 }
 
 .legal-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 32px;
   display: flex;
@@ -96,13 +96,13 @@
 .legal-sec h2 {
   font-size: 1.1rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   margin-bottom: 8px;
 }
 
 .legal-sec p {
   font-size: 0.9rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.6;
 }
 </style>

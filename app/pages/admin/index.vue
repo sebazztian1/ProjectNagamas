@@ -120,17 +120,17 @@ const formatRupiah = (val: number) => {
 .dash-title {
   font-size: 1.65rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .dash-subtitle {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .btn-new-trip {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   text-decoration: none;
   font-size: 0.85rem;
@@ -141,7 +141,7 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-new-trip:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 .kpi-grid {
@@ -152,7 +152,7 @@ const formatRupiah = (val: number) => {
 
 .kpi-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 20px;
   display: flex;
@@ -161,7 +161,7 @@ const formatRupiah = (val: number) => {
 
 .kpi-label {
   font-size: 0.78rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   font-weight: 600;
   margin-bottom: 6px;
 }
@@ -169,7 +169,7 @@ const formatRupiah = (val: number) => {
 .kpi-val {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
@@ -178,12 +178,12 @@ const formatRupiah = (val: number) => {
 }
 
 .kpi-val.highlight {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .kpi-sub {
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .dash-two-col {
@@ -194,7 +194,7 @@ const formatRupiah = (val: number) => {
 
 .panel-box {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px;
 }
@@ -205,19 +205,19 @@ const formatRupiah = (val: number) => {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .panel-head h3 {
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .panel-link {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   text-decoration: none;
 }
 
@@ -232,20 +232,20 @@ const formatRupiah = (val: number) => {
   justify-content: space-between;
   align-items: center;
   padding: 12px;
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
 }
 
 .ord-code {
   display: block;
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .ord-cust {
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .ord-right {
@@ -257,7 +257,7 @@ const formatRupiah = (val: number) => {
 .ord-amount {
   font-size: 0.95rem;
   font-weight: 800;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .btn-check-proof {
@@ -277,10 +277,10 @@ const formatRupiah = (val: number) => {
 }
 
 .trip-quick-item {
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
   padding: 12px;
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
 }
 
 .tq-top {
@@ -292,7 +292,7 @@ const formatRupiah = (val: number) => {
 
 .tq-top strong {
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .tq-badge {
@@ -308,20 +308,20 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 6px;
 }
 
 .tq-bar {
   height: 6px;
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--color-secondary, #EFE1C6);
   border-radius: 4px;
   overflow: hidden;
 }
 
 .tq-fill {
   height: 100%;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
 }
 
 @media (max-width: 900px) {

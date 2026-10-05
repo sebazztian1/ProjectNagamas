@@ -136,13 +136,13 @@ const forgotPassword = () => {
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  background-color: #f8fafc;
+  background-color: #FFFBF2;
 }
 
 .auth-card {
   background: #ffffff;
   border-radius: 16px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #EFE1C6;
   max-width: 440px;
   width: 100%;
   padding: 36px 32px;
@@ -159,13 +159,13 @@ const forgotPassword = () => {
   gap: 6px;
   font-size: 0.82rem;
   font-weight: 600;
-  color: #64748b;
+  color: #7A6A55;
   text-decoration: none;
   transition: color 0.15s;
 }
 
 .back-link:hover {
-  color: #0f172a;
+  color: #2B2116;
 }
 
 .auth-header {
@@ -176,9 +176,9 @@ const forgotPassword = () => {
   font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 1px;
-  color: #0f172a;
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  color: #2B2116;
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   display: inline-block;
   padding: 3px 8px;
   border-radius: 4px;
@@ -188,14 +188,14 @@ const forgotPassword = () => {
 .auth-title {
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 6px;
   letter-spacing: -0.3px;
 }
 
 .auth-subtitle {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.45;
 }
 
@@ -214,7 +214,7 @@ const forgotPassword = () => {
 .form-group label {
   font-size: 0.82rem;
   font-weight: 600;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .label-row {
@@ -225,12 +225,12 @@ const forgotPassword = () => {
 
 .forgot-link {
   font-size: 0.78rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   text-decoration: none;
 }
 
 .forgot-link:hover {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   text-decoration: underline;
 }
 
@@ -243,7 +243,7 @@ const forgotPassword = () => {
 .input-icon {
   position: absolute;
   left: 12px;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   pointer-events: none;
 }
 
@@ -251,17 +251,17 @@ const forgotPassword = () => {
   width: 100%;
   padding: 10px 14px 10px 38px;
   border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   background: #ffffff;
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   outline: none;
   transition: border-color 0.2s;
 }
 
 .input-wrap input:focus {
-  border-color: var(--color-primary, #4A5D73);
-  box-shadow: 0 0 0 3px rgba(74, 93, 115, 0.12);
+  border-color: var(--color-primary, #8C6D3F);
+  box-shadow: 0 0 0 3px rgba(140, 109, 63, 0.12);
 }
 
 .toggle-eye {
@@ -270,7 +270,7 @@ const forgotPassword = () => {
   background: none;
   border: none;
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   font-weight: 600;
   cursor: pointer;
 }
@@ -286,19 +286,19 @@ const forgotPassword = () => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   cursor: pointer;
 }
 
 .checkbox-label input {
-  accent-color: var(--color-primary, #4A5D73);
+  accent-color: var(--color-primary, #8C6D3F);
   width: 15px;
   height: 15px;
 }
 
 .submit-btn {
   margin-top: 6px;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -310,23 +310,23 @@ const forgotPassword = () => {
 }
 
 .submit-btn:hover:not(:disabled) {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 .submit-btn:disabled {
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--color-secondary, #EFE1C6);
   cursor: not-allowed;
 }
 
 .bottom-switch {
   text-align: center;
   font-size: 0.85rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-top: 8px;
 }
 
 .switch-link {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
   text-decoration: underline;
 }

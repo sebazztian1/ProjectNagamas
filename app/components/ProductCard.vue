@@ -79,23 +79,24 @@ const formatPrice = (value: number) => {
 <style scoped>
 .product-card {
   background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #e2e8f0;
+  border-radius: var(--radius-md, 14px);
+  border: 1px solid var(--brand-primary, #EFE1C6);
   overflow: hidden;
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow: var(--shadow-sm, 0 4px 16px -2px rgba(140, 109, 63, 0.06));
 }
 
 .product-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
-  border-color: #cbd5e1;
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md, 0 10px 30px -6px rgba(140, 109, 63, 0.10));
+  border-color: var(--brand-secondary, #D8B978);
 }
 
 .product-card.out-of-stock {
-  opacity: 0.7;
+  opacity: 0.65;
 }
 
 /* Image Container */
@@ -103,7 +104,7 @@ const formatPrice = (value: number) => {
   position: relative;
   width: 100%;
   aspect-ratio: 1 / 1;
-  background: #f8fafc;
+  background: var(--brand-neutral, #FFFBF2);
   overflow: hidden;
 }
 
@@ -115,26 +116,27 @@ const formatPrice = (value: number) => {
 }
 
 .product-card:hover .product-img {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
 .product-badge {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: #0f172a;
-  color: #ffffff;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 3px 8px;
+  background: var(--brand-primary, #EFE1C6);
+  color: var(--brand-accent, #8C6D3F);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 9px;
   border-radius: 6px;
+  border: 1px solid rgba(216, 185, 120, 0.4);
 }
 
 .stock-badge {
   position: absolute;
   top: 10px;
   right: 10px;
-  background: #ef4444;
+  background: var(--color-danger, #A33A2A);
   color: #ffffff;
   font-size: 0.7rem;
   font-weight: 600;
@@ -144,31 +146,36 @@ const formatPrice = (value: number) => {
 
 /* Info */
 .card-info {
-  padding: 16px;
+  padding: 18px 18px 16px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .category-name {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: #94a3b8;
-  font-weight: 600;
-  margin-bottom: 4px;
+  letter-spacing: 0.08em;
+  color: var(--brand-accent, #8C6D3F);
+  font-weight: 700;
+  margin-bottom: 6px;
 }
 
 .product-title {
-  font-size: 0.95rem;
+  font-size: 0.96rem;
   font-weight: 600;
-  color: #0f172a;
-  line-height: 1.35;
+  color: var(--color-text, #2B2116);
+  line-height: 1.45;
   margin: 0 0 12px 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  transition: color 0.15s ease;
+}
+
+.product-card:hover .product-title {
+  color: var(--brand-accent, #8C6D3F);
 }
 
 .card-bottom {
@@ -176,9 +183,9 @@ const formatPrice = (value: number) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 10px;
-  border-top: 1px solid #f1f5f9;
-  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--brand-primary, #EFE1C6);
+  gap: 10px;
 }
 
 .price-box {
@@ -187,30 +194,31 @@ const formatPrice = (value: number) => {
 }
 
 .price-value {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--brand-accent, #8C6D3F);
+  letter-spacing: -0.01em;
 }
 
 .wa-btn {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: #25d366;
-  color: #ffffff;
-  border: none;
+  background: var(--brand-neutral, #FFFBF2);
+  color: var(--brand-accent, #8C6D3F);
+  border: 1px solid var(--brand-secondary, #D8B978);
   border-radius: 8px;
   padding: 7px 12px;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
-  box-shadow: 0 2px 6px rgba(37, 211, 102, 0.2);
 }
 
 .wa-btn:hover {
-  background: #20ba5a;
-  transform: scale(1.03);
+  background: var(--brand-accent, #8C6D3F);
+  color: #FFFBF2;
+  border-color: var(--brand-accent, #8C6D3F);
 }
 
 .wa-icon {

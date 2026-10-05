@@ -70,7 +70,7 @@ const removeToast = (id: string) => {
   align-items: flex-start;
   gap: 12px;
   background: #18191f;
-  color: #f8fafc;
+  color: #FFFBF2;
   padding: 14px 16px;
   border-radius: 12px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
@@ -134,14 +134,14 @@ const removeToast = (id: string) => {
 .toast-message {
   margin: 0;
   font-size: 0.82rem;
-  color: #94a3b8;
+  color: #A8957A;
   line-height: 1.4;
 }
 
 .toast-close {
   background: none;
   border: none;
-  color: #64748b;
+  color: #7A6A55;
   font-size: 1.25rem;
   cursor: pointer;
   padding: 0 4px;

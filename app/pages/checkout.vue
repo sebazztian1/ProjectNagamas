@@ -234,7 +234,7 @@ const formatRupiah = (val: number) => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -244,7 +244,7 @@ const formatRupiah = (val: number) => {
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -255,13 +255,13 @@ const formatRupiah = (val: number) => {
 .page-title {
   font-size: 1.85rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 6px;
 }
 
 .page-subtitle {
   font-size: 0.92rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .checkout-layout {
@@ -272,7 +272,7 @@ const formatRupiah = (val: number) => {
 
 .section-box {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px;
   margin-bottom: 20px;
@@ -281,7 +281,7 @@ const formatRupiah = (val: number) => {
 .box-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 16px;
 }
 
@@ -300,15 +300,15 @@ const formatRupiah = (val: number) => {
 .input-item label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .input-item input {
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   outline: none;
 }
 
@@ -323,7 +323,7 @@ const formatRupiah = (val: number) => {
   align-items: flex-start;
   gap: 12px;
   padding: 14px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 10px;
   cursor: pointer;
   background: #ffffff;
@@ -331,25 +331,25 @@ const formatRupiah = (val: number) => {
 }
 
 .radio-card.selected {
-  border-color: var(--color-primary, #4A5D73);
-  background: var(--color-canvas, #F4F6F8);
+  border-color: var(--color-primary, #8C6D3F);
+  background: var(--color-canvas, #FFFBF2);
 }
 
 .radio-card input {
-  accent-color: var(--color-primary, #4A5D73);
+  accent-color: var(--color-primary, #8C6D3F);
   margin-top: 3px;
 }
 
 .opt-text strong {
   display: block;
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 2px;
 }
 
 .opt-text span {
   font-size: 0.78rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.35;
 }
 
@@ -363,15 +363,15 @@ const formatRupiah = (val: number) => {
 .shipping-address-box label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .shipping-address-box textarea {
   padding: 10px;
   border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   outline: none;
   font-family: inherit;
 }
@@ -379,7 +379,7 @@ const formatRupiah = (val: number) => {
 /* Summary Card */
 .summary-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 14px;
   padding: 24px;
   position: sticky;
@@ -389,10 +389,10 @@ const formatRupiah = (val: number) => {
 .summary-title {
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .summary-items {
@@ -409,24 +409,24 @@ const formatRupiah = (val: number) => {
 .item-name {
   font-size: 0.88rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   display: block;
 }
 
 .item-qty-sub {
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .item-price {
   font-size: 0.92rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   white-space: nowrap;
 }
 
 .subtotal-calc {
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
   padding-top: 14px;
   display: flex;
   flex-direction: column;
@@ -437,37 +437,37 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .unique-code-row {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
 .total-row {
-  border-top: 1px dashed var(--color-secondary, #E4E7EB);
+  border-top: 1px dashed var(--color-secondary, #EFE1C6);
   padding-top: 10px;
   margin-top: 4px;
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .total-price {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-size: 1.35rem;
 }
 
 .dp-note-row {
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--color-secondary, #EFE1C6);
   padding: 8px 12px;
   border-radius: 6px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 0.85rem;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   margin-top: 6px;
 }
 
@@ -486,7 +486,7 @@ const formatRupiah = (val: number) => {
 
 .btn-create-order {
   width: 100%;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -498,7 +498,7 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-create-order:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 @media (max-width: 860px) {

@@ -147,18 +147,18 @@ const formatRupiah = (val: number) => {
 .page-title {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .page-subtitle {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .table-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   overflow-x: auto;
 }
@@ -170,19 +170,19 @@ const formatRupiah = (val: number) => {
 }
 
 .data-table th {
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   padding: 12px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .data-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   vertical-align: middle;
 }
 
@@ -197,7 +197,7 @@ const formatRupiah = (val: number) => {
   height: 50px;
   border-radius: 8px;
   overflow: hidden;
-  background: #f1f5f9;
+  background: #F7EEDC;
   flex-shrink: 0;
 }
 
@@ -215,7 +215,7 @@ const formatRupiah = (val: number) => {
 
 .desc {
   font-size: 0.76rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.35;
   margin-bottom: 4px;
   display: -webkit-box;
@@ -226,7 +226,7 @@ const formatRupiah = (val: number) => {
 
 .ref-link {
   font-size: 0.72rem;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   text-decoration: none;
   font-weight: 700;
 }
@@ -234,12 +234,12 @@ const formatRupiah = (val: number) => {
 .sub-txt {
   display: block;
   font-size: 0.74rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .country-tag {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 0.75rem;
@@ -264,12 +264,12 @@ const formatRupiah = (val: number) => {
 }
 
 .quote-val {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-size: 0.95rem;
 }
 
 .btn-quote {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   padding: 7px 12px;
@@ -283,7 +283,7 @@ const formatRupiah = (val: number) => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(43, 33, 22, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -305,7 +305,7 @@ const formatRupiah = (val: number) => {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .close-x {
@@ -330,20 +330,20 @@ const formatRupiah = (val: number) => {
 .f-group label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .f-group input, .f-group textarea {
   padding: 8px 10px;
   border-radius: 6px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
   outline: none;
 }
 
 .calc-hint {
   font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .modal-foot {
@@ -352,12 +352,12 @@ const formatRupiah = (val: number) => {
   gap: 10px;
   margin-top: 10px;
   padding-top: 14px;
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .btn-cancel {
   background: none;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -365,7 +365,7 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-save {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   padding: 8px 16px;

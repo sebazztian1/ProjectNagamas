@@ -1,113 +1,122 @@
 <template>
-  <header class="simple-navbar">
+  <header class="site-header" :class="{ 'is-scrolled': isScrolled }">
+    <!-- Thin announcement strip -->
+    <div class="announce-bar">
+      <span>DBB LUXURY BRANDED PARTNER</span>
+    </div>
+
     <div class="nav-wrapper">
-      <!-- Logo / Title -->
-      <NuxtLink to="/" class="brand">
-        <span class="brand-title">dbb_luxe</span>
-        <span class="brand-badge">Jastip & Ready</span>
-      </NuxtLink>
-
-      <!-- Center Navigation Links -->
-      <nav class="nav-links">
-        <NuxtLink to="/" class="nav-link" active-class="active" exact>Beranda</NuxtLink>
-        <NuxtLink to="/ready" class="nav-link" active-class="active">Ready Stock</NuxtLink>
-        <NuxtLink to="/jastip" class="nav-link" active-class="active">Jadwal Jastip</NuxtLink>
-        <NuxtLink to="/request" class="nav-link" active-class="active">Request Titip</NuxtLink>
-      </nav>
-
-      <!-- Search Input -->
-      <div class="search-wrap">
-        <svg class="search-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-        </svg>
-        <input 
-          type="text" 
-          :value="searchQuery" 
-          @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
-          placeholder="Cari barang ready atau jastip..."
-          class="search-field"
-        />
-        <button 
-          v-if="searchQuery" 
-          class="clear-btn"
-          @click="$emit('update:searchQuery', '')"
-        >
-          &times;
+      <!-- Left: Mobile toggle + Brand -->
+      <div class="nav-left">
+        <button class="icon-btn mobile-only" aria-label="Buka menu" @click="mobileOpen = !mobileOpen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="3" y1="7" x2="21" y2="7" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="17" x2="21" y2="17" />
+          </svg>
         </button>
+
+        <NuxtLink to="/" class="brand" aria-label="dbb_luxe beranda">
+          <span class="brand-title">dbb<span class="brand-dot">_</span>luxe</span>
+          <span class="brand-tagline">Jastip &amp; Ready Stock</span>
+        </NuxtLink>
       </div>
 
-      <!-- Auth & Action Navigation -->
+      <!-- Center: Primary navigation -->
+      <nav class="nav-links" aria-label="Navigasi utama">
+        <NuxtLink to="/" class="nav-link" exact-active-class="active">Beranda</NuxtLink>
+        <NuxtLink to="/ready" class="nav-link" active-class="active">Ready Stock</NuxtLink>
+        <NuxtLink to="/jastip" class="nav-link" active-class="active">Jadwal Jastip</NuxtLink>
+        <NuxtLink to="/request" class="nav-link" active-class="active">Request</NuxtLink>
+      </nav>
+
+      <!-- Right: Compact icon actions -->
       <div class="nav-right">
-        <!-- Wishlist Link -->
-        <NuxtLink to="/wishlist" class="nav-icon-link" title="Wishlist Saya">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        <button class="icon-btn" :class="{ active: searchOpen }" aria-label="Cari" @click="toggleSearch">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.65" y2="16.65" />
           </svg>
-          <span class="badge-bubble">2</span>
+        </button>
+
+        <NuxtLink to="/wishlist" class="icon-btn" title="Wishlist">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+          </svg>
+          <span class="dot-badge">2</span>
         </NuxtLink>
 
-        <!-- Orders Link -->
-        <NuxtLink to="/orders" class="nav-icon-link" title="Pesanan Saya">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <path d="M16 10a4 4 0 0 1-8 0"></path>
+        <NuxtLink to="/notifikasi" class="icon-btn hide-sm" title="Notifikasi">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+          </svg>
+          <span class="dot-badge">1</span>
+        </NuxtLink>
+
+        <NuxtLink to="/orders" class="icon-btn" title="Pesanan Saya">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
           </svg>
         </NuxtLink>
 
-        <!-- Notification Link -->
-        <NuxtLink to="/notifikasi" class="nav-icon-link" title="Notifikasi">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
-            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
-          </svg>
-          <span class="badge-bubble alert">1</span>
-        </NuxtLink>
+        <span class="nav-divider hide-sm"></span>
 
-        <!-- Live Chat Customer Service button -->
-        <NuxtLink to="/chat" class="nav-chat-btn" title="Chat dengan Customer Service">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-          </svg>
-          <span>Chat</span>
-        </NuxtLink>
-
-        <!-- Admin Dashboard shortcut link -->
-        <NuxtLink to="/admin" class="nav-admin-link" title="Buka Dashboard Admin">
-          <span>Admin</span>
-        </NuxtLink>
-
-        <!-- Logged in State -->
+        <!-- Logged in -->
         <div v-if="currentUser" class="user-menu">
           <NuxtLink to="/akun" class="user-pill" :title="currentUser.email">
             <span class="user-avatar">{{ currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U' }}</span>
-            <span class="user-name">{{ currentUser.name || currentUser.username }}</span>
+            <span class="user-name hide-sm">{{ currentUser.name || currentUser.username }}</span>
           </NuxtLink>
-          <button class="logout-btn" @click="handleLogout" title="Keluar">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-              <polyline points="16 17 21 12 16 7"></polyline>
-              <line x1="21" y1="12" x2="9" y2="12"></line>
+          <button class="icon-btn hide-sm" title="Keluar" @click="handleLogout">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" />
             </svg>
           </button>
         </div>
 
-        <!-- Guest State: Links to /login or /register -->
-        <div v-else class="auth-btn-group">
-          <NuxtLink to="/login" class="nav-auth-link login">
-            Masuk
-          </NuxtLink>
-          <NuxtLink to="/register" class="nav-auth-link register">
-            Daftar
-          </NuxtLink>
+        <!-- Guest -->
+        <div v-else class="auth-group">
+          <NuxtLink to="/login" class="btn-text hide-sm">Masuk</NuxtLink>
+          <NuxtLink to="/register" class="btn-solid">Daftar</NuxtLink>
         </div>
       </div>
     </div>
+
+    <!-- Collapsible search panel -->
+    <transition name="slide">
+      <div v-if="searchOpen" class="search-panel">
+        <div class="search-inner">
+          <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="11" cy="11" r="7" /><line x1="20" y1="20" x2="16.65" y2="16.65" />
+          </svg>
+          <input
+            ref="searchInput"
+            :value="searchQuery"
+            type="search"
+            class="search-field"
+            placeholder="Cari produk ready stock atau jastip…"
+            @input="$emit('update:searchQuery', ($event.target as HTMLInputElement).value)"
+            @keydown.esc="searchOpen = false"
+          />
+          <button class="search-close" aria-label="Tutup pencarian" @click="searchOpen = false">Tutup</button>
+        </div>
+      </div>
+    </transition>
+
+    <!-- Mobile drawer -->
+    <transition name="slide">
+      <nav v-if="mobileOpen" class="mobile-menu" aria-label="Navigasi mobile" @click="mobileOpen = false">
+        <NuxtLink to="/">Beranda</NuxtLink>
+        <NuxtLink to="/ready">Ready Stock</NuxtLink>
+        <NuxtLink to="/jastip">Jadwal Jastip</NuxtLink>
+        <NuxtLink to="/request">Request Titip</NuxtLink>
+        <NuxtLink to="/notifikasi">Notifikasi</NuxtLink>
+        <NuxtLink to="/chat">Live Chat</NuxtLink>
+        <NuxtLink v-if="!currentUser" to="/login">Masuk</NuxtLink>
+      </nav>
+    </transition>
   </header>
 </template>
 
 <script setup lang="ts">
+import { ref, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 
@@ -121,6 +130,32 @@ defineEmits<{
 
 const { currentUser, logout } = useAuth()
 const { showToast } = useToast()
+const route = useRoute()
+
+const searchOpen = ref(false)
+const mobileOpen = ref(false)
+const isScrolled = ref(false)
+const searchInput = ref<HTMLInputElement | null>(null)
+
+const toggleSearch = async () => {
+  searchOpen.value = !searchOpen.value
+  if (searchOpen.value) {
+    await nextTick()
+    searchInput.value?.focus()
+  }
+}
+
+const onScroll = () => {
+  isScrolled.value = window.scrollY > 8
+}
+
+onMounted(() => window.addEventListener('scroll', onScroll, { passive: true }))
+onBeforeUnmount(() => window.removeEventListener('scroll', onScroll))
+
+watch(() => route.path, () => {
+  mobileOpen.value = false
+  searchOpen.value = false
+})
 
 const handleLogout = () => {
   logout()
@@ -133,307 +168,361 @@ const handleLogout = () => {
 </script>
 
 <style scoped>
-.simple-navbar {
+.site-header {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  background: rgba(255, 251, 242, 0.92);
+  backdrop-filter: saturate(140%) blur(10px);
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.site-header.is-scrolled {
+  border-bottom-color: var(--color-border);
+  box-shadow: 0 6px 20px -16px rgba(43, 33, 22, 0.35);
+}
+
+.announce-bar {
+  background: var(--brand-primary);
+  color: var(--brand-accent);
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  padding: 7px 16px;
 }
 
 .nav-wrapper {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 12px 20px;
+  padding: 16px 28px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 28px;
+}
+
+.nav-left {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 8px;
 }
 
 .brand {
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
   text-decoration: none;
-  cursor: pointer;
-  flex-shrink: 0;
+  line-height: 1;
 }
 
 .brand-title {
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: var(--color-primary, #4A5D73);
-  letter-spacing: -0.5px;
-}
-
-.brand-badge {
-  font-size: 0.7rem;
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  font-family: var(--font-display);
+  font-size: 1.75rem;
   font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 6px;
+  color: var(--color-text);
+  letter-spacing: 0.01em;
 }
 
+.brand-dot {
+  color: var(--brand-secondary);
+}
+
+.brand-tagline {
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+/* Center links */
 .nav-links {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-left: 12px;
+  gap: 32px;
 }
 
 .nav-link {
+  position: relative;
   text-decoration: none;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--color-text-muted, #64748B);
-  padding: 6px 12px;
-  border-radius: 6px;
-  transition: all 0.15s;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  padding: 6px 0;
+  transition: color 0.2s;
+}
+
+.nav-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--brand-secondary);
+  transform: scaleX(0);
+  transition: transform 0.25s ease;
 }
 
 .nav-link:hover {
-  color: var(--color-primary, #4A5D73);
-  background: var(--color-secondary, #E4E7EB);
+  color: var(--color-text);
+}
+
+.nav-link:hover::after,
+.nav-link.active::after {
+  transform: scaleX(1);
 }
 
 .nav-link.active {
-  color: #ffffff;
-  background: var(--color-primary, #4A5D73);
+  color: var(--brand-accent);
+  font-weight: 600;
 }
 
-.search-wrap {
-  flex: 1;
-  max-width: 280px;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.search-icon {
-  position: absolute;
-  left: 12px;
-  color: var(--color-text-muted, #64748B);
-  pointer-events: none;
-}
-
-.search-field {
-  width: 100%;
-  padding: 8px 30px 8px 34px;
-  border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  background: var(--color-canvas, #F4F6F8);
-  font-size: 0.84rem;
-  color: var(--color-text, #1E293B);
-  outline: none;
-  transition: all 0.2s;
-}
-
-.search-field:focus {
-  background: #ffffff;
-  border-color: var(--color-primary, #4A5D73);
-}
-
-.clear-btn {
-  position: absolute;
-  right: 10px;
-  background: none;
-  border: none;
-  color: var(--color-text-muted, #64748B);
-  cursor: pointer;
-  font-size: 1rem;
-}
-
+/* Right actions */
 .nav-right {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-shrink: 0;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
-.nav-icon-link {
+.icon-btn {
   position: relative;
-  display: flex;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  color: var(--color-primary, #4A5D73);
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  text-decoration: none;
-  transition: all 0.15s;
-}
-
-.nav-icon-link:hover {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary-hover, #384759);
-}
-
-.badge-bubble {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: var(--color-primary, #4A5D73);
-  color: #ffffff;
-  font-size: 0.65rem;
-  font-weight: 800;
-  width: 17px;
-  height: 17px;
   border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+}
+
+.icon-btn:hover,
+.icon-btn.active {
+  background: var(--brand-primary);
+  color: var(--brand-accent);
+}
+
+.dot-badge {
+  position: absolute;
+  top: 5px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--brand-accent);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 2px solid #ffffff;
+  box-shadow: 0 0 0 2px var(--brand-neutral);
 }
 
-.badge-bubble.alert {
-  background: var(--color-warning, #D97706);
-}
-
-.nav-chat-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: #F0FDF4;
-  border: 1px solid #BBF7D0;
-  color: #166534;
-  padding: 7px 12px;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
-  text-decoration: none;
-  transition: all 0.15s;
-}
-
-.nav-chat-btn:hover {
-  background: #166534;
-  color: #ffffff;
-}
-
-.nav-admin-link {
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-text-muted, #64748B);
-  text-decoration: none;
-  padding: 7px 12px;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 600;
-  transition: all 0.15s;
-}
-
-.nav-admin-link:hover {
-  background: var(--color-primary, #4A5D73);
-  color: #ffffff;
-  border-color: var(--color-primary, #4A5D73);
+.nav-divider {
+  width: 1px;
+  height: 22px;
+  background: var(--color-border);
+  margin: 0 8px;
 }
 
 .user-menu {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
 }
 
 .user-pill {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 10px 4px 5px;
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  border-radius: 20px;
+  padding: 4px 12px 4px 4px;
+  border-radius: 999px;
   text-decoration: none;
-  transition: all 0.15s;
+  transition: background 0.2s;
 }
 
 .user-pill:hover {
-  border-color: var(--color-primary, #4A5D73);
+  background: var(--brand-primary);
 }
 
 .user-avatar {
-  width: 26px;
-  height: 26px;
-  background: var(--color-primary, #4A5D73);
-  color: #ffffff;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
+  background: var(--brand-accent);
+  color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
-  font-weight: 800;
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .user-name {
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   font-weight: 600;
-  color: var(--color-text, #1E293B);
-  max-width: 90px;
+  color: var(--color-text);
+  max-width: 110px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.logout-btn {
-  background: none;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  padding: 6px;
-  border-radius: 8px;
-  color: var(--color-text-muted, #64748B);
-  cursor: pointer;
+.auth-group {
   display: flex;
   align-items: center;
-  justify-content: center;
-  transition: all 0.15s;
+  gap: 6px;
 }
 
-.logout-btn:hover {
-  background: #FEE2E2;
-  color: #DC2626;
-  border-color: #FCA5A5;
-}
-
-.auth-btn-group {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nav-auth-link {
+.btn-text {
   text-decoration: none;
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 600;
-  padding: 7px 14px;
-  border-radius: 8px;
-  transition: all 0.15s;
+  color: var(--color-text);
+  padding: 9px 14px;
+  border-radius: 999px;
+  transition: background 0.2s;
 }
 
-.nav-auth-link.login {
-  color: var(--color-primary, #4A5D73);
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  background: #ffffff;
+.btn-text:hover {
+  background: var(--brand-primary);
 }
 
-.nav-auth-link.login:hover {
-  background: var(--color-secondary, #E4E7EB);
+.btn-solid {
+  text-decoration: none;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff;
+  background: var(--brand-accent);
+  padding: 9px 20px;
+  border-radius: 999px;
+  transition: background 0.2s, transform 0.2s;
 }
 
-.nav-auth-link.register {
-  background: var(--color-primary, #4A5D73);
-  color: #ffffff;
-  border: 1px solid var(--color-primary, #4A5D73);
+.btn-solid:hover {
+  background: var(--color-primary-hover);
+  transform: translateY(-1px);
 }
 
-.nav-auth-link.register:hover {
-  background: var(--color-primary-hover, #384759);
+/* Search panel */
+.search-panel {
+  border-top: 1px solid var(--color-border);
+  background: var(--brand-neutral);
 }
 
-@media (max-width: 992px) {
+.search-inner {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 16px 24px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 42px;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+.search-field {
+  flex: 1;
+  padding: 13px 18px 13px 48px;
+  border-radius: 999px;
+  border: 1px solid var(--color-border);
+  background: #fff;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-field:focus {
+  border-color: var(--brand-secondary);
+  box-shadow: 0 0 0 4px rgba(216, 185, 120, 0.25);
+}
+
+.search-close {
+  background: none;
+  border: none;
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Mobile drawer */
+.mobile-menu {
+  display: flex;
+  flex-direction: column;
+  border-top: 1px solid var(--color-border);
+  padding: 8px 24px 16px;
+  background: var(--brand-neutral);
+}
+
+.mobile-menu a {
+  text-decoration: none;
+  padding: 12px 0;
+  font-weight: 500;
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mobile-menu a:last-child {
+  border-bottom: none;
+}
+
+.mobile-only {
+  display: none;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.slide-enter-from,
+.slide-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@media (max-width: 960px) {
   .nav-links {
+    display: none;
+  }
+  .nav-wrapper {
+    grid-template-columns: 1fr auto;
+  }
+  .mobile-only {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 560px) {
+  .hide-sm {
+    display: none !important;
+  }
+  .nav-wrapper {
+    padding: 12px 16px;
+  }
+  .brand-title {
+    font-size: 1.45rem;
+  }
+  .brand-tagline {
     display: none;
   }
 }

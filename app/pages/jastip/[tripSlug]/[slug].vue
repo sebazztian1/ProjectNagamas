@@ -179,7 +179,7 @@ const handleChatAdmin = () => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 24px;
 }
 
@@ -189,11 +189,11 @@ const handleChatAdmin = () => {
 }
 
 .breadcrumb a:hover {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -213,7 +213,7 @@ const handleChatAdmin = () => {
   position: relative;
   aspect-ratio: 1 / 1;
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 14px;
   overflow: hidden;
 }
@@ -228,7 +228,7 @@ const handleChatAdmin = () => {
   position: absolute;
   top: 14px;
   left: 14px;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -238,7 +238,7 @@ const handleChatAdmin = () => {
 
 .trip-reminder-box {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 10px;
   padding: 16px;
 }
@@ -248,14 +248,14 @@ const handleChatAdmin = () => {
   align-items: center;
   gap: 6px;
   font-size: 0.85rem;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   margin-bottom: 4px;
 }
 
 .trip-reminder-box p {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 8px;
 }
 
@@ -263,8 +263,8 @@ const handleChatAdmin = () => {
   display: flex;
   justify-content: space-between;
   font-size: 0.78rem;
-  color: var(--color-text-muted, #64748B);
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  color: var(--color-text-muted, #7A6A55);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
   padding-top: 8px;
 }
 
@@ -276,21 +276,21 @@ const handleChatAdmin = () => {
 
 .store-tag {
   font-size: 0.8rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 6px;
 }
 
 .product-name {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   line-height: 1.3;
   margin-bottom: 16px;
 }
 
 .jastip-price-breakdown {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 18px;
   margin-bottom: 16px;
@@ -300,7 +300,7 @@ const handleChatAdmin = () => {
   display: block;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   text-transform: uppercase;
   margin-bottom: 10px;
 }
@@ -315,35 +315,35 @@ const handleChatAdmin = () => {
 
 .f-item {
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .f-item strong {
   display: block;
   font-size: 0.95rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .math-op {
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   font-weight: 700;
 }
 
 .f-item.highlight strong.final-price {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .calc-note {
   font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .quota-alert {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   font-size: 0.8rem;
   padding: 8px 12px;
   border-radius: 6px;
@@ -358,7 +358,7 @@ const handleChatAdmin = () => {
   display: block;
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 6px;
 }
 
@@ -370,8 +370,8 @@ const handleChatAdmin = () => {
 
 .variant-btn {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-text, #1E293B);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-text, #2B2116);
   padding: 7px 14px;
   border-radius: 6px;
   font-size: 0.82rem;
@@ -380,8 +380,8 @@ const handleChatAdmin = () => {
 }
 
 .variant-btn.active {
-  border-color: var(--color-primary, #4A5D73);
-  background: var(--color-primary, #4A5D73);
+  border-color: var(--color-primary, #8C6D3F);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
 }
 
@@ -395,13 +395,13 @@ const handleChatAdmin = () => {
 .qty-label {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .qty-ctrl {
   display: flex;
   align-items: center;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   background: #ffffff;
   border-radius: 8px;
   overflow: hidden;
@@ -410,7 +410,7 @@ const handleChatAdmin = () => {
 .qty-ctrl button {
   width: 34px;
   height: 34px;
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
   border: none;
   font-weight: 800;
   font-size: 1rem;
@@ -431,7 +431,7 @@ const handleChatAdmin = () => {
 
 .subtotal-hint {
   font-size: 0.85rem;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -443,7 +443,7 @@ const handleChatAdmin = () => {
 }
 
 .btn-po-now {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   text-decoration: none;
   text-align: center;
@@ -455,13 +455,13 @@ const handleChatAdmin = () => {
 }
 
 .btn-po-now:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 .btn-chat-admin {
   background: #ffffff;
-  color: var(--color-primary, #4A5D73);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  color: var(--color-primary, #8C6D3F);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
   font-weight: 700;
   padding: 13px;
@@ -475,7 +475,7 @@ const handleChatAdmin = () => {
 
 .guarantee-box {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 10px;
   padding: 14px;
   display: flex;
@@ -489,25 +489,25 @@ const handleChatAdmin = () => {
   align-items: center;
   gap: 8px;
   font-size: 0.8rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   font-weight: 600;
 }
 
 .g-item svg {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   flex-shrink: 0;
 }
 
 .desc-section h3 {
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 8px;
 }
 
 .desc-section p {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.6;
 }
 

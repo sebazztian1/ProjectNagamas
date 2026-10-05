@@ -212,7 +212,7 @@ const formatRupiah = (val: number) => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -222,13 +222,13 @@ const formatRupiah = (val: number) => {
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
 .order-hero-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 14px;
   padding: 24px;
   display: flex;
@@ -241,8 +241,8 @@ const formatRupiah = (val: number) => {
 
 .type-tag {
   font-size: 0.72rem;
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 800;
   padding: 3px 8px;
   border-radius: 6px;
@@ -251,13 +251,13 @@ const formatRupiah = (val: number) => {
 .order-heading {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin: 6px 0 2px;
 }
 
 .order-created {
   font-size: 0.8rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .hero-right {
@@ -275,8 +275,8 @@ const formatRupiah = (val: number) => {
 }
 
 .status-banner.purchasing {
-  background: #E0E7FF;
-  color: #4338CA;
+  background: #F3E6CC;
+  color: #6F5530;
 }
 
 .status-banner.ready_pickup {
@@ -306,28 +306,36 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-hero-pay {
-  background: #D97706;
-  color: #ffffff;
+  background: var(--brand-accent, #8C6D3F);
+  color: #FFFBF2;
   text-decoration: none;
-  padding: 8px 14px;
-  border-radius: 6px;
-  font-size: 0.82rem;
-  font-weight: 700;
+  padding: 9px 18px;
+  border-radius: var(--radius-full, 999px);
+  font-size: 0.84rem;
+  font-weight: 600;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  border: 1px solid var(--brand-secondary, #D8B978);
+  transition: all 0.2s;
+}
+
+.btn-hero-pay:hover {
+  background: var(--color-primary-hover, #73572E);
+  transform: translateY(-1px);
 }
 
 .btn-hero-pay.locked {
-  background: #E2E8F0;
-  color: #64748B;
+  background: var(--brand-primary, #EFE1C6);
+  color: var(--color-text-muted, #7A6A55);
   cursor: not-allowed;
+  border-color: var(--brand-primary, #EFE1C6);
 }
 
 .btn-hero-pay.waiting-check {
-  background: #EFF6FF;
-  color: #1D4ED8;
-  border: 1px solid #BFDBFE;
+  background: var(--brand-neutral, #FFFBF2);
+  color: var(--brand-accent, #8C6D3F);
+  border: 1px solid var(--brand-secondary, #D8B978);
 }
 
 /* Informative Status Alert */
@@ -335,28 +343,28 @@ const formatRupiah = (val: number) => {
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 16px 20px;
-  border-radius: 12px;
-  margin-bottom: 24px;
+  padding: 18px 24px;
+  border-radius: var(--radius-md, 14px);
+  margin-bottom: 28px;
   border: 1px solid transparent;
 }
 
 .alert-approval {
-  background: #FEFCE8;
-  border-color: #FEF08A;
-  color: #713F12;
+  background: var(--brand-primary, #EFE1C6);
+  border-color: var(--brand-secondary, #D8B978);
+  color: var(--brand-accent, #8C6D3F);
 }
 
 .alert-approved {
-  background: #F0FDF4;
-  border-color: #BBF7D0;
-  color: #166534;
+  background: #EAEFE7;
+  border-color: #BFD3BF;
+  color: #2F5938;
 }
 
 .alert-rejected {
-  background: #FEF2F2;
-  border-color: #FECACA;
-  color: #991B1B;
+  background: #FBECE8;
+  border-color: #E8BFB7;
+  color: #933324;
 }
 
 .alert-icon {
@@ -366,14 +374,14 @@ const formatRupiah = (val: number) => {
 
 .alert-text h4 {
   margin: 0 0 4px;
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 700;
 }
 
 .alert-text p {
   margin: 0;
-  font-size: 0.84rem;
-  line-height: 1.45;
+  font-size: 0.86rem;
+  line-height: 1.5;
 }
 
 .sub-alert-note {
@@ -385,14 +393,21 @@ const formatRupiah = (val: number) => {
 
 .btn-alert-pay {
   margin-left: auto;
-  background: #16A34A;
-  color: #ffffff;
+  background: var(--brand-accent, #8C6D3F);
+  color: #FFFBF2;
   text-decoration: none;
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 700;
+  padding: 10px 20px;
+  border-radius: var(--radius-full, 999px);
+  font-size: 0.84rem;
+  font-weight: 600;
   white-space: nowrap;
+  border: 1px solid var(--brand-secondary, #D8B978);
+  transition: all 0.2s;
+}
+
+.btn-alert-pay:hover {
+  background: var(--color-primary-hover, #73572E);
+  transform: translateY(-1px);
 }
 
 .order-grid-layout {
@@ -403,7 +418,7 @@ const formatRupiah = (val: number) => {
 
 .box-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px;
 }
@@ -411,10 +426,10 @@ const formatRupiah = (val: number) => {
 .box-head {
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 /* Timeline */
@@ -438,20 +453,20 @@ const formatRupiah = (val: number) => {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--color-secondary, #EFE1C6);
   border: 2px solid #ffffff;
-  box-shadow: 0 0 0 2px var(--color-secondary, #E4E7EB);
+  box-shadow: 0 0 0 2px var(--color-secondary, #EFE1C6);
 }
 
 .step-dot.active {
-  background: var(--color-primary, #4A5D73);
-  box-shadow: 0 0 0 2px var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
+  box-shadow: 0 0 0 2px var(--color-primary, #8C6D3F);
 }
 
 .step-line {
   width: 2px;
   flex: 1;
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--color-secondary, #EFE1C6);
   margin: 4px 0;
   min-height: 40px;
 }
@@ -463,28 +478,28 @@ const formatRupiah = (val: number) => {
 
 .step-time {
   font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 2px;
 }
 
 .step-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .step-note {
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.45;
   margin-bottom: 8px;
 }
 
 .receipt-proof-preview {
   margin-top: 8px;
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
   padding: 10px;
 }
@@ -493,7 +508,7 @@ const formatRupiah = (val: number) => {
   display: block;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   margin-bottom: 6px;
 }
 
@@ -501,7 +516,7 @@ const formatRupiah = (val: number) => {
   max-width: 260px;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .proof-img-wrap img {
@@ -527,22 +542,22 @@ const formatRupiah = (val: number) => {
 .it-info strong {
   display: block;
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .it-info span {
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .it-price {
   font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .financial-breakdown {
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
   padding-top: 14px;
   display: flex;
   flex-direction: column;
@@ -554,19 +569,19 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .f-row.total {
-  border-top: 1px dashed var(--color-secondary, #E4E7EB);
+  border-top: 1px dashed var(--color-secondary, #EFE1C6);
   padding-top: 8px;
   font-size: 1rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .total-bold {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-size: 1.2rem;
 }
 
@@ -575,21 +590,21 @@ const formatRupiah = (val: number) => {
 }
 
 .pickup-info-box {
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
   padding: 12px;
 }
 
 .pickup-info-box h4 {
   font-size: 0.8rem;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   margin-bottom: 4px;
 }
 
 .pickup-info-box p {
   font-size: 0.82rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   line-height: 1.4;
 }
 

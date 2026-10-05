@@ -60,18 +60,18 @@ const customerList = ref([
 .page-title {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .page-subtitle {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .table-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   overflow-x: auto;
 }
@@ -83,19 +83,19 @@ const customerList = ref([
 }
 
 .data-table th {
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   padding: 12px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .data-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   vertical-align: middle;
 }
 
@@ -109,7 +109,7 @@ const customerList = ref([
   width: 34px;
   height: 34px;
   border-radius: 50%;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -119,8 +119,8 @@ const customerList = ref([
 }
 
 .order-count-badge {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 3px 8px;
   border-radius: 6px;
   font-weight: 700;

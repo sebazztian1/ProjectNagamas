@@ -256,27 +256,26 @@ onMounted(() => {
 }
 
 /* ========================================================= */
-/* LAUNCHER BUTTON */
 /* ========================================================= */
 .chat-launcher-btn {
   display: flex;
   align-items: center;
   gap: 10px;
-  background: #0f172a;
-  color: #ffffff;
-  border: none;
+  background: var(--brand-accent, #8C6D3F);
+  color: #FFFBF2;
+  border: 1px solid var(--brand-secondary, #D8B978);
   border-radius: 30px;
-  padding: 12px 20px 12px 14px;
+  padding: 12px 20px 12px 16px;
   cursor: pointer;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.28);
+  box-shadow: 0 8px 24px rgba(140, 109, 63, 0.32);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
 }
 
 .chat-launcher-btn:hover {
-  background: #1e293b;
+  background: var(--color-primary-hover, #73572E);
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 12px 28px rgba(140, 109, 63, 0.42);
 }
 
 .chat-launcher-btn.is-open {
@@ -285,7 +284,8 @@ onMounted(() => {
   height: 48px;
   padding: 0;
   justify-content: center;
-  background: #334155;
+  background: #1C140C;
+  border-color: var(--brand-secondary, #D8B978);
 }
 
 .launcher-icon-wrap {
@@ -303,23 +303,23 @@ onMounted(() => {
 .online-indicator {
   width: 8px;
   height: 8px;
-  background: #22c55e;
+  background: var(--brand-secondary, #D8B978);
   border-radius: 50%;
-  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.4);
+  box-shadow: 0 0 0 2px rgba(216, 185, 120, 0.4);
   animation: pulseGreen 2s infinite;
 }
 
 @keyframes pulseGreen {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(216, 185, 120, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(216, 185, 120, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(216, 185, 120, 0); }
 }
 
 .launcher-unread-badge {
   position: absolute;
   top: -4px;
   right: -4px;
-  background: #ef4444;
+  background: var(--color-danger, #A33A2A);
   color: #ffffff;
   font-size: 0.68rem;
   font-weight: 800;
@@ -345,9 +345,9 @@ onMounted(() => {
   height: 540px;
   max-height: calc(100vh - 110px);
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--brand-primary, #EFE1C6);
   border-radius: 18px;
-  box-shadow: 0 20px 48px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 20px 48px rgba(43, 33, 22, 0.18);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -368,13 +368,13 @@ onMounted(() => {
 
 /* Header */
 .chat-header {
-  background: #0f172a;
+  background: #1C140C;
   color: #ffffff;
   padding: 16px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(216, 185, 120, 0.2);
 }
 
 .header-agent-info {
@@ -391,14 +391,14 @@ onMounted(() => {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #38bdf8, #2563eb);
+  background: linear-gradient(135deg, var(--brand-secondary, #D8B978), var(--brand-accent, #8C6D3F));
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 800;
   font-size: 1rem;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 8px rgba(140, 109, 63, 0.3);
 }
 
 .agent-online-dot {
@@ -407,9 +407,9 @@ onMounted(() => {
   right: 0;
   width: 10px;
   height: 10px;
-  background: #22c55e;
+  background: var(--brand-secondary, #D8B978);
   border-radius: 50%;
-  border: 2px solid #0f172a;
+  border: 2px solid #1C140C;
 }
 
 .agent-name-row {
@@ -426,8 +426,8 @@ onMounted(() => {
 
 .verified-tag {
   font-size: 0.65rem;
-  background: #38bdf8;
-  color: #0f172a;
+  background: #D8B978;
+  color: #2B2116;
   width: 14px;
   height: 14px;
   border-radius: 50%;
@@ -439,7 +439,7 @@ onMounted(() => {
 
 .agent-status {
   font-size: 0.72rem;
-  color: #94a3b8;
+  color: #A8957A;
   display: block;
 }
 
@@ -468,8 +468,8 @@ onMounted(() => {
 
 /* Attached Product Banner */
 .attached-product-banner {
-  background: #f8fafc;
-  border-bottom: 1px solid #e2e8f0;
+  background: #FFFBF2;
+  border-bottom: 1px solid #EFE1C6;
   padding: 10px 14px;
   display: flex;
   align-items: center;
@@ -492,7 +492,7 @@ onMounted(() => {
 
 .attached-tag {
   font-size: 0.68rem;
-  color: #64748b;
+  color: #7A6A55;
   font-weight: 600;
   display: block;
 }
@@ -500,7 +500,7 @@ onMounted(() => {
 .attached-title {
   font-size: 0.8rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #2B2116;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -514,7 +514,7 @@ onMounted(() => {
 
 .attached-price {
   font-weight: 700;
-  color: #0f172a;
+  color: #2B2116;
 }
 
 .text-green { color: #16a34a; font-weight: 600; }
@@ -524,7 +524,7 @@ onMounted(() => {
   background: none;
   border: none;
   font-size: 1.2rem;
-  color: #94a3b8;
+  color: #A8957A;
   cursor: pointer;
   line-height: 1;
 }
@@ -541,12 +541,12 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: #f8fafc;
+  background: #FFFBF2;
 }
 
 .welcome-box {
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #EFE1C6;
   border-radius: 12px;
   padding: 12px 14px;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.02);
@@ -555,13 +555,13 @@ onMounted(() => {
 .welcome-heading {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #2B2116;
   margin-bottom: 4px;
 }
 
 .welcome-sub {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #7A6A55;
   line-height: 1.4;
   margin: 0;
 }
@@ -573,8 +573,8 @@ onMounted(() => {
 
 .date-chip span {
   font-size: 0.68rem;
-  color: #94a3b8;
-  background: #e2e8f0;
+  color: #A8957A;
+  background: #EFE1C6;
   padding: 2px 10px;
   border-radius: 10px;
   font-weight: 600;
@@ -604,15 +604,15 @@ onMounted(() => {
 }
 
 .user-msg .chat-bubble {
-  background: #0f172a;
+  background: #2B2116;
   color: #ffffff;
   border-bottom-right-radius: 3px;
 }
 
 .admin-msg .chat-bubble {
   background: #ffffff;
-  color: #0f172a;
-  border: 1px solid #e2e8f0;
+  color: #2B2116;
+  border: 1px solid #EFE1C6;
   border-bottom-left-radius: 3px;
 }
 
@@ -645,7 +645,7 @@ onMounted(() => {
 
 .check-status {
   font-size: 0.68rem;
-  color: #38bdf8;
+  color: #D8B978;
   font-weight: 800;
 }
 
@@ -665,7 +665,7 @@ onMounted(() => {
 .typing-dots span {
   width: 6px;
   height: 6px;
-  background: #94a3b8;
+  background: #A8957A;
   border-radius: 50%;
   animation: typingBounce 1.4s infinite ease-in-out both;
 }
@@ -680,7 +680,7 @@ onMounted(() => {
 
 .typing-label {
   font-size: 0.72rem;
-  color: #64748b;
+  color: #7A6A55;
   font-style: italic;
 }
 
@@ -688,7 +688,7 @@ onMounted(() => {
 .quick-questions-wrapper {
   padding: 8px 14px;
   background: #ffffff;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid #F7EEDC;
   display: flex;
   gap: 6px;
   overflow-x: auto;
@@ -696,28 +696,28 @@ onMounted(() => {
 }
 
 .quick-q-btn {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #FFFBF2;
+  border: 1px solid #EFE1C6;
   border-radius: 12px;
   padding: 5px 10px;
   font-size: 0.72rem;
-  color: #334155;
+  color: #4A3B2A;
   cursor: pointer;
   transition: all 0.15s;
   font-weight: 600;
 }
 
 .quick-q-btn:hover {
-  background: #0f172a;
+  background: #2B2116;
   color: #ffffff;
-  border-color: #0f172a;
+  border-color: #2B2116;
 }
 
 /* Footer Input */
 .chat-footer {
   padding: 10px 14px 12px 14px;
   background: #ffffff;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #EFE1C6;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -733,7 +733,7 @@ onMounted(() => {
   flex: 1;
   padding: 9px 12px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid #E3D2AE;
   font-size: 0.84rem;
   outline: none;
   font-family: inherit;
@@ -741,11 +741,11 @@ onMounted(() => {
 }
 
 .chat-input:focus {
-  border-color: #0f172a;
+  border-color: #2B2116;
 }
 
 .send-btn {
-  background: #0f172a;
+  background: #2B2116;
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -760,7 +760,7 @@ onMounted(() => {
 }
 
 .send-btn:hover:not(:disabled) {
-  background: #1e293b;
+  background: #2B2116;
   transform: scale(1.05);
 }
 
@@ -773,7 +773,7 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   font-size: 0.65rem;
-  color: #94a3b8;
+  color: #A8957A;
 }
 
 @media (max-width: 480px) {

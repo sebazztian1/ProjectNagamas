@@ -431,13 +431,13 @@ const formatRupiah = (val: number) => {
 .page-title {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .page-subtitle {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .filter-row {
@@ -453,8 +453,8 @@ const formatRupiah = (val: number) => {
 
 .t-btn {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-text-muted, #64748B);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-text-muted, #7A6A55);
   padding: 7px 14px;
   border-radius: 20px;
   font-size: 0.82rem;
@@ -463,13 +463,13 @@ const formatRupiah = (val: number) => {
 }
 
 .t-btn.active {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
 }
 
 .table-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   overflow-x: auto;
 }
@@ -481,26 +481,26 @@ const formatRupiah = (val: number) => {
 }
 
 .data-table th {
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   padding: 12px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .data-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   vertical-align: middle;
 }
 
 .sub-txt {
   display: block;
   font-size: 0.74rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .type-pill {
@@ -516,14 +516,14 @@ const formatRupiah = (val: number) => {
 }
 
 .type-pill.jastip {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .unique-badge {
   display: block;
   font-size: 0.72rem;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -551,8 +551,8 @@ const formatRupiah = (val: number) => {
 }
 
 .status-pill.purchasing {
-  background: #E0E7FF;
-  color: #4338CA;
+  background: #F3E6CC;
+  color: #6F5530;
 }
 
 .status-pill.arrived {
@@ -566,8 +566,8 @@ const formatRupiah = (val: number) => {
 }
 
 .status-pill.completed {
-  background: #F1F5F9;
-  color: #475569;
+  background: #F7EEDC;
+  color: #5C4B36;
 }
 
 .status-pill.rejected {
@@ -577,8 +577,8 @@ const formatRupiah = (val: number) => {
 
 .tab-badge {
   font-size: 0.7rem;
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 1px 6px;
   border-radius: 10px;
   margin-left: 6px;
@@ -600,19 +600,19 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-view-receipt {
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   padding: 5px 10px;
   border-radius: 6px;
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   cursor: pointer;
 }
 
 .no-proof {
   font-size: 0.75rem;
-  color: #94A3B8;
+  color: #A8957A;
 }
 
 .no-proof-muted {
@@ -645,7 +645,7 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-verify {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   padding: 6px 12px;
@@ -657,9 +657,9 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-step {
-  background: #F1F5F9;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: #F7EEDC;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 0.76rem;
@@ -687,8 +687,8 @@ const formatRupiah = (val: number) => {
 
 .btn-reject-sm {
   background: none;
-  border: 1px solid #CBD5E1;
-  color: #64748B;
+  border: 1px solid #E3D2AE;
+  color: #7A6A55;
   padding: 3px 6px;
   border-radius: 4px;
   font-size: 0.7rem;
@@ -723,7 +723,7 @@ const formatRupiah = (val: number) => {
 
 .modal-desc {
   font-size: 0.86rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 16px;
   line-height: 1.45;
 }
@@ -738,22 +738,22 @@ const formatRupiah = (val: number) => {
 .modal-form-group label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .form-select, .form-textarea {
   width: 100%;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
   padding: 10px;
   font-size: 0.86rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   font-family: inherit;
 }
 
 .form-select:focus, .form-textarea:focus {
   outline: none;
-  border-color: var(--color-primary, #4A5D73);
+  border-color: var(--color-primary, #8C6D3F);
 }
 
 .modal-actions-row {
@@ -765,8 +765,8 @@ const formatRupiah = (val: number) => {
 
 .btn-cancel {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-text-muted, #64748B);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-text-muted, #7A6A55);
   padding: 9px 16px;
   border-radius: 8px;
   font-size: 0.84rem;
@@ -789,7 +789,7 @@ const formatRupiah = (val: number) => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.55);
+  background: rgba(43, 33, 22, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -811,7 +811,7 @@ const formatRupiah = (val: number) => {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .close-btn {
@@ -828,7 +828,7 @@ const formatRupiah = (val: number) => {
 }
 
 .proof-image-side {
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
   overflow: hidden;
   max-height: 380px;
@@ -848,28 +848,28 @@ const formatRupiah = (val: number) => {
 
 .box-stat {
   font-size: 0.85rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .box-stat strong {
   display: block;
   font-size: 1rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-top: 2px;
 }
 
 .highlight-price {
-  color: var(--color-primary, #4A5D73) !important;
+  color: var(--color-primary, #8C6D3F) !important;
   font-size: 1.4rem !important;
 }
 
 .audit-hint {
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   padding: 10px;
   border-radius: 6px;
   font-size: 0.78rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.4;
 }
 
@@ -881,7 +881,7 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-approve-big {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   padding: 12px;
@@ -893,7 +893,7 @@ const formatRupiah = (val: number) => {
 
 .btn-reject-big {
   background: none;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   color: #DC2626;
   padding: 10px;
   border-radius: 8px;

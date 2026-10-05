@@ -115,17 +115,17 @@ const saveSettings = () => {
 .page-title {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .page-subtitle {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .btn-save-all {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   font-size: 0.85rem;
@@ -143,7 +143,7 @@ const saveSettings = () => {
 
 .settings-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px;
 }
@@ -151,10 +151,10 @@ const saveSettings = () => {
 .card-head {
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 18px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .bank-config-list {
@@ -164,8 +164,8 @@ const saveSettings = () => {
 }
 
 .bank-config-box {
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
   padding: 14px;
   display: flex;
@@ -185,7 +185,7 @@ const saveSettings = () => {
   gap: 6px;
   font-size: 0.78rem;
   font-weight: 600;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .settings-form {
@@ -203,13 +203,13 @@ const saveSettings = () => {
 .f-group label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .f-group input, .f-group select {
   padding: 9px 12px;
   border-radius: 6px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
   outline: none;
   background: #ffffff;
@@ -217,7 +217,7 @@ const saveSettings = () => {
 
 .hint {
   font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 @media (max-width: 860px) {

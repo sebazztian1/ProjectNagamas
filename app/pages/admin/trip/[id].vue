@@ -243,7 +243,7 @@ const formatRupiah = (val: number) => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .breadcrumb a {
@@ -252,7 +252,7 @@ const formatRupiah = (val: number) => {
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -267,19 +267,19 @@ const formatRupiah = (val: number) => {
 .country-pill {
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .trip-title {
   font-size: 1.65rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin: 4px 0 2px;
 }
 
 .trip-sub {
   font-size: 0.85rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .btn-export-csv {
@@ -299,7 +299,7 @@ const formatRupiah = (val: number) => {
 .trip-subtabs {
   display: flex;
   gap: 8px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   padding-bottom: 10px;
 }
 
@@ -308,20 +308,20 @@ const formatRupiah = (val: number) => {
   border: none;
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   padding: 8px 14px;
   border-radius: 6px;
   cursor: pointer;
 }
 
 .subtab-btn.active {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
 }
 
 .list-head-alert {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   font-size: 0.82rem;
   font-weight: 600;
   padding: 10px 14px;
@@ -331,7 +331,7 @@ const formatRupiah = (val: number) => {
 
 .table-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   overflow-x: auto;
 }
@@ -343,19 +343,19 @@ const formatRupiah = (val: number) => {
 }
 
 .data-table th {
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
   font-size: 0.78rem;
   font-weight: 700;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   padding: 12px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .data-table td {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   vertical-align: middle;
 }
 
@@ -366,20 +366,20 @@ const formatRupiah = (val: number) => {
 .variant-text {
   display: block;
   font-size: 0.74rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .store-tag {
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   padding: 3px 8px;
   border-radius: 4px;
   font-size: 0.74rem;
 }
 
 .qty-badge {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 3px 8px;
   border-radius: 12px;
   font-weight: 800;
@@ -388,8 +388,8 @@ const formatRupiah = (val: number) => {
 
 .btn-toggle-buy {
   background: none;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-text-muted, #64748B);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-text-muted, #7A6A55);
   padding: 6px 10px;
   border-radius: 6px;
   font-size: 0.75rem;
@@ -404,7 +404,7 @@ const formatRupiah = (val: number) => {
 }
 
 .highlight-quota {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .status-pill.verified {

@@ -217,7 +217,7 @@ const formatRupiah = (val: number) => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -227,7 +227,7 @@ const formatRupiah = (val: number) => {
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -238,13 +238,13 @@ const formatRupiah = (val: number) => {
 .page-title {
   font-size: 1.85rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 6px;
 }
 
 .page-subtitle {
   font-size: 0.92rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .payment-grid {
@@ -255,7 +255,7 @@ const formatRupiah = (val: number) => {
 
 .total-tagihan-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px;
   margin-bottom: 20px;
@@ -263,7 +263,7 @@ const formatRupiah = (val: number) => {
 
 .tagihan-label {
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   font-weight: 600;
 }
 
@@ -277,13 +277,13 @@ const formatRupiah = (val: number) => {
 .tagihan-num {
   font-size: 1.8rem;
   font-weight: 800;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .btn-copy {
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 0.8rem;
@@ -303,7 +303,7 @@ const formatRupiah = (val: number) => {
 
 .bank-list-card, .upload-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px;
 }
@@ -311,10 +311,10 @@ const formatRupiah = (val: number) => {
 .card-head-title {
   font-size: 1.05rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 16px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .bank-items {
@@ -324,8 +324,8 @@ const formatRupiah = (val: number) => {
 }
 
 .bank-item-box {
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 10px;
   padding: 14px;
 }
@@ -340,12 +340,12 @@ const formatRupiah = (val: number) => {
 .bank-name {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .bank-holder {
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .bank-acc-row {
@@ -356,14 +356,14 @@ const formatRupiah = (val: number) => {
 
 .acc-num {
   font-size: 1.1rem;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   letter-spacing: 0.5px;
 }
 
 .btn-copy-sm {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-text-muted, #64748B);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-text-muted, #7A6A55);
   padding: 4px 10px;
   border-radius: 6px;
   font-size: 0.75rem;
@@ -386,15 +386,15 @@ const formatRupiah = (val: number) => {
 .form-group label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .form-group input {
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   outline: none;
 }
 
@@ -405,7 +405,7 @@ const formatRupiah = (val: number) => {
 }
 
 .dropzone-box {
-  border: 2px dashed var(--color-secondary, #E4E7EB);
+  border: 2px dashed var(--color-secondary, #EFE1C6);
   border-radius: 10px;
   padding: 24px;
   display: flex;
@@ -413,8 +413,8 @@ const formatRupiah = (val: number) => {
   align-items: center;
   justify-content: center;
   gap: 6px;
-  background: var(--color-canvas, #F4F6F8);
-  color: var(--color-text-muted, #64748B);
+  background: var(--color-canvas, #FFFBF2);
+  color: var(--color-text-muted, #7A6A55);
   font-size: 0.84rem;
   cursor: pointer;
   text-align: center;
@@ -427,11 +427,11 @@ const formatRupiah = (val: number) => {
 
 .file-hint {
   font-size: 0.72rem;
-  color: #94A3B8;
+  color: #A8957A;
 }
 
 .btn-submit-payment {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -444,7 +444,7 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-submit-payment:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 @media (max-width: 800px) {
@@ -456,7 +456,7 @@ const formatRupiah = (val: number) => {
 /* Lockout Card Styles */
 .lockout-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 14px;
   padding: 40px 30px;
   text-align: center;
@@ -478,12 +478,12 @@ const formatRupiah = (val: number) => {
 .lockout-card h2 {
   font-size: 1.4rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 10px;
 }
 
 .lockout-card p {
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   font-size: 0.95rem;
   line-height: 1.5;
   margin-bottom: 8px;
@@ -491,8 +491,8 @@ const formatRupiah = (val: number) => {
 
 .lockout-hint {
   font-size: 0.88rem !important;
-  color: #4A5D73 !important;
-  background: #F1F5F9;
+  color: #8C6D3F !important;
+  background: #F7EEDC;
   padding: 12px 16px;
   border-radius: 8px;
   margin: 16px 0 24px !important;
@@ -506,7 +506,7 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-back-detail {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   text-decoration: none;
   padding: 10px 20px;
@@ -517,13 +517,13 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-back-detail:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 .btn-chat-admin {
   background: #ffffff;
-  color: var(--color-primary, #4A5D73);
-  border: 1px solid var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
+  border: 1px solid var(--color-primary, #8C6D3F);
   text-decoration: none;
   padding: 10px 20px;
   border-radius: 8px;
@@ -533,6 +533,6 @@ const formatRupiah = (val: number) => {
 }
 
 .btn-chat-admin:hover {
-  background: #F8FAFC;
+  background: #FFFBF2;
 }
 </style>

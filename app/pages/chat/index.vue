@@ -154,7 +154,7 @@ const sendMessage = () => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -164,13 +164,13 @@ const sendMessage = () => {
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
 .chat-box-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 14px;
   overflow: hidden;
   display: grid;
@@ -180,7 +180,7 @@ const sendMessage = () => {
 
 /* Sidebar */
 .chat-sidebar {
-  border-right: 1px solid var(--color-secondary, #E4E7EB);
+  border-right: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   flex-direction: column;
   background: #ffffff;
@@ -188,7 +188,7 @@ const sendMessage = () => {
 
 .sidebar-header {
   padding: 18px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -197,7 +197,7 @@ const sendMessage = () => {
 .sidebar-header h3 {
   font-size: 1rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .cs-badge {
@@ -216,7 +216,7 @@ const sendMessage = () => {
 
 .room-item {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   gap: 12px;
   cursor: pointer;
@@ -224,18 +224,18 @@ const sendMessage = () => {
 }
 
 .room-item:hover {
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
 }
 
 .room-item.active {
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--color-secondary, #EFE1C6);
 }
 
 .room-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -260,7 +260,7 @@ const sendMessage = () => {
 .room-title {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -268,12 +268,12 @@ const sendMessage = () => {
 
 .room-time {
   font-size: 0.7rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .room-last-msg {
   font-size: 0.78rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -283,13 +283,13 @@ const sendMessage = () => {
 .chat-conversation {
   display: flex;
   flex-direction: column;
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
 }
 
 .chat-conv-header {
   padding: 14px 20px;
   background: #ffffff;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -300,13 +300,13 @@ const sendMessage = () => {
   align-items: center;
   gap: 8px;
   font-size: 0.85rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .badge-topic {
   font-size: 0.72rem;
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 2px 6px;
   border-radius: 4px;
   font-weight: 700;
@@ -341,16 +341,16 @@ const sendMessage = () => {
   padding: 10px 14px;
   border-radius: 12px;
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   line-height: 1.45;
 }
 
 .message-bubble-row.is-me .bubble {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
-  border-color: var(--color-primary, #4A5D73);
+  border-color: var(--color-primary, #8C6D3F);
 }
 
 .msg-time {
@@ -364,17 +364,17 @@ const sendMessage = () => {
 .chat-input-bar {
   padding: 14px 20px;
   background: #ffffff;
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   gap: 10px;
 }
 
 .btn-attach {
   background: none;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   padding: 8px 10px;
   border-radius: 8px;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   cursor: pointer;
 }
 
@@ -382,18 +382,18 @@ const sendMessage = () => {
   flex: 1;
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   outline: none;
 }
 
 .chat-input-bar input:focus {
-  border-color: var(--color-primary, #4A5D73);
+  border-color: var(--color-primary, #8C6D3F);
 }
 
 .btn-send {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -404,7 +404,7 @@ const sendMessage = () => {
 }
 
 .btn-send:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 @media (max-width: 768px) {

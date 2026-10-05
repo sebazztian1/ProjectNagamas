@@ -92,7 +92,7 @@ const readNotif = (notif: AppNotification) => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -102,7 +102,7 @@ const readNotif = (notif: AppNotification) => {
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -121,19 +121,19 @@ const readNotif = (notif: AppNotification) => {
 .page-title {
   font-size: 1.85rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 6px;
 }
 
 .page-subtitle {
   font-size: 0.92rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .btn-mark-all {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 0.82rem;
@@ -143,7 +143,7 @@ const readNotif = (notif: AppNotification) => {
 
 .notif-list-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   overflow: hidden;
 }
@@ -155,7 +155,7 @@ const readNotif = (notif: AppNotification) => {
 
 .notif-item {
   padding: 18px 20px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   gap: 16px;
   cursor: pointer;
@@ -163,12 +163,12 @@ const readNotif = (notif: AppNotification) => {
 }
 
 .notif-item:hover {
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
 }
 
 .notif-item.unread {
-  background: rgba(74, 93, 115, 0.05);
-  border-left: 3px solid var(--color-primary, #4A5D73);
+  background: rgba(140, 109, 63, 0.05);
+  border-left: 3px solid var(--color-primary, #8C6D3F);
 }
 
 .notif-icon-col {
@@ -186,7 +186,7 @@ const readNotif = (notif: AppNotification) => {
 }
 
 .icon-bubble.order {
-  background: #E0E7FF;
+  background: #F3E6CC;
 }
 
 .icon-bubble.request {
@@ -211,17 +211,17 @@ const readNotif = (notif: AppNotification) => {
 .notif-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .notif-time {
   font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .notif-text {
   font-size: 0.86rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.45;
   margin-bottom: 8px;
 }
@@ -229,7 +229,7 @@ const readNotif = (notif: AppNotification) => {
 .notif-action-link {
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   text-decoration: none;
 }
 
@@ -240,6 +240,6 @@ const readNotif = (notif: AppNotification) => {
 .empty-notif {
   padding: 60px 20px;
   text-align: center;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 </style>

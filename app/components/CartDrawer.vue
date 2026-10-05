@@ -103,7 +103,7 @@ const formatPrice = (val: number) => {
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(43, 33, 22, 0.5);
   backdrop-filter: blur(2px);
   z-index: 1100;
   display: flex;
@@ -122,7 +122,7 @@ const formatPrice = (val: number) => {
 
 .drawer-header {
   padding: 18px 20px;
-  border-bottom: 1px solid #e2e8f0;
+  border-bottom: 1px solid #EFE1C6;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -131,19 +131,19 @@ const formatPrice = (val: number) => {
 .drawer-title {
   margin: 0;
   font-size: 1.05rem;
-  color: #0f172a;
+  color: #2B2116;
 }
 
 .drawer-subtitle {
   font-size: 0.75rem;
-  color: #64748b;
+  color: #7A6A55;
 }
 
 .close-btn {
   background: none;
   border: none;
   cursor: pointer;
-  color: #64748b;
+  color: #7A6A55;
 }
 
 .drawer-body {
@@ -155,13 +155,13 @@ const formatPrice = (val: number) => {
 .empty-state {
   text-align: center;
   padding: 40px 10px;
-  color: #64748b;
+  color: #7A6A55;
   font-size: 0.9rem;
 }
 
 .continue-btn {
   margin-top: 14px;
-  background: #0f172a;
+  background: #2B2116;
   color: #ffffff;
   border: none;
   border-radius: 6px;
@@ -181,7 +181,7 @@ const formatPrice = (val: number) => {
   display: flex;
   gap: 12px;
   padding-bottom: 14px;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #F7EEDC;
 }
 
 .item-img {
@@ -189,7 +189,7 @@ const formatPrice = (val: number) => {
   height: 64px;
   border-radius: 8px;
   object-fit: cover;
-  background: #f8fafc;
+  background: #FFFBF2;
 }
 
 .item-info {
@@ -208,14 +208,14 @@ const formatPrice = (val: number) => {
   margin: 0;
   font-size: 0.85rem;
   font-weight: 600;
-  color: #0f172a;
+  color: #2B2116;
   line-height: 1.25;
 }
 
 .remove-btn {
   background: none;
   border: none;
-  color: #94a3b8;
+  color: #A8957A;
   font-size: 1.2rem;
   cursor: pointer;
   line-height: 1;
@@ -228,14 +228,14 @@ const formatPrice = (val: number) => {
 .item-price {
   font-size: 0.88rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #2B2116;
   margin: 4px 0 8px 0;
 }
 
 .qty-control {
   display: inline-flex;
   align-items: center;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #EFE1C6;
   border-radius: 6px;
   width: fit-content;
 }
@@ -256,7 +256,7 @@ const formatPrice = (val: number) => {
 
 .drawer-footer {
   padding: 18px 20px;
-  border-top: 1px solid #e2e8f0;
+  border-top: 1px solid #EFE1C6;
 }
 
 .total-row {
@@ -264,13 +264,13 @@ const formatPrice = (val: number) => {
   justify-content: space-between;
   font-size: 1rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #2B2116;
   margin-bottom: 12px;
 }
 
 .checkout-btn {
   width: 100%;
-  background: #0f172a;
+  background: #2B2116;
   color: #ffffff;
   border: none;
   border-radius: 8px;

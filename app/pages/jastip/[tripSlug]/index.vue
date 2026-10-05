@@ -11,7 +11,7 @@
       </div>
 
       <!-- Trip Hero Banner -->
-      <div class="trip-hero" :style="{ backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.7), rgba(15, 23, 42, 0.85)), url(${trip.coverImageUrl})` }">
+      <div class="trip-hero" :style="{ backgroundImage: `linear-gradient(rgba(43, 33, 22, 0.7), rgba(43, 33, 22, 0.85)), url(${trip.coverImageUrl})` }">
         <div class="hero-top">
           <span class="country-pill">{{ trip.flag }} {{ trip.country }} &bull; {{ trip.cityOrArea }}</span>
           <span v-if="trip.status === 'open'" class="open-pill">Open PO Sedang Buka</span>
@@ -146,7 +146,7 @@ const formatDate = (dateStr: string) => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 16px;
 }
 
@@ -156,7 +156,7 @@ const formatDate = (dateStr: string) => {
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -194,7 +194,7 @@ const formatDate = (dateStr: string) => {
 }
 
 .closed-pill {
-  background: #64748B;
+  background: #7A6A55;
   color: #ffffff;
   padding: 4px 10px;
   border-radius: 20px;
@@ -211,7 +211,7 @@ const formatDate = (dateStr: string) => {
 
 .hero-desc {
   font-size: 0.95rem;
-  color: #E2E8F0;
+  color: #EFE1C6;
   max-width: 800px;
   line-height: 1.5;
   margin-bottom: 24px;
@@ -224,7 +224,7 @@ const formatDate = (dateStr: string) => {
 }
 
 .stat-card {
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(43, 33, 22, 0.6);
   backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.15);
   padding: 12px 16px;
@@ -234,7 +234,7 @@ const formatDate = (dateStr: string) => {
 .s-label {
   display: block;
   font-size: 0.74rem;
-  color: #CBD5E1;
+  color: #E3D2AE;
   margin-bottom: 2px;
 }
 
@@ -255,17 +255,17 @@ const formatDate = (dateStr: string) => {
 .sub-title {
   font-size: 1.5rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .sub-desc {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .btn-request-trip {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   text-decoration: none;
   font-size: 0.85rem;
@@ -276,7 +276,7 @@ const formatDate = (dateStr: string) => {
 }
 
 .btn-request-trip:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 .products-grid {
@@ -287,7 +287,7 @@ const formatDate = (dateStr: string) => {
 
 .jastip-prod-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   overflow: hidden;
   display: flex;
@@ -297,13 +297,13 @@ const formatDate = (dateStr: string) => {
 
 .jastip-prod-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 10px 20px -5px rgba(74, 93, 115, 0.12);
+  box-shadow: 0 10px 20px -5px rgba(140, 109, 63, 0.12);
 }
 
 .card-thumb {
   position: relative;
   aspect-ratio: 1 / 1;
-  background: #f1f5f9;
+  background: #F7EEDC;
 }
 
 .card-thumb img {
@@ -316,7 +316,7 @@ const formatDate = (dateStr: string) => {
   position: absolute;
   top: 10px;
   left: 10px;
-  background: rgba(15, 23, 42, 0.8);
+  background: rgba(43, 33, 22, 0.8);
   color: #ffffff;
   font-size: 0.68rem;
   font-weight: 700;
@@ -333,7 +333,7 @@ const formatDate = (dateStr: string) => {
 
 .cat-pill {
   font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   font-weight: 600;
   text-transform: uppercase;
   margin-bottom: 4px;
@@ -347,7 +347,7 @@ const formatDate = (dateStr: string) => {
 .prod-title {
   font-size: 0.95rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   line-height: 1.4;
   margin-bottom: 8px;
   display: -webkit-box;
@@ -358,7 +358,7 @@ const formatDate = (dateStr: string) => {
 
 .currency-info {
   font-size: 0.76rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 12px;
 }
 
@@ -369,13 +369,13 @@ const formatDate = (dateStr: string) => {
 
 .price-lbl {
   font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .price-val {
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .btn-group {
@@ -389,9 +389,9 @@ const formatDate = (dateStr: string) => {
   text-align: center;
   font-size: 0.8rem;
   font-weight: 600;
-  color: var(--color-primary, #4A5D73);
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  color: var(--color-primary, #8C6D3F);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   padding: 8px;
   border-radius: 6px;
 }
@@ -402,7 +402,7 @@ const formatDate = (dateStr: string) => {
   font-size: 0.8rem;
   font-weight: 700;
   color: #ffffff;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   padding: 8px;
   border-radius: 6px;
 }
@@ -411,8 +411,8 @@ const formatDate = (dateStr: string) => {
   text-align: center;
   font-size: 0.8rem;
   font-weight: 600;
-  color: #94A3B8;
-  background: #E2E8F0;
+  color: #A8957A;
+  background: #EFE1C6;
   padding: 8px;
   border-radius: 6px;
 }
@@ -422,14 +422,14 @@ const formatDate = (dateStr: string) => {
   padding: 60px 20px;
   background: #ffffff;
   border-radius: 12px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  color: var(--color-text-muted, #64748B);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .btn-req {
   display: inline-block;
   margin-top: 12px;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   padding: 8px 16px;
   border-radius: 6px;

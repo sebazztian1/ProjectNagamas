@@ -129,7 +129,7 @@ const handleChatWhatsApp = () => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(43, 33, 22, 0.6);
   backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
@@ -156,18 +156,18 @@ const handleChatWhatsApp = () => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: #F7EEDC;
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #64748b;
+  color: #7A6A55;
   z-index: 10;
 }
 
 .close-btn:hover {
-  background: #0f172a;
+  background: #2B2116;
   color: #ffffff;
 }
 
@@ -189,7 +189,7 @@ const handleChatWhatsApp = () => {
   aspect-ratio: 1 / 1;
   border-radius: 12px;
   overflow: hidden;
-  background: #f8fafc;
+  background: #FFFBF2;
 }
 
 .main-img {
@@ -208,14 +208,14 @@ const handleChatWhatsApp = () => {
   height: 56px;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border: 1px solid #EFE1C6;
+  background: #FFFBF2;
   cursor: pointer;
   padding: 0;
 }
 
 .thumb-btn.active {
-  border-color: #0f172a;
+  border-color: #2B2116;
 }
 
 .thumb-btn img {
@@ -231,7 +231,7 @@ const handleChatWhatsApp = () => {
 
 .category-tag {
   font-size: 0.72rem;
-  color: #94a3b8;
+  color: #A8957A;
   font-weight: 700;
   letter-spacing: 0.5px;
   margin-bottom: 4px;
@@ -240,7 +240,7 @@ const handleChatWhatsApp = () => {
 .modal-title {
   font-size: 1.35rem;
   font-weight: 700;
-  color: #0f172a;
+  color: #2B2116;
   margin: 0 0 10px 0;
   line-height: 1.3;
 }
@@ -248,19 +248,19 @@ const handleChatWhatsApp = () => {
 .price-tag {
   font-size: 1.4rem;
   font-weight: 800;
-  color: #0f172a;
+  color: #2B2116;
   margin-bottom: 14px;
 }
 
 .modal-desc {
   font-size: 0.88rem;
-  color: #475569;
+  color: #5C4B36;
   line-height: 1.5;
   margin: 0 0 18px 0;
 }
 
 .specs-list {
-  background: #f8fafc;
+  background: #FFFBF2;
   border-radius: 10px;
   padding: 12px;
   display: flex;
@@ -276,11 +276,11 @@ const handleChatWhatsApp = () => {
 }
 
 .spec-name {
-  color: #64748b;
+  color: #7A6A55;
 }
 
 .spec-value {
-  color: #0f172a;
+  color: #2B2116;
   font-weight: 600;
 }
 
@@ -292,7 +292,7 @@ const handleChatWhatsApp = () => {
 
 .chat-main-btn {
   flex: 1;
-  background: #0f172a;
+  background: #2B2116;
   color: #ffffff;
   border: none;
   border-radius: 10px;
@@ -304,19 +304,19 @@ const handleChatWhatsApp = () => {
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.2);
+  box-shadow: 0 4px 14px rgba(43, 33, 22, 0.2);
   transition: all 0.2s;
 }
 
 .chat-main-btn:hover {
-  background: #1e293b;
+  background: #2B2116;
   transform: translateY(-1px);
 }
 
 .wa-secondary-btn {
-  background: #f1f5f9;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
+  background: #F7EEDC;
+  color: #2B2116;
+  border: 1px solid #E3D2AE;
   border-radius: 10px;
   height: 46px;
   padding: 0 16px;

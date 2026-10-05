@@ -149,13 +149,13 @@
 .admin-wrapper {
   display: flex;
   min-height: 100vh;
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
 }
 
 .admin-sidebar {
   width: 270px;
   background: #ffffff;
-  border-right: 1px solid var(--color-secondary, #E4E7EB);
+  border-right: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   flex-direction: column;
   position: sticky;
@@ -166,7 +166,7 @@
 
 .sidebar-brand {
   padding: 20px 22px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .brand-link {
@@ -180,7 +180,7 @@
   width: 38px;
   height: 38px;
   border-radius: 8px;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -193,13 +193,13 @@
   display: block;
   font-size: 1.15rem;
   font-weight: 800;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   letter-spacing: -0.5px;
 }
 
 .admin-tag {
   font-size: 0.7rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   font-weight: 600;
 }
 
@@ -215,7 +215,7 @@
 .nav-section-title {
   font-size: 0.68rem;
   font-weight: 800;
-  color: #94A3B8;
+  color: #A8957A;
   padding: 12px 10px 6px;
   letter-spacing: 0.5px;
 }
@@ -229,17 +229,17 @@
   text-decoration: none;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   transition: all 0.15s;
 }
 
 .nav-item:hover {
-  background: var(--color-canvas, #F4F6F8);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-canvas, #FFFBF2);
+  color: var(--color-primary, #8C6D3F);
 }
 
 .nav-item.active {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
 }
 
@@ -247,8 +247,8 @@
   margin-left: auto;
   font-size: 0.7rem;
   font-weight: 800;
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   padding: 2px 7px;
   border-radius: 10px;
 }
@@ -265,7 +265,7 @@
 
 .sidebar-footer {
   padding: 14px 16px;
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .back-shop-btn {
@@ -273,18 +273,18 @@
   align-items: center;
   gap: 8px;
   text-decoration: none;
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   padding: 9px 12px;
   border-radius: 8px;
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   transition: all 0.15s;
 }
 
 .back-shop-btn:hover {
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--color-secondary, #EFE1C6);
 }
 
 /* Admin Main Area */
@@ -297,7 +297,7 @@
 
 .admin-topbar {
   background: #ffffff;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   padding: 12px 28px;
   display: flex;
   justify-content: space-between;
@@ -314,8 +314,8 @@
 }
 
 .role-chip {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
   font-size: 0.74rem;
   font-weight: 800;
   padding: 3px 8px;
@@ -338,12 +338,12 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   text-decoration: none;
 }
 
@@ -357,7 +357,7 @@
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -369,7 +369,7 @@
 .user-label {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .admin-page-content {

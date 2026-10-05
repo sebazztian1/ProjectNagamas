@@ -281,24 +281,25 @@ const forgotPassword = () => {
 .auth-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
+  background: rgba(28, 20, 12, 0.65);
+  backdrop-filter: blur(6px);
   z-index: 1200;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
+  padding: 24px;
 }
 
 .auth-modal {
   background: #ffffff;
-  border-radius: 16px;
+  border-radius: var(--radius-md, 16px);
+  border: 1px solid var(--brand-primary, #EFE1C6);
   max-width: 440px;
   width: 100%;
   position: relative;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg, 0 20px 48px rgba(43, 33, 22, 0.18));
   overflow: hidden;
-  animation: scaleUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .close-btn {
@@ -308,28 +309,28 @@ const forgotPassword = () => {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: var(--brand-primary, #EFE1C6);
   border: none;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #64748b;
+  color: var(--brand-accent, #8C6D3F);
   z-index: 10;
   transition: all 0.2s;
 }
 
 .close-btn:hover {
-  background: #0f172a;
-  color: #ffffff;
+  background: var(--brand-accent, #8C6D3F);
+  color: #FFFBF2;
 }
 
 /* Tabs */
 .auth-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  border-bottom: 1px solid #e2e8f0;
-  background: #f8fafc;
+  border-bottom: 1px solid var(--brand-primary, #EFE1C6);
+  background: var(--brand-neutral, #FFFBF2);
 }
 
 .tab-btn {
@@ -338,25 +339,25 @@ const forgotPassword = () => {
   border: none;
   font-size: 0.95rem;
   font-weight: 600;
-  color: #64748b;
+  color: var(--color-text-muted, #7A6A55);
   cursor: pointer;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
 }
 
 .tab-btn:hover {
-  color: #0f172a;
+  color: var(--brand-accent, #8C6D3F);
 }
 
 .tab-btn.active {
   background: #ffffff;
-  color: #0f172a;
-  border-bottom-color: #0f172a;
+  color: var(--brand-accent, #8C6D3F);
+  border-bottom-color: var(--brand-accent, #8C6D3F);
 }
 
 /* Body */
 .auth-body {
-  padding: 24px;
+  padding: 28px 24px 24px;
 }
 
 .form-header {
@@ -364,15 +365,16 @@ const forgotPassword = () => {
 }
 
 .form-header h3 {
-  font-size: 1.25rem;
-  color: #0f172a;
+  font-family: var(--font-display, Georgia, serif);
+  font-size: 1.4rem;
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .form-header p {
   font-size: 0.85rem;
-  color: #64748b;
-  line-height: 1.4;
+  color: var(--color-text-muted, #7A6A55);
+  line-height: 1.5;
 }
 
 .auth-form {
@@ -388,9 +390,9 @@ const forgotPassword = () => {
 }
 
 .form-group label {
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #334155;
+  color: var(--color-text, #2B2116);
 }
 
 .label-row {
@@ -401,12 +403,12 @@ const forgotPassword = () => {
 
 .forgot-link {
   font-size: 0.78rem;
-  color: #64748b;
+  color: var(--color-text-muted, #7A6A55);
   text-decoration: none;
 }
 
 .forgot-link:hover {
-  color: #0f172a;
+  color: var(--brand-accent, #8C6D3F);
   text-decoration: underline;
 }
 
@@ -419,25 +421,25 @@ const forgotPassword = () => {
 .input-icon {
   position: absolute;
   left: 12px;
-  color: #94a3b8;
+  color: var(--brand-secondary, #D8B978);
   pointer-events: none;
 }
 
 .input-wrap input {
   width: 100%;
-  padding: 10px 14px 10px 38px;
+  padding: 11px 14px 11px 38px;
   border-radius: 8px;
-  border: 1px solid #cbd5e1;
+  border: 1px solid var(--brand-primary, #EFE1C6);
   background: #ffffff;
   font-size: 0.88rem;
-  color: #0f172a;
+  color: var(--color-text, #2B2116);
   outline: none;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .input-wrap input:focus {
-  border-color: #0f172a;
-  box-shadow: 0 0 0 3px rgba(15, 23, 42, 0.08);
+  border-color: var(--brand-secondary, #D8B978);
+  box-shadow: 0 0 0 3px rgba(216, 185, 120, 0.25);
 }
 
 .toggle-eye {
@@ -446,7 +448,7 @@ const forgotPassword = () => {
   background: none;
   border: none;
   font-size: 0.75rem;
-  color: #64748b;
+  color: var(--color-text-muted, #7A6A55);
   font-weight: 600;
   cursor: pointer;
 }
@@ -461,50 +463,53 @@ const forgotPassword = () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.8rem;
-  color: #475569;
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #7A6A55);
   cursor: pointer;
 }
 
 .checkbox-label input {
-  accent-color: #0f172a;
+  accent-color: var(--brand-accent, #8C6D3F);
   width: 15px;
   height: 15px;
 }
 
 .submit-btn {
-  margin-top: 8px;
-  background: #0f172a;
-  color: #ffffff;
-  border: none;
-  border-radius: 8px;
+  margin-top: 10px;
+  background: var(--brand-accent, #8C6D3F);
+  color: #FFFBF2;
+  border: 1px solid var(--brand-secondary, #D8B978);
+  border-radius: var(--radius-full, 999px);
   padding: 12px;
-  font-size: 0.9rem;
+  font-size: 0.92rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.2s;
+  transition: all 0.2s;
 }
 
 .submit-btn:hover:not(:disabled) {
-  opacity: 0.9;
+  background: var(--color-primary-hover, #73572E);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px -2px rgba(140, 109, 63, 0.35);
 }
 
 .submit-btn:disabled {
-  background: #cbd5e1;
+  background: var(--brand-primary, #EFE1C6);
+  color: var(--color-text-muted, #7A6A55);
   cursor: not-allowed;
 }
 
 .switch-prompt {
   text-align: center;
   font-size: 0.82rem;
-  color: #64748b;
-  margin-top: 6px;
+  color: var(--color-text-muted, #7A6A55);
+  margin-top: 8px;
 }
 
 .switch-link {
   background: none;
   border: none;
-  color: #0f172a;
+  color: var(--brand-accent, #8C6D3F);
   font-weight: 700;
   cursor: pointer;
   text-decoration: underline;
@@ -513,7 +518,7 @@ const forgotPassword = () => {
 }
 
 @keyframes scaleUp {
-  from { transform: scale(0.95); opacity: 0; }
+  from { transform: scale(0.96); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
 }
 </style>

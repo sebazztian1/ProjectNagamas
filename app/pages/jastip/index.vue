@@ -54,7 +54,7 @@
           class="trip-card"
           :class="{ 'is-closed': trip.status === 'closed' }"
         >
-          <div class="card-cover" :style="{ backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.4), rgba(15, 23, 42, 0.8)), url(${trip.coverImageUrl})` }">
+          <div class="card-cover" :style="{ backgroundImage: `linear-gradient(rgba(43, 33, 22, 0.4), rgba(43, 33, 22, 0.8)), url(${trip.coverImageUrl})` }">
             <div class="cover-top">
               <span class="country-badge">{{ trip.flag }} {{ trip.country }}</span>
               <span v-if="trip.status === 'open'" class="status-badge open">Open PO</span>
@@ -132,7 +132,7 @@ const formatDate = (dateStr: string) => {
 
 <style scoped>
 .jastip-trips-page {
-  padding: 30px 20px 60px;
+  padding: 32px 24px 80px;
 }
 
 .page-container {
@@ -144,18 +144,23 @@ const formatDate = (dateStr: string) => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
-  margin-bottom: 12px;
+  font-size: 0.86rem;
+  color: var(--color-text-muted);
+  margin-bottom: 20px;
 }
 
 .breadcrumb a {
   text-decoration: none;
-  color: inherit;
+  color: var(--color-text-muted);
+  transition: color 0.15s ease;
+}
+
+.breadcrumb a:hover {
+  color: var(--brand-accent);
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--brand-accent);
   font-weight: 700;
 }
 
@@ -163,134 +168,141 @@ const formatDate = (dateStr: string) => {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 24px;
-  margin-bottom: 28px;
+  gap: 28px;
+  margin-bottom: 36px;
   flex-wrap: wrap;
 }
 
 .header-pill {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  gap: 8px;
+  background: var(--brand-primary);
+  color: var(--brand-accent);
   font-size: 0.74rem;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 20px;
-  margin-bottom: 8px;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  margin-bottom: 12px;
+  letter-spacing: 0.06em;
+  border: 1px solid rgba(216, 185, 120, 0.4);
 }
 
 .page-title {
-  font-size: 1.85rem;
-  font-weight: 800;
-  color: var(--color-text, #1E293B);
-  letter-spacing: -0.5px;
-  margin-bottom: 6px;
+  font-size: 2.2rem;
+  margin-bottom: 8px;
 }
 
 .page-desc {
-  font-size: 0.92rem;
-  color: var(--color-text-muted, #64748B);
+  font-size: 0.95rem;
+  color: var(--color-text-muted);
   max-width: 680px;
-  line-height: 1.5;
+  line-height: 1.65;
 }
 
 .request-banner-link {
-  background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  border-left: 3px solid var(--color-primary, #4A5D73);
-  padding: 12px 18px;
-  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid var(--brand-primary);
+  border-left: 4px solid var(--brand-accent);
+  padding: 14px 20px;
+  border-radius: var(--radius-md);
   text-decoration: none;
   display: flex;
   flex-direction: column;
-  transition: all 0.15s;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
 }
 
 .request-banner-link:hover {
-  background: var(--color-canvas, #F4F6F8);
-  border-color: var(--color-primary, #4A5D73);
+  background: var(--brand-neutral);
+  border-color: var(--brand-secondary);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 .req-title {
-  font-size: 0.78rem;
-  color: var(--color-text-muted, #64748B);
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-bottom: 2px;
 }
 
 .req-sub {
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--brand-accent);
 }
 
 .trip-tabs {
   display: flex;
-  gap: 10px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
-  padding-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--brand-primary);
+  padding-bottom: 14px;
 }
 
 .tab-btn {
-  background: none;
-  border: none;
-  font-size: 0.92rem;
+  background: #FFFFFF;
+  border: 1px solid var(--brand-primary);
+  font-size: 0.9rem;
   font-weight: 600;
-  color: var(--color-text-muted, #64748B);
-  padding: 8px 16px;
-  border-radius: 8px;
+  color: var(--color-text-muted);
+  padding: 9px 20px;
+  border-radius: var(--radius-full);
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
-  transition: all 0.15s;
+  gap: 10px;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-subtle);
 }
 
 .tab-btn:hover {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--brand-neutral);
+  border-color: var(--brand-secondary);
+  color: var(--brand-accent);
 }
 
 .tab-btn.active {
-  background: var(--color-primary, #4A5D73);
-  color: #ffffff;
+  background: var(--brand-accent);
+  color: #FFFBF2;
+  border-color: var(--brand-accent);
+  box-shadow: 0 4px 14px -2px rgba(140, 109, 63, 0.35);
 }
 
 .tab-badge {
-  background: rgba(255, 255, 255, 0.2);
-  padding: 2px 7px;
-  border-radius: 10px;
-  font-size: 0.75rem;
-  font-weight: 800;
+  background: rgba(255, 251, 242, 0.25);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-size: 0.74rem;
+  font-weight: 700;
 }
 
 .tab-btn:not(.active) .tab-badge {
-  background: var(--color-secondary, #E4E7EB);
-  color: var(--color-primary, #4A5D73);
+  background: var(--brand-primary);
+  color: var(--brand-accent);
 }
 
 .trips-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 26px;
+  gap: 32px;
 }
 
 .trip-card {
-  background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  border-radius: 14px;
+  background: #FFFFFF;
+  border: 1px solid var(--brand-primary);
+  border-radius: var(--radius-md);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
-  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
 }
 
 .trip-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 10px 24px -6px rgba(74, 93, 115, 0.15);
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand-secondary);
 }
 
 .trip-card.is-closed {
@@ -298,14 +310,28 @@ const formatDate = (dateStr: string) => {
 }
 
 .card-cover {
-  height: 180px;
+  height: 200px;
   background-size: cover;
   background-position: center;
-  padding: 16px;
+  padding: 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  color: #ffffff;
+  color: #FFFBF2;
+  position: relative;
+}
+
+.card-cover::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(28, 20, 12, 0.4) 0%, rgba(28, 20, 12, 0.75) 100%);
+  pointer-events: none;
+}
+
+.cover-top, .cover-bottom {
+  position: relative;
+  z-index: 1;
 }
 
 .cover-top {
@@ -315,57 +341,66 @@ const formatDate = (dateStr: string) => {
 }
 
 .country-badge {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.78rem;
+  background: rgba(28, 20, 12, 0.6);
+  backdrop-filter: blur(6px);
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  font-size: 0.76rem;
   font-weight: 700;
+  color: var(--brand-primary);
+  border: 1px solid rgba(216, 185, 120, 0.25);
 }
 
 .status-badge {
-  padding: 4px 10px;
-  border-radius: 20px;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
   font-size: 0.72rem;
   font-weight: 800;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .status-badge.open {
-  background: #10B981;
-  color: #ffffff;
+  background: var(--color-ready-bg);
+  color: var(--color-ready);
+  border: 1px solid rgba(59, 110, 72, 0.3);
 }
 
 .status-badge.closed {
-  background: #64748B;
-  color: #ffffff;
+  background: rgba(255, 251, 242, 0.2);
+  color: #FFFBF2;
+  border: 1px solid rgba(255, 251, 242, 0.3);
 }
 
 .city-label {
-  font-size: 0.75rem;
-  color: #E2E8F0;
+  font-size: 0.76rem;
+  color: var(--brand-secondary);
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.06em;
+  font-weight: 600;
 }
 
 .trip-card-title {
-  font-size: 1.25rem;
-  font-weight: 800;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #FFFBF2;
   margin-top: 2px;
+  line-height: 1.25;
 }
 
 .card-content {
-  padding: 20px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .trip-desc {
-  font-size: 0.85rem;
-  color: var(--color-text-muted, #64748B);
-  line-height: 1.5;
-  margin-bottom: 18px;
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+  margin-bottom: 20px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -375,53 +410,55 @@ const formatDate = (dateStr: string) => {
 .trip-schedule-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  background: var(--color-canvas, #F4F6F8);
-  border: 1px solid var(--color-secondary, #E4E7EB);
-  border-radius: 10px;
-  padding: 12px;
-  margin-bottom: 16px;
+  gap: 12px;
+  background: var(--brand-neutral);
+  border: 1px solid var(--brand-primary);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  margin-bottom: 20px;
 }
 
 .sched-label {
   display: block;
-  font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
-  margin-bottom: 2px;
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  margin-bottom: 4px;
 }
 
 .sched-val {
-  font-size: 0.85rem;
-  color: var(--color-text, #1E293B);
+  font-size: 0.88rem;
+  color: var(--color-text);
+  font-weight: 600;
 }
 
 .sched-val.highlight {
-  color: var(--color-primary, #4A5D73);
+  color: var(--brand-accent);
+  font-weight: 700;
 }
 
 .quota-wrap {
-  margin-bottom: 18px;
+  margin-bottom: 22px;
 }
 
 .quota-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 0.76rem;
-  color: var(--color-text-muted, #64748B);
-  margin-bottom: 6px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+  margin-bottom: 8px;
 }
 
 .quota-bar {
   height: 6px;
-  background: var(--color-secondary, #E4E7EB);
-  border-radius: 4px;
+  background: var(--brand-primary);
+  border-radius: 999px;
   overflow: hidden;
 }
 
 .quota-fill {
   height: 100%;
-  background: var(--color-primary, #4A5D73);
-  border-radius: 4px;
+  background: linear-gradient(90deg, var(--brand-secondary) 0%, var(--brand-accent) 100%);
+  border-radius: 999px;
 }
 
 .trip-card-footer {
@@ -432,26 +469,30 @@ const formatDate = (dateStr: string) => {
   display: block;
   text-align: center;
   text-decoration: none;
-  background: var(--color-primary, #4A5D73);
-  color: #ffffff;
+  background: var(--brand-accent);
+  color: #FFFBF2;
   font-size: 0.88rem;
-  font-weight: 700;
-  padding: 10px;
-  border-radius: 8px;
-  transition: all 0.15s;
+  font-weight: 600;
+  padding: 11px 16px;
+  border-radius: var(--radius-full);
+  transition: all 0.2s ease;
+  border: 1px solid var(--brand-secondary);
 }
 
 .btn-open-trip:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px -3px rgba(140, 109, 63, 0.35);
 }
 
 .btn-open-trip.btn-view-closed {
-  background: var(--color-canvas, #F4F6F8);
-  color: var(--color-primary, #4A5D73);
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  background: var(--brand-neutral);
+  color: var(--brand-accent);
+  border: 1px solid var(--brand-primary);
 }
 
 .btn-open-trip.btn-view-closed:hover {
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--brand-primary);
+  border-color: var(--brand-secondary);
 }
 </style>

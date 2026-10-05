@@ -71,7 +71,7 @@ const faqs = [
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -81,7 +81,7 @@ const faqs = [
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -93,13 +93,13 @@ const faqs = [
 .page-title {
   font-size: 2rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 8px;
 }
 
 .page-subtitle {
   font-size: 0.95rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   max-width: 650px;
   margin: 0 auto;
   line-height: 1.5;
@@ -114,7 +114,7 @@ const faqs = [
 
 .faq-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px 24px;
 }
@@ -122,19 +122,19 @@ const faqs = [
 .faq-question {
   font-size: 1.05rem;
   font-weight: 700;
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   margin-bottom: 10px;
 }
 
 .faq-answer {
   font-size: 0.9rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   line-height: 1.6;
 }
 
 .contact-box {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 14px;
   padding: 30px;
   text-align: center;
@@ -143,13 +143,13 @@ const faqs = [
 .contact-box h3 {
   font-size: 1.2rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 8px;
 }
 
 .contact-box p {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -161,7 +161,7 @@ const faqs = [
 }
 
 .btn-chat {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   text-decoration: none;
   font-size: 0.88rem;

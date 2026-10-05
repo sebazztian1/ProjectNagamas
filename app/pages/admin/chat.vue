@@ -125,18 +125,18 @@ const sendAdminReply = () => {
 .page-title {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .page-subtitle {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .chat-inbox-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   display: grid;
   grid-template-columns: 320px 1fr;
@@ -145,21 +145,21 @@ const sendAdminReply = () => {
 }
 
 .inbox-sidebar {
-  border-right: 1px solid var(--color-secondary, #E4E7EB);
+  border-right: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   flex-direction: column;
 }
 
 .inbox-search {
   padding: 14px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .inbox-search input {
   width: 100%;
   padding: 8px 12px;
   border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.82rem;
   outline: none;
 }
@@ -171,7 +171,7 @@ const sendAdminReply = () => {
 
 .cust-room-item {
   padding: 14px 16px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   gap: 12px;
   cursor: pointer;
@@ -179,18 +179,18 @@ const sendAdminReply = () => {
 }
 
 .cust-room-item:hover {
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
 }
 
 .cust-room-item.active {
-  background: var(--color-secondary, #E4E7EB);
+  background: var(--color-secondary, #EFE1C6);
 }
 
 .cust-avatar {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -215,17 +215,17 @@ const sendAdminReply = () => {
 .cust-name {
   font-size: 0.85rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .cust-time {
   font-size: 0.7rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .cust-preview {
   font-size: 0.76rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -235,13 +235,13 @@ const sendAdminReply = () => {
 .inbox-conversation {
   display: flex;
   flex-direction: column;
-  background: var(--color-canvas, #F4F6F8);
+  background: var(--color-canvas, #FFFBF2);
 }
 
 .conv-header {
   padding: 14px 20px;
   background: #ffffff;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -250,12 +250,12 @@ const sendAdminReply = () => {
 .user-info strong {
   display: block;
   font-size: 0.95rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .user-phone {
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .active-badge {
@@ -285,17 +285,17 @@ const sendAdminReply = () => {
 .chat-bubble {
   max-width: 65%;
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 10px 14px;
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .bubble-row.admin-reply .chat-bubble {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
-  border-color: var(--color-primary, #4A5D73);
+  border-color: var(--color-primary, #8C6D3F);
 }
 
 .sender-name {
@@ -317,7 +317,7 @@ const sendAdminReply = () => {
 .admin-input-bar {
   padding: 14px 20px;
   background: #ffffff;
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   gap: 10px;
 }
@@ -326,13 +326,13 @@ const sendAdminReply = () => {
   flex: 1;
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
   outline: none;
 }
 
 .btn-reply {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   border-radius: 8px;

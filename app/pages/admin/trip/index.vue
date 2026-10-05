@@ -11,7 +11,7 @@
     <!-- Trips Grid -->
     <div class="trip-cards-grid">
       <div v-for="t in trips" :key="t.id" class="trip-admin-card">
-        <div class="card-cover-bar" :style="{ backgroundImage: `linear-gradient(rgba(15, 23, 42, 0.45), rgba(15, 23, 42, 0.75)), url(${t.coverImageUrl})` }">
+        <div class="card-cover-bar" :style="{ backgroundImage: `linear-gradient(rgba(43, 33, 22, 0.45), rgba(43, 33, 22, 0.75)), url(${t.coverImageUrl})` }">
           <div class="cover-top">
             <span class="flag-chip">{{ t.flag }} {{ t.country }}</span>
             <span class="status-chip" :class="t.status">{{ t.status === 'open' ? 'Open PO' : 'Tutup PO' }}</span>
@@ -195,17 +195,17 @@ const saveTrip = () => {
 .page-title {
   font-size: 1.6rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 4px;
 }
 
 .page-subtitle {
   font-size: 0.88rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .btn-create-trip {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   font-size: 0.85rem;
@@ -223,7 +223,7 @@ const saveTrip = () => {
 
 .trip-admin-card {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   overflow: hidden;
   display: flex;
@@ -268,7 +268,7 @@ const saveTrip = () => {
 }
 
 .status-chip.closed {
-  background: #64748B;
+  background: #7A6A55;
 }
 
 .trip-name {
@@ -279,7 +279,7 @@ const saveTrip = () => {
 
 .trip-area {
   font-size: 0.75rem;
-  color: #CBD5E1;
+  color: #E3D2AE;
 }
 
 .card-body {
@@ -294,17 +294,17 @@ const saveTrip = () => {
   display: flex;
   justify-content: space-between;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .info-row strong {
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .card-actions-grid {
   margin-top: auto;
   padding-top: 14px;
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -312,7 +312,7 @@ const saveTrip = () => {
 
 .btn-detail-trip {
   text-decoration: none;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   text-align: center;
   font-size: 0.82rem;
@@ -336,7 +336,7 @@ const saveTrip = () => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.5);
+  background: rgba(43, 33, 22, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -358,7 +358,7 @@ const saveTrip = () => {
   align-items: center;
   margin-bottom: 20px;
   padding-bottom: 10px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .close-x {
@@ -389,13 +389,13 @@ const saveTrip = () => {
 .f-group label {
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .f-group input, .f-group textarea {
   padding: 8px 10px;
   border-radius: 6px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
   outline: none;
 }
@@ -406,12 +406,12 @@ const saveTrip = () => {
   gap: 10px;
   margin-top: 10px;
   padding-top: 14px;
-  border-top: 1px solid var(--color-secondary, #E4E7EB);
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .btn-cancel {
   background: none;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   padding: 8px 14px;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -419,7 +419,7 @@ const saveTrip = () => {
 }
 
 .btn-save {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   padding: 8px 16px;

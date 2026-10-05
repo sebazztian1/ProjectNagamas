@@ -142,7 +142,7 @@ const changePassword = () => {
   align-items: center;
   gap: 8px;
   font-size: 0.82rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-bottom: 20px;
 }
 
@@ -152,7 +152,7 @@ const changePassword = () => {
 }
 
 .breadcrumb .active {
-  color: var(--color-primary, #4A5D73);
+  color: var(--color-primary, #8C6D3F);
   font-weight: 700;
 }
 
@@ -163,13 +163,13 @@ const changePassword = () => {
 .page-title {
   font-size: 1.85rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 6px;
 }
 
 .page-subtitle {
   font-size: 0.92rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .account-layout {
@@ -180,7 +180,7 @@ const changePassword = () => {
 
 .card-box {
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 24px;
 }
@@ -188,10 +188,10 @@ const changePassword = () => {
 .card-title {
   font-size: 1.1rem;
   font-weight: 800;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   margin-bottom: 20px;
   padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-secondary, #E4E7EB);
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
 }
 
 .avatar-row {
@@ -205,7 +205,7 @@ const changePassword = () => {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   display: flex;
   align-items: center;
@@ -217,7 +217,7 @@ const changePassword = () => {
 .role-badge {
   display: block;
   font-size: 0.75rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
   margin-top: 2px;
 }
 
@@ -236,35 +236,35 @@ const changePassword = () => {
 .form-group label {
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
 }
 
 .form-group input {
   padding: 10px 12px;
   border-radius: 8px;
-  border: 1px solid var(--color-secondary, #E4E7EB);
+  border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
-  color: var(--color-text, #1E293B);
+  color: var(--color-text, #2B2116);
   outline: none;
 }
 
 .form-group input:focus {
-  border-color: var(--color-primary, #4A5D73);
+  border-color: var(--color-primary, #8C6D3F);
 }
 
 .input-disabled {
-  background: var(--color-canvas, #F4F6F8);
-  color: #94A3B8;
+  background: var(--color-canvas, #FFFBF2);
+  color: #A8957A;
   cursor: not-allowed;
 }
 
 .field-hint {
   font-size: 0.72rem;
-  color: var(--color-text-muted, #64748B);
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .btn-save, .btn-change-pass {
-  background: var(--color-primary, #4A5D73);
+  background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
   border-radius: 8px;
@@ -277,7 +277,7 @@ const changePassword = () => {
 }
 
 .btn-save:hover, .btn-change-pass:hover {
-  background: var(--color-primary-hover, #384759);
+  background: var(--color-primary-hover, #6F5530);
 }
 
 @media (max-width: 800px) {
