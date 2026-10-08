@@ -18,22 +18,22 @@
           <div class="step-num">1</div>
           <div class="step-body">
             <h3>Pilih Jalur Belanja Anda (Ready Stock vs Jastip)</h3>
-            <p>Buka halaman <strong>Ready Stock</strong> jika Anda membutuhkan barang yang siap kirim/ambil hari ini. Buka <strong>Jadwal Jastip</strong> jika Anda ingin menitipkan produk luar negeri pada trip keberangkatan admin.</p>
+            <p>Buka halaman <strong>Ready Stock</strong> jika Anda membutuhkan barang yang siap langsung dikirim. Buka <strong>Jadwal Jastip</strong> jika Anda ingin menitipkan produk luar negeri pada trip keberangkatan admin.</p>
           </div>
         </div>
 
         <div class="step-card">
           <div class="step-num">2</div>
           <div class="step-body">
-            <h3>Checkout & Tunggu Persetujuan Admin (ACC)</h3>
-            <p>Setelah mengajukan checkout, pesanan berstatus <em>"Menunggu Persetujuan Admin"</em>. Admin dbb_luxe akan memeriksa ketersediaan stok fisik di Pasar Baru atau sisa kuota koper traveler luar negeri terlebih dahulu.</p>
+            <h3>Checkout &amp; Tunggu Persetujuan Admin (ACC)</h3>
+            <p>Setelah mengisi data alamat pengiriman dan mengajukan checkout, pesanan berstatus <em>"Menunggu Persetujuan Admin"</em>. Admin dbb_luxe akan memeriksa ketersediaan stok ready atau sisa kuota koper traveler luar negeri terlebih dahulu.</p>
           </div>
         </div>
 
         <div class="step-card">
           <div class="step-num">3</div>
           <div class="step-body">
-            <h3>Pesanan Disetujui: Transfer Manual & Upload Bukti</h3>
+            <h3>Pesanan Disetujui: Transfer Manual &amp; Upload Bukti</h3>
             <p>Setelah di-ACC oleh admin, batas waktu pembayaran 24 jam mulai berjalan. Kirimkan pembayaran sesuai nominal (+ 3 digit kode unik) ke rekening resmi BCA/Mandiri atau QRIS dbb_luxe, lalu unggah foto bukti transfer di menu <em>Pesanan Saya &rarr; Bayar</em>.</p>
           </div>
         </div>
@@ -41,16 +41,16 @@
         <div class="step-card">
           <div class="step-num">4</div>
           <div class="step-body">
-            <h3>Pantau Tracking & Bukti Pembelian Toko Fisik</h3>
-            <p>Admin mengonfirmasi pembayaran lunas. Untuk pesanan Jastip, admin akan mengunggah foto struk belanja asli dari toko luar negeri ke halaman tracking pesanan Anda setelah barang berhasil dibeli.</p>
+            <h3>Pantau Tracking &amp; Bukti Pembelian Luar Negeri</h3>
+            <p>Admin mengonfirmasi pembayaran lunas. Untuk pesanan Jastip, admin akan mengunggah foto struk belanja asli dari toko resmi luar negeri ke halaman tracking pesanan Anda setelah barang berhasil dibeli.</p>
           </div>
         </div>
 
         <div class="step-card">
           <div class="step-num">5</div>
           <div class="step-body">
-            <h3>Pengambilan Barang di Toko Fisik dbb_luxe</h3>
-            <p>Saat status berubah menjadi <em>"Siap Diambil"</em>, Anda dapat langsung datang ke toko kami di Pasar Baru Jakarta dengan menunjukkan Kode Order (contoh: JST-20261002-001).</p>
+            <h3>Pengiriman Barang Langsung ke Alamat Anda</h3>
+            <p>Saat pesanan siap atau tiba di Indonesia, admin akan mengemas barang dengan aman dan mengirimkannya langsung ke alamat Anda melalui jasa kurir ekspedisi.</p>
           </div>
         </div>
       </div>

@@ -12,11 +12,11 @@
           <div>
             <div class="ready-badge">
               <span class="dot"></span>
-              Stok Tersedia di Toko Jakarta
+              Stok Tersedia di Warehouse Jakarta
             </div>
             <h1 class="page-title">Katalog Barang Ready Stock</h1>
             <p class="page-desc">
-              Barang-barang impor dan sisa kuota trip sebelumnya yang sudah siap kirim atau bisa diambil langsung di toko fisik hari ini.
+              Barang-barang impor dan sisa kuota trip sebelumnya yang sudah siap dikemas dan langsung dikirim ke alamat Anda.
             </p>
           </div>
         </div>

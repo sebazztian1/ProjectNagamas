@@ -30,30 +30,15 @@
             </div>
           </div>
 
-          <!-- Fulfillment Method -->
+          <!-- Fulfillment / Shipping Address -->
           <div class="section-box">
-            <h3 class="box-title">2. Metode Pengambilan Barang</h3>
-            <div class="fulfillment-options">
-              <label class="radio-card" :class="{ selected: fulfillment === 'pickup' }">
-                <input type="radio" value="pickup" v-model="fulfillment" />
-                <div class="opt-text">
-                  <strong>Ambil Mandiri di Toko Fisik (Gratis)</strong>
-                  <span>dbb_luxe Store Jakarta (Pasar Baru). Barang langsung diambil saat siap/tiba.</span>
-                </div>
-              </label>
-
-              <label class="radio-card" :class="{ selected: fulfillment === 'shipping' }">
-                <input type="radio" value="shipping" v-model="fulfillment" />
-                <div class="opt-text">
-                  <strong>Pengiriman Ekspedisi Manual (JNE / J&T)</strong>
-                  <span>Untuk luar kota. Ongkir dihitung manual oleh admin setelah barang ditimbang.</span>
-                </div>
-              </label>
-            </div>
-
-            <div v-if="fulfillment === 'shipping'" class="shipping-address-box">
-              <label>Alamat Lengkap Pengiriman:</label>
-              <textarea v-model="shippingAddress" rows="2" placeholder="Nama Jalan, No. Rumah, RT/RW, Kecamatan, Kota, Kode Pos..."></textarea>
+            <h3 class="box-title">2. Alamat Pengiriman</h3>
+            <p class="section-sub-text">
+              dbb_luxe beroperasi penuh secara online. Seluruh pesanan dikemas rapi dan dikirimkan langsung oleh admin ke alamat Anda.
+            </p>
+            <div class="shipping-address-box">
+              <label>Alamat Lengkap Tujuan (Wajib Diisi):</label>
+              <textarea v-model="shippingAddress" rows="3" placeholder="Nama Jalan, No. Rumah, RT/RW, Kelurahan, Kecamatan, Kota/Kabupaten, Kode Pos..."></textarea>
             </div>
           </div>
 
@@ -148,8 +133,8 @@ const itemProduct = computed(() => {
 
 const customerName = ref('Siti Rahmawati')
 const customerPhone = ref('0812-3456-7890')
-const fulfillment = ref<'pickup' | 'shipping'>('pickup')
-const shippingAddress = ref('')
+const fulfillment = ref<'shipping'>('shipping')
+const shippingAddress = ref('Jl. Senopati No. 28, Kebayoran Baru, Jakarta Selatan 12190')
 const paymentType = ref<'full' | 'dp'>('full')
 
 const subtotal = computed(() => itemProduct.value.price * qty.value)
@@ -157,6 +142,14 @@ const uniqueCode = ref(Math.floor(100 + Math.random() * 899))
 const totalTagihan = computed(() => subtotal.value + uniqueCode.value)
 
 const handleCreateOrder = () => {
+  if (!shippingAddress.value.trim()) {
+    showToast({
+      title: 'Alamat Wajib Diisi',
+      message: 'Mohon masukkan alamat lengkap pengiriman pesanan Anda.',
+      type: 'error'
+    })
+    return
+  }
   const newOrderCode = (itemProduct.value.productType === 'ready' ? 'RDY-' : 'JST-') + '20261002-' + Math.floor(100 + Math.random() * 900)
   
   // Add to mockOrders

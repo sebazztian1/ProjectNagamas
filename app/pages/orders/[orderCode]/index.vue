@@ -48,7 +48,7 @@
         <div class="alert-icon">⏳</div>
         <div class="alert-text">
           <h4>Pesanan Anda Sedang Ditinjau oleh Admin dbb_luxe</h4>
-          <p>Admin kami sedang mengecek ketersediaan fisik barang di Pasar Baru atau sisa kuota koper traveler luar negeri. Instruksi pembayaran transfer manual dan tombol bayar akan terbuka otomatis setelah pesanan disetujui (di-ACC).</p>
+          <p>Admin kami sedang mengecek ketersediaan stok ready atau sisa kuota koper traveler luar negeri. Instruksi pembayaran transfer manual dan tombol bayar akan terbuka otomatis setelah pesanan disetujui (di-ACC).</p>
         </div>
       </div>
 
@@ -139,13 +139,9 @@
 
             <!-- Fulfillment Info -->
             <div class="pickup-info-box">
-              <h4>Metode Pengambilan:</h4>
-              <p v-if="order.fulfillmentMethod === 'pickup'">
-                <strong>Ambil Mandiri di Toko Fisik (dbb_luxe Pasar Baru Jakarta)</strong><br />
-                Tunjukkan kode order <strong>{{ order.orderCode }}</strong> ke kasir saat status berubah menjadi <em>Siap Diambil</em>.
-              </p>
-              <p v-else>
-                <strong>Pengiriman ke Alamat:</strong><br />
+              <h4>Alamat Pengiriman Pesanan:</h4>
+              <p>
+                <strong>Tujuan Pengiriman:</strong><br />
                 {{ order.shippingAddress || 'Alamat dalam konfirmasi admin' }}
               </p>
             </div>
@@ -175,7 +171,7 @@ const formatStatus = (st: string) => {
     verified: 'Pembayaran Terverifikasi',
     purchasing: 'Sedang Dibelikan di Toko Asal',
     arrived: 'Barang Tiba di Indonesia',
-    ready_pickup: 'Siap Diambil di Toko',
+    ready_pickup: 'Siap Dikirim / Diserahkan',
     completed: 'Pesanan Selesai',
     rejected: 'Pesanan Ditolak',
     cancelled: 'Dibatalkan',

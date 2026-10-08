@@ -1,5 +1,5 @@
 ================================================================================
-              PROGRESS & TODO LIST PENGEMBANGAN WEBSITE (REVISI V2)
+              PROGRESS & TODO LIST PENGEMBANGAN WEBSITE (REVISI V3)
 ================================================================================
 Proyek          : Web Jastip dbb_luxe - Katalog Ready Stock, Jadwal/Trip Jastip,
                   Wishlist, Request Produk, Live Chat Admin & Order Manual
@@ -7,19 +7,26 @@ Format Checklist: [ ] Belum Selesai | [/] Sedang Dikerjakan | [X] Selesai
 ================================================================================
 
 RINGKASAN PERUBAHAN V2 & WORKFLOW
-- Toko: dbb_luxe (Offline store: Pasar Baru Jakarta Pusat; Online: Jastip & Ready).
+- Toko: dbb_luxe (Full Online Jastip & Ready Stock - TIDAK ADA TOKO FISIK).
 - Barang dipisah menjadi dua jalur: READY STOCK (/ready) dan JASTIP (/jastip).
 - Alur Pemesanan 2 Tahap (ACC Admin Sebelum Transfer):
-  1. Customer Checkout -> Status: Menunggu Persetujuan Admin (pending_approval).
-  2. Admin Review & ACC: Admin cek fisik stok Pasar Baru / slot bagasi koper luar negeri.
+  1. Customer Checkout (Wajib isi alamat pengiriman) -> Status: Menunggu Persetujuan Admin (pending_approval).
+  2. Admin Review & ACC: Admin cek ketersediaan stok ready / slot bagasi koper luar negeri & alamat pengiriman.
      - Jika ACC: Status -> Menunggu Pembayaran (pending_payment). Countdown batas bayar 24 jam baru mulai berjalan di sini.
      - Jika Ditolak: Status -> Ditolak (rejected) beserta alasan penolakan dari admin.
   3. Customer Transfer & Upload Bukti -> Status: Bukti Diupload (payment_uploaded).
   4. Admin Konfirmasi Pembayaran -> Status: Terverifikasi (verified).
+  5. Admin Kirim Barang ke Alamat Customer (di luar sistem) -> Status: Selesai (completed).
 - Order dipecah menjadi `orders` + `order_items` (multi-item, ada quantity).
 - Pembayaran manual: kode unik transfer, batas waktu bayar, riwayat pembayaran.
 - Request produk punya alur penawaran (quote) dari admin.
 - Notifikasi customer, pengaturan toko, audit log, dan keamanan bukti transfer.
+- REVISI V3 & V4 (hasil klarifikasi):
+  - dbb_luxe TIDAK MEMILIKI TOKO FISIK (Full Online). Tidak ada opsi ambil mandiri di toko.
+  - Seluruh pesanan dikirim oleh Admin langsung ke alamat penerima yang dicatat pada saat checkout.
+  - Sistem TIDAK terhubung langsung ke API ekspedisi pihak ketiga / resi otomatis (pengiriman diatur mandiri oleh admin di luar sistem).
+  - Live chat bersifat UMUM: satu ruang chat per customer. Produk yang ditanyakan dibagikan sebagai kartu produk di dalam chat.
+  - Pendaftaran akun: Nama, Email, Nomor Telepon, Password (tanpa OTP). Login memakai Email.
 
 --------------------------------------------------------------------------------
 STRUKTUR HALAMAN (SITEMAP)
@@ -37,12 +44,12 @@ PUBLIK / GUEST
 CUSTOMER (wajib login)
   /wishlist              Daftar favorit (ready & jastip)
   /request               Form request produk + riwayat request
-  /chat                  Inbox chat customer; /chat/[room-id] room per produk
+  /chat                  Ruang chat umum customer dengan admin (satu room per customer)
   /checkout              Ringkasan order & instruksi pembayaran
-  /orders                Riwayat pesanan; /orders/[kode-order] detail + tracking
+  /orders                Riwayat pesanan; /orders/[kode-order] detail + timeline status
   /orders/[kode-order]/bayar   Upload bukti transfer
   /notifikasi            Daftar notifikasi
-  /akun                  Profil (username, no HP, ganti password)
+  /akun                  Profil (nama, email, no HP, ganti password)
 
 ADMIN (/admin/*)
   /admin                 Dashboard ringkasan
@@ -60,7 +67,7 @@ ADMIN (/admin/*)
 SKEMA DATABASE (MySQL) - VERSI BARU
 --------------------------------------------------------------------------------
 users
-  id, username (unique), password_hash, phone_number, role (customer/admin/staff),
+  id, name, email (unique), phone_number, password_hash, role (customer/admin/staff),
   is_active, created_at, updated_at
 
 categories
@@ -92,14 +99,14 @@ product_requests
   quoted_price, quote_note, quote_expires_at, admin_note,
   created_at, updated_at
 
-chat_rooms
-  id, customer_id, product_id (nullable), last_message,
+chat_rooms (chat umum: satu room per customer)
+  id, customer_id (unique), last_message,
   unread_admin_count, unread_customer_count, updated_at
-  (unique: customer_id + product_id)
 
 chat_messages
-  id, room_id, sender_id, sender_role, message_type (text/image),
-  content, image_url, is_read, created_at
+  id, room_id, sender_id, sender_role, message_type (text/image/product),
+  content, image_url, product_id (nullable, untuk kartu produk yang dibagikan),
+  is_read, created_at
 
 orders
   id, order_code (unik, contoh JST-20261002-001), user_id,
@@ -107,10 +114,11 @@ orders
   subtotal, unique_code (3 digit), total_amount,
   payment_type (full/dp), dp_amount, paid_amount, remaining_amount,
   order_status (pending_approval/pending_payment/payment_uploaded/verified/purchasing/
-  arrived/ready_pickup/completed/rejected/cancelled/expired),
+  arrived/ready_handover/completed/rejected/cancelled/expired),
   rejection_reason (text, nullable), approved_at (timestamp, nullable),
-  payment_deadline, fulfillment_method (pickup/shipping),
-  shipping_address, shipping_cost, tracking_number (3 kolom terakhir opsional),
+  payment_deadline, fulfillment_method (pickup/delivery),
+  recipient_name, recipient_phone, shipping_address (wajib jika delivery; disimpan
+  sebagai salinan per order), shipping_cost (opsional, diisi admin saat ACC),
   customer_note, admin_note, created_at, updated_at
 
 order_items
@@ -151,21 +159,26 @@ Catatan relasi penting:
   trip). Keranjang campur dipecah otomatis menjadi dua order saat checkout.
 - Harga jastip = (original_price x exchange_rate) + fee, lalu disimpan sebagai
   `price`; order_items menyimpan snapshot harga saat order.
+- total_amount = subtotal + shipping_cost (jika ada) + unique_code.
+- chat_rooms: satu room per customer (unique customer_id). Produk yang ditanyakan
+  dikirim sebagai pesan bertipe `product` (product_id terisi).
+- Pengiriman tidak ditangani sistem: tidak ada kolom resi/tracking dan tidak ada
+  integrasi ekspedisi. Alamat hanya data order untuk admin.
 
 --------------------------------------------------------------------------------
 FASE 1: PERENCANAAN, ANALISIS & DESAIN (UI/UX & DATABASE)
 --------------------------------------------------------------------------------
 [ ] 1.1 Analisis Kebutuhan & Alur Pengguna (User Flow)
     [ ] Diagram alur Guest: browse /ready & /jastip -> diarahkan login jika chat/request/wishlist/order
-    [ ] Diagram alur Customer Ready: login -> browse /ready -> checkout -> Menunggu ACC Admin -> Admin ACC -> bayar & upload bukti -> ambil barang di Pasar Baru
-    [ ] Diagram alur Customer Jastip: login -> pilih trip open -> pilih produk -> checkout (DP/lunas) -> Menunggu ACC Admin -> Admin ACC -> bayar & upload bukti -> pantau status -> barang tiba -> ambil
+    [ ] Diagram alur Customer Ready: login -> browse /ready -> checkout (isi data penerima & alamat pengiriman) -> Menunggu ACC Admin -> Admin ACC -> bayar & upload bukti -> barang dikirim admin ke alamat customer di luar sistem
+    [ ] Diagram alur Customer Jastip: login -> pilih trip open -> pilih produk -> checkout (DP/lunas, isi data penerima & alamat pengiriman) -> Menunggu ACC Admin -> Admin ACC -> bayar & upload bukti -> pantau status -> barang tiba di Indonesia -> dikirim admin ke alamat customer di luar sistem
     [ ] Diagram alur Request Produk: customer request -> admin beri penawaran -> customer setuju -> otomatis jadi order
     [ ] Diagram alur Admin Trip: buat trip (draft) -> tambah produk -> buka PO -> tutup PO -> daftar belanja -> beli -> barang tiba -> update massal status -> notifikasi customer
-    [ ] Diagram alur Admin Order: review order masuk -> ACC / Tolak -> jika ACC, terima upload bukti -> verifikasi pembayaran -> update status -> selesai
-    [ ] Diagram state order Ready: Menunggu Persetujuan (ACC) -> Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Siap Diambil -> Selesai (+ Ditolak Admin / Dibatalkan / Kedaluwarsa)
-    [ ] Diagram state order Jastip: Menunggu Persetujuan (ACC) -> Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Sedang Dibelikan -> Barang Tiba -> Siap Diambil -> Selesai (+ Ditolak Admin / Dibatalkan / Kedaluwarsa)
+    [ ] Diagram alur Admin Order: review order masuk -> ACC / Tolak -> jika ACC, terima upload bukti -> verifikasi pembayaran -> update status -> kirim barang -> selesai
+    [ ] Diagram state order Ready: Menunggu Persetujuan (ACC) -> Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Sedang Dikemas & Dikirim -> Selesai (+ Ditolak Admin / Dibatalkan / Kedaluwarsa)
+    [ ] Diagram state order Jastip: Menunggu Persetujuan (ACC) -> Menunggu Pembayaran -> Bukti Diupload -> Terverifikasi -> Sedang Dibelikan di LN -> Tiba di Indonesia -> Sedang Dikemas & Dikirim -> Selesai (+ Ditolak Admin / Dibatalkan / Kedaluwarsa)
     [ ] Diagram state trip: Draft -> Open -> Closed -> Purchasing -> Arrived -> Completed (+ Cancelled)
-    [ ] Tetapkan aturan bisnis: verifikasi ketersediaan (ACC), batas bayar 24 jam setelah ACC, kebijakan batal/refund, aturan DP, pengambilan barang di Pasar Baru
+    [ ] Tetapkan aturan bisnis: toko 100% online tanpa toko fisik, verifikasi ketersediaan (ACC), batas bayar 24 jam setelah ACC, kebijakan batal/refund, aturan DP, pengiriman dilakukan langsung oleh admin ke alamat customer di luar sistem (sistem mencatat alamat & no HP penerima)
 
 [ ] 1.2 Perancangan Database (ERD & Tabel)
     [ ] Finalisasi ERD berdasarkan skema database V2 di atas
@@ -173,7 +186,7 @@ FASE 1: PERENCANAAN, ANALISIS & DESAIN (UI/UX & DATABASE)
     [ ] Tentukan strategi soft delete (products) dan snapshot harga (order_items)
 
 [ ] 1.3 Desain Tampilan (Wireframe / Mockup UI/UX)
-    [ ] Halaman Login & Register (Username, Password, No HP)
+    [ ] Halaman Login & Register (Nama, Email, No HP, Password)
     [ ] Beranda (banner trip open + hitung mundur + highlight ready)
     [ ] Halaman Katalog Ready (/ready): grid card, badge stok, harga, tombol wishlist
     [ ] Halaman Daftar Trip Jastip (/jastip): kartu trip (negara, tanggal tutup PO, estimasi tiba, badge status, hitung mundur)
@@ -182,8 +195,8 @@ FASE 1: PERENCANAAN, ANALISIS & DESAIN (UI/UX & DATABASE)
     [ ] Drawer/Halaman Wishlist (penanda tipe produk, tombol hapus, Chat Admin, Beli)
     [ ] Counter badge wishlist & notifikasi di Navbar customer
     [ ] Form Request Produk + riwayat request + tampilan penawaran
-    [ ] Interface Live Chat Customer (preview produk, upload gambar)
-    [ ] Halaman Checkout (ringkasan, pilih DP/lunas untuk jastip, instruksi rekening)
+    [ ] Interface Live Chat Customer (satu ruang chat umum, kartu produk, upload gambar)
+    [ ] Halaman Checkout (ringkasan, pilih metode penyerahan & isi alamat jika dikirim, pilih DP/lunas untuk jastip, instruksi rekening)
     [ ] Halaman Upload Bukti Transfer & Riwayat/Tracking Order (timeline status)
     [ ] Dashboard Admin:
         [ ] Dashboard ringkas (order menunggu verifikasi, chat unread, request baru, omzet per trip)
@@ -223,17 +236,17 @@ FASE 2: SETUP LINGKUNGAN, DATABASE & STORAGE GAMBAR
 FASE 3: AUTENTIKASI & OTORISASI (AUTH & ROLES)
 --------------------------------------------------------------------------------
 [ ] 3.1 Registrasi Akun Customer
-    [ ] Form Register: Username, Password, Konfirmasi Password, Nomor HP (tanpa OTP)
-    [ ] Validasi nomor HP (format standar Indonesia) & username unik
+    [ ] Form Register: Nama, Email, Nomor HP, Password, Konfirmasi Password (tanpa OTP)
+    [ ] Validasi format email & nomor HP (format standar Indonesia), email unik
     [ ] Hashing password (bcrypt/argon2)
     [ ] Simpan user dengan default role `customer`
 
 [ ] 3.2 Login & Session Management
-    [ ] Form Login & generate session/token (JWT / Cookie session)
+    [ ] Form Login (Email & Password) & generate session/token (JWT / Cookie session)
     [ ] Redirect sesuai role (Admin ke Dashboard, Customer ke Beranda)
     [ ] Logout
-    [ ] Reset password manual oleh admin (atau tambah field email jika diputuskan)
-    [ ] Halaman Akun: ubah no HP & ganti password
+    [ ] Reset password: manual oleh admin (MVP); kirim link reset via email bersifat opsional karena email kini dikumpulkan saat pendaftaran
+    [ ] Halaman Akun: ubah nama, email, no HP & ganti password
 
 [ ] 3.3 Middleware Proteksi Route
     [ ] Middleware `auth`: chat, request, wishlist, checkout, orders, notifikasi
@@ -247,7 +260,7 @@ FASE 4: KATALOG READY STOCK & MANAJEMEN PRODUK
     [ ] Daftar produk ready (foto, nama, harga Rp, status stok)
     [ ] Filter kategori, pencarian, urutan harga/terbaru
     [ ] Detail produk ready (deskripsi, variasi, stok: Ready / Kosong)
-    [ ] Tombol aksi: "Chat Admin" dan "Beli Sekarang" (guest diarahkan login)
+    [ ] Tombol aksi: "Chat Admin" (mengirim kartu produk ke chat umum) dan "Beli Sekarang" (guest diarahkan login)
 
 [ ] 4.2 Manajemen Produk oleh Admin (ready & jastip)
     [ ] Form tambah produk (nama, deskripsi, kategori, tipe ready/jastip, harga, variasi, foto, multi-foto)
@@ -293,10 +306,11 @@ FASE 6: WISHLIST CUSTOMER
     [ ] Tombol toggle Love pada card produk (ready & jastip) dan modal detail
     [ ] Drawer/Halaman Wishlist dengan penanda tipe produk
     [ ] Badge jumlah wishlist di Navbar (real-time counter)
-    [ ] Aksi: Hapus, Chat Admin (live chat/WhatsApp), Beli Sekarang
+    [ ] Aksi: Hapus, Chat Admin (live chat, mengirim kartu produk), Beli Sekarang
     [ ] Tombol beli dinonaktifkan jika produk jastip & trip sudah tutup / ready habis
     [ ] Modal peringatan login jika guest mencoba menyimpan
     [ ] Persistensi: local storage + database per akun, gabung (merge) saat login, cegah duplikasi
+    [ ] Opsional: pengingat berkala mengenai barang wishlist (notifikasi in-app / email), sesuai permintaan narasumber
 
 --------------------------------------------------------------------------------
 FASE 7: REQUEST PRODUK & PENAWARAN (QUOTE)
@@ -316,7 +330,7 @@ FASE 7: REQUEST PRODUK & PENAWARAN (QUOTE)
     [ ] Opsi menjadikan request sebagai produk di trip
 
 --------------------------------------------------------------------------------
-FASE 8: LIVE CHAT REAL-TIME BY PRODUK & NOTIFIKASI ADMIN
+FASE 8: LIVE CHAT REAL-TIME (UMUM) & NOTIFIKASI ADMIN
 --------------------------------------------------------------------------------
 [ ] 8.1 Arsitektur Real-time Chat & Broadcasting (MySQL + Realtime Broadcaster)
     [ ] Catatan Arsitektur:
@@ -329,18 +343,18 @@ FASE 8: LIVE CHAT REAL-TIME BY PRODUK & NOTIFIKASI ADMIN
           4. Penerima yang subscribe menerima payload secara instan
     [ ] Versi awal (MVP) boleh memakai polling sederhana; realtime broadcast menyusul
     [ ] Setup Realtime Broadcaster
-    [ ] Room chat berdasarkan kombinasi (Customer + Produk)
+    [ ] Satu room chat per customer (chat umum); produk dibagikan sebagai kartu produk di dalam chat
     [ ] Proteksi: Guest tidak dapat membuka room chat
 
 [ ] 8.2 Chat Customer
-    [ ] Header preview produk (nama, foto, harga, tipe ready/jastip)
+    [ ] Kirim kartu produk ke chat (nama, foto, harga, tipe ready/jastip) lewat tombol "Chat Admin" di halaman produk/wishlist
     [ ] Kirim pesan teks real-time
     [ ] Kirim gambar (preview sebelum kirim)
     [ ] Bubble responsif, timestamp, status pengiriman
 
 [ ] 8.3 Chat & Notifikasi Admin
-    [ ] Inbox percakapan terurut pesan terbaru
-    [ ] Badge unread per room + total di navbar/sidebar admin
+    [ ] Inbox percakapan per customer terurut pesan terbaru
+    [ ] Badge unread per customer/room + total di navbar/sidebar admin
     [ ] Sound notification / browser toast saat ada pesan baru
     [ ] Balas teks & gambar
     [ ] Mark as read
@@ -357,23 +371,26 @@ FASE 9: CHECKOUT, ORDER & PEMBAYARAN MANUAL (NON-MIDTRANS)
     [ ] Inisialisasi status order awal: `pending_approval` (Menunggu Persetujuan Admin)
     [ ] Rekening dan instruksi transfer di-lock/ditahan hingga pesanan di-ACC admin
     [ ] Pilihan skema pembayaran: DP 50% atau Pelunasan Penuh (khusus jastip)
+    [ ] Form alamat pengiriman (nama penerima, no HP penerima, alamat lengkap pengiriman) wajib diisi saat checkout dan dicatat per order
+    [ ] Toko beroperasi full online (tidak ada opsi ambil di toko / self-pickup)
 
 [ ] 9.2 Peninjauan & Persetujuan (ACC) oleh Admin (/admin/order)
     [ ] Tab filter: "Perlu ACC" di dashboard admin
-    [ ] Admin memeriksa ketersediaan stok fisik di toko Pasar Baru atau sisa kuota koper traveler luar negeri
+    [ ] Admin memeriksa ketersediaan stok ready atau sisa kuota koper traveler luar negeri serta alamat pengiriman
+    [ ] Admin dapat mengisi perkiraan ongkir (opsional, disepakati di luar sistem); total tagihan = subtotal + ongkir + kode unik
     [ ] Aksi: "✓ ACC / Setujui Pesanan"
         - Status order berubah menjadi `pending_payment`
         - Batas waktu bayar (payment_deadline 24 jam) AKTIF dan mulai dihitung mundur
         - Kirim notifikasi in-app / WhatsApp ke customer bahwa pesanan siap dibayar
     [ ] Aksi: "✕ Tolak Pesanan"
-        - Modal input alasan penolakan (kuota penuh, barang discontinued, stok fisik Pasar Baru habis)
+        - Modal input alasan penolakan (kuota penuh, barang discontinued, stok habis)
         - Status order berubah menjadi `rejected`
         - Catat `rejection_reason` dan kirim notifikasi penolakan ke customer (customer tidak perlu bayar)
 
 [ ] 9.3 Instruksi Pembayaran (Terbuka Setelah Di-ACC)
     [ ] Halaman instruksi: daftar rekening aktif BCA/Mandiri & QRIS resmi dbb_luxe
     [ ] Ringkasan barang, total tagihan (+ kode unik 3 digit), countdown batas waktu bayar 24 jam
-    [ ] Informasi metode penyerahan barang: Ambil Mandiri di Toko Fisik (Pasar Baru) atau Pengiriman Manual
+    [ ] Informasi alamat pengiriman tujuan yang telah diisi customer
     [ ] Auto-expire order jika melewati batas bayar 24 jam (`expired`) & kembalikan kuota/stok
 
 [ ] 9.4 Upload Bukti Transfer Customer
@@ -393,7 +410,12 @@ FASE 9: CHECKOUT, ORDER & PEMBAYARAN MANUAL (NON-MIDTRANS)
 [ ] 9.6 Pembatalan & Refund Manual
     [ ] Aturan batal: bebas sebelum di-ACC atau sebelum pembayaran diverifikasi; jastip tidak bisa dibatalkan setelah barang dibeli di luar negeri
     [ ] Status & pencatatan refund manual jika barang tidak ditemukan di luar negeri (100% full refund)
-    [ ] Pengaturan pengiriman opsional: alamat, ongkir input manual admin, input nomor resi pengiriman
+
+[ ] 9.7 Pengiriman Barang (Di Luar Sistem)
+    [ ] Admin mengemas dan mengirimkan barang ke alamat tujuan customer melalui kurir (di luar sistem)
+    [ ] Admin dapat mencatat nomor resi / nama kurir pada catatan pesanan (`admin_note`)
+    [ ] Admin menandai order "Selesai" (`completed`) setelah paket dikirim/diterima customer
+    [ ] Sistem tidak terintegrasi langsung ke API ekspedisi pihak ketiga (sistem hanya bertindak sebagai pencatat alamat tujuan)
 
 --------------------------------------------------------------------------------
 FASE 10: TRACKING & NOTIFIKASI CUSTOMER
@@ -434,15 +456,18 @@ FASE 12: PENGUJIAN (TESTING), KEAMANAN & OPTIMASI
 
 [ ] 12.2 Pengujian Fungsional
     [ ] Guest mencoba chat/request/wishlist/checkout (harus diarahkan login)
+    [ ] Register dengan email duplikat/format email salah/no HP tidak valid (harus ditolak); login dengan email & password
     [ ] Wishlist: tambah, hapus, cegah duplikasi, sinkron saat relogin, produk jastip trip tutup
     [ ] Trip: buat, buka, tutup manual, auto-close tanggal & kuota penuh, produk tidak bisa dipesan setelah tutup
     [ ] Checkout: ready vs jastip, keranjang campur terpecah, perhitungan harga/fee/kurs, kode unik, DP & pelunasan
+    [ ] Checkout tanpa alamat pengiriman ditolak (alamat wajib); total tagihan memuat ongkir jika diisi admin saat ACC
     [ ] Order expired otomatis & stok/kuota kembali
     [ ] Verifikasi & tolak pembayaran, bukti ganda, nominal tidak cocok
     [ ] Update status massal per trip & notifikasi customer
     [ ] Alur request -> penawaran -> setuju -> order
     [ ] Upload gambar: produk, trip, chat, request, bukti transfer
     [ ] Real-time chat & notifikasi admin saat chat masuk bersamaan
+    [ ] Chat umum: satu room per customer, kartu produk terkirim dari halaman produk & wishlist
     [ ] Perubahan stok ready & dampaknya di katalog/detail
 
 [ ] 12.3 Optimasi Performa & UI Responsif
@@ -475,11 +500,11 @@ FASE 13: DEPLOYMENT & HOSTING (WEB + DATABASE)
     [ ] Security headers (CSP, CORS)
 
 [ ] 13.4 Post-Deployment Testing (Smoke Test)
-    [ ] Register & login customer baru
+    [ ] Register (nama, email, no HP) & login customer baru
     [ ] Admin login, buat trip, tambah produk jastip + foto, tambah produk ready
     [ ] Customer melihat /ready dan /jastip terpisah dengan benar
     [ ] Customer wishlist (cek counter navbar)
-    [ ] Customer chat dari produk (notif admin muncul/bunyi)
+    [ ] Customer chat admin & kirim kartu produk dari halaman produk (notif admin muncul/bunyi)
     [ ] Customer request produk + gambar, admin kirim penawaran
     [ ] Customer checkout ready & jastip (DP), upload bukti, admin verifikasi
     [ ] Admin update status trip & order, customer menerima notifikasi
@@ -499,9 +524,12 @@ Tahap 7 : Fase 12 & 13 (testing, optimasi, deployment)
 ================================================================================
                               CATATAN TAMBAHAN
 ================================================================================
-- Pengiriman barang secara default tidak disediakan; transaksi diselesaikan lewat
-  konfirmasi bukti transfer dan pengambilan mandiri. Opsi pengiriman manual
-  (alamat, ongkir input admin, resi) bersifat opsional (Fase 9.5).
+- dbb_luxe TIDAK MEMILIKI TOKO FISIK (Toko Online Penuh / Jastip Concierge).
+- Seluruh barang dikirimkan langsung ke alamat pelanggan melalui jasa pengiriman
+  (kurir/ekspedisi) yang diurus langsung oleh admin di luar sistem.
+- Sistem tidak menghitung ongkir otomatis, tidak terhubung ke API ekspedisi, dan tidak
+  melacak nomor resi secara otomatis. Alamat tujuan dicatat pada saat checkout sebagai
+  data panduan admin untuk mengirimkan pesanan (Fase 9.1 & 9.7).
 - Bukti transfer bersifat sensitif: simpan di bucket private.
 - Simpan file ini sebagai acuan berkala. Ubah `[ ]` menjadi `[X]` setiap kali
   tugas selesai diimplementasikan.

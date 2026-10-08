@@ -8,7 +8,7 @@ export default defineNuxtConfig({
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-        { name: 'description', content: 'dbb_luxe — jastip resmi luar negeri dan koleksi ready stock pilihan. Ambil langsung di toko Pasar Baru, Jakarta.' },
+        { name: 'description', content: 'dbb_luxe — layanan jastip resmi luar negeri dan koleksi ready stock pilihan. Dikirim langsung dan aman ke seluruh Indonesia.' },
         { name: 'theme-color', content: '#FFFBF2' }
       ],
       link: [

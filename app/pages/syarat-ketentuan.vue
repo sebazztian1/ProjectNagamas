@@ -29,8 +29,8 @@
         </section>
 
         <section class="legal-sec">
-          <h2>4. Pengambilan Barang (Pickup) & Pengiriman</h2>
-          <p>Metode utama penyelesaian barang adalah Pengambilan Mandiri (Self-Pickup) di toko fisik dbb_luxe Jakarta dengan menunjukkan Kode Order unik. Konsumen di luar kota dapat mengajukan pengiriman manual melalui kesepakatan ongkir dengan admin.</p>
+          <h2>4. Kebijakan Pengiriman Barang</h2>
+          <p>dbb_luxe beroperasi penuh secara online tanpa toko fisik. Seluruh pesanan dikemas secara rapi dan aman, lalu dikirimkan langsung ke alamat tujuan konsumen melalui jasa kurir ekspedisi. Biaya ongkos kirim disepakati bersama admin pada saat peninjauan pesanan.</p>
         </section>
       </div>
     </div>

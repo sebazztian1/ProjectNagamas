@@ -104,8 +104,8 @@
           <!-- Trust Guarantees -->
           <div class="trust-cards">
             <div class="t-card">
-              <strong>Pickup di Toko Fisik</strong>
-              <span>Bisa langsung ambil hari ini di dbb_luxe Store Jakarta.</span>
+              <strong>Pengiriman Cepat</strong>
+              <span>Langsung dikemas aman dan dikirim ke alamat Anda.</span>
             </div>
             <div class="t-card">
               <strong>100% Produk Original</strong>

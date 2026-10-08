@@ -176,7 +176,7 @@ export const mockJastipTrips: JastipTrip[] = [
     flag: '🇰🇷',
     cityOrArea: 'Seoul (Olive Young Myeongdong, Hongdae, Seongsu)',
     description: 'Beli langsung skincare viral Olive Young (Torriden, Anua, Medicube), merchandise K-Pop, dan fashion brand lokal Korea langsung dari store resmi.',
-    terms: 'Pengambilan barang di toko fisik dbb_luxe atau via ekspedisi lokal setelah barang tiba di Jakarta.',
+    terms: 'Pengiriman via ekspedisi kurir langsung ke alamat Anda setelah barang tiba di Jakarta.',
     coverImageUrl: 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1200&q=80',
     currency: 'KRW',
     exchangeRate: 11.8,
@@ -554,7 +554,7 @@ export const mockOrders: Order[] = [
         fromStatus: 'pending_approval',
         toStatus: 'pending_payment',
         title: 'Pesanan Disetujui Admin (ACC)',
-        note: 'Stok fisik di Pasar Baru siap.',
+        note: 'Stok ready di warehouse siap dikemas.',
         createdAt: '2026-10-02 11:20'
       },
       {
@@ -686,8 +686,8 @@ export const mockOrders: Order[] = [
         id: 'log-02-3',
         fromStatus: 'verified',
         toStatus: 'ready_pickup',
-        title: 'Siap Diambil di Toko',
-        note: 'Barang sudah disiapkan di meja kasir dbb_luxe Store Pasar Baru.',
+        title: 'Siap Dikemas & Dikirim',
+        note: 'Barang sudah disiapkan di warehouse dbb_luxe untuk proses pengiriman kurir.',
         createdAt: '2026-10-01 14:20'
       }
     ],

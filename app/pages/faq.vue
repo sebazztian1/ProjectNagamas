@@ -35,11 +35,11 @@
 const faqs = [
   {
     q: 'Apa perbedaan antara produk "Ready Stock" dan "Jastip"?',
-    a: 'Produk Ready Stock adalah barang yang sudah ada stok fisiknya di toko kami di Jakarta dan siap diambil hari ini atau langsung dikirim. Sedangkan produk Jastip adalah sistem Pre-Order (PO) di mana admin akan membelikan barang tersebut langsung dari toko fisik di luar negeri (Jepang, Korea, Thailand) sesuai jadwal trip keberangkatan.'
+    a: 'Produk Ready Stock adalah barang yang sudah ada stoknya di warehouse kami di Jakarta dan siap langsung dikemas serta dikirim ke alamat Anda. Sedangkan produk Jastip adalah sistem Pre-Order (PO) di mana admin akan membelikan barang tersebut langsung dari toko resmi di luar negeri (Jepang, Korea, Thailand) sesuai jadwal trip keberangkatan.'
   },
   {
     q: 'Bagaimana sistem pembayaran transfer manual di dbb_luxe?',
-    a: 'Setelah checkout diajukan, pesanan Anda akan ditinjau dan di-ACC oleh admin terlebih dahulu untuk memastikan ketersediaan kuota bagasi / stok toko. Setelah disetujui, Anda akan menerima tagihan dengan Kode Unik 3 Digit (contoh: Rp 215.147) dan batas waktu transfer 24 jam ke rekening resmi BCA/Mandiri atau QRIS dbb_luxe.'
+    a: 'Setelah checkout diajukan, pesanan Anda akan ditinjau dan di-ACC oleh admin terlebih dahulu untuk memastikan ketersediaan kuota bagasi / stok barang. Setelah disetujui, Anda akan menerima tagihan dengan Kode Unik 3 Digit (contoh: Rp 215.147) dan batas waktu transfer 24 jam ke rekening resmi BCA/Mandiri atau QRIS dbb_luxe.'
   },
   {
     q: 'Apakah saya bisa membayar dengan DP (Down Payment)?',
@@ -50,8 +50,8 @@ const faqs = [
     a: 'Kami memberikan Garansi 100% Uang Kembali (Full Refund). Jika barang habis atau tidak ditemukan selama masa trip, uang Anda akan dikembalikan utuh tanpa potongan biaya apapun.'
   },
   {
-    q: 'Di mana saya bisa mengambil barang yang sudah dipesan?',
-    a: 'Pengambilan mandiri (Self-Pickup) dapat dilakukan di toko fisik kami: dbb_luxe Store Jakarta, Ruko Pasar Baru Square No. 12, Sawah Besar, Jakarta Pusat. Anda cukup menunjukkan kode pesanan (contoh: JST-20261002-001) kepada staf kasir kami.'
+    q: 'Bagaimana proses pengiriman barang yang sudah dipesan?',
+    a: 'dbb_luxe beroperasi penuh secara online tanpa toko fisik. Seluruh pesanan dikemas dengan rapi dan aman, lalu dikirimkan langsung oleh admin ke alamat tujuan Anda melalui kurir ekspedisi.'
   }
 ]
 </script>

@@ -131,11 +131,11 @@
         <div class="title-wrap">
           <div class="ready-pill">
             <span class="gold-indicator"></span>
-            SIAP KIRIM &bull; AMBIL LANGSUNG DI TOKO
+            READY STOCK &bull; SIAP KIRIM KE SELURUH INDONESIA
           </div>
           <h2 class="section-title">Katalog Ready Stock</h2>
           <p class="section-desc">
-            Seluruh barang di bawah ini memiliki stok fisik di toko dbb_luxe Jakarta. Bisa langsung dibeli dan diambil hari ini tanpa menunggu jadwal trip jastip.
+            Seluruh barang di bawah ini tersedia di warehouse dbb_luxe Jakarta. Siap diproses dan langsung dikirim ke alamat Anda tanpa menunggu jadwal trip jastip.
           </p>
         </div>
 
@@ -191,7 +191,7 @@
             </NuxtLink>
 
             <div class="card-stock-row">
-              <span class="stock-label">Stok Fisik di Toko:</span>
+              <span class="stock-label">Stok Tersedia:</span>
               <span class="stock-qty">{{ product.stockQuantity }} pcs</span>
             </div>
 

@@ -109,13 +109,13 @@
 
                 <template v-else-if="ord.orderStatus === 'arrived'">
                   <button class="btn-step" @click="advanceOrder(ord)">
-                    Siap Diambil di Pasar Baru &rarr;
+                    Siapkan &amp; Kirim ke Alamat &rarr;
                   </button>
                 </template>
 
                 <template v-else-if="ord.orderStatus === 'ready_pickup'">
                   <button class="btn-step green" @click="advanceOrder(ord)">
-                    ✓ Serahkan ke Customer
+                    ✓ Tandai Telah Terkirim / Selesai
                   </button>
                 </template>
 
@@ -194,7 +194,7 @@
             <label>Alasan Penolakan:</label>
             <select v-model="rejectReasonPreset" class="form-select">
               <option value="Kuota koper bagasi trip Tokyo sudah penuh untuk kategori ini">Kuota koper bagasi trip sudah penuh untuk kategori ini</option>
-              <option value="Stok fisik barang di toko Pasar Baru telah habis terjual">Stok fisik barang di toko Pasar Baru telah habis terjual</option>
+              <option value="Stok ready barang telah habis terjual">Stok ready barang telah habis terjual</option>
               <option value="Barang titipan dilarang masuk oleh regulasi kepabeanan bandara">Barang titipan dilarang masuk oleh regulasi kepabeanan bandara</option>
               <option value="Toko fisik resmi di negara asal telah tutup / produk discontinued">Toko fisik resmi di negara asal telah tutup / produk discontinued</option>
               <option value="Lainnya">Lainnya (Tulis catatan khusus)</option>
@@ -269,7 +269,7 @@ const accOrder = (ord: Order) => {
 const openRejectModal = (ord: Order) => {
   selectedOrderForReject.value = ord
   rejectReasonPreset.value = ord.orderType === 'ready' 
-    ? 'Stok fisik barang di toko Pasar Baru telah habis terjual' 
+    ? 'Stok ready barang telah habis terjual' 
     : 'Kuota koper bagasi trip Tokyo sudah penuh untuk kategori ini'
   customRejectReason.value = ''
 }
@@ -354,7 +354,7 @@ const advanceOrder = (ord: Order) => {
       id: 'log-' + Date.now(),
       fromStatus: 'verified',
       toStatus: ord.orderStatus,
-      title: ord.orderType === 'ready' ? 'Siap Diambil di Pasar Baru' : 'Sedang Dibelikan di LN',
+      title: ord.orderType === 'ready' ? 'Siap Dikemas & Dikirim' : 'Sedang Dibelikan di LN',
       createdAt: 'Baru saja'
     })
     showToast({
@@ -378,17 +378,17 @@ const advanceOrder = (ord: Order) => {
       id: 'log-' + Date.now(),
       fromStatus: 'arrived',
       toStatus: 'ready_pickup',
-      title: 'Siap Diambil di Toko Fisik',
+      title: 'Siap Dikemas & Dikirim',
       createdAt: 'Baru saja'
     })
-    showToast({ title: 'Siap Diambil', message: `Customer dapat mengambil pesanan di Pasar Baru.`, type: 'success' })
+    showToast({ title: 'Siap Dikirim', message: `Barang siap dikemas dan dikirimkan ke alamat customer.`, type: 'success' })
   } else if (ord.orderStatus === 'ready_pickup') {
     ord.orderStatus = 'completed'
     ord.logs.push({
       id: 'log-' + Date.now(),
       fromStatus: 'ready_pickup',
       toStatus: 'completed',
-      title: 'Pesanan Selesai',
+      title: 'Pesanan Selesai / Terkirim',
       createdAt: 'Baru saja'
     })
     showToast({ title: 'Pesanan Selesai', message: `Transaksi selesai.`, type: 'success' })

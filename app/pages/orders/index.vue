@@ -109,7 +109,7 @@ const formatStatus = (st: string) => {
     verified: 'Pembayaran Terverifikasi',
     purchasing: 'Sedang Dibelikan di Toko Asal',
     arrived: 'Barang Tiba di Indo',
-    ready_pickup: 'Siap Diambil di Toko',
+    ready_pickup: 'Siap Dikirim / Diserahkan',
     completed: 'Pesanan Selesai',
     rejected: 'Ditolak Admin',
     cancelled: 'Dibatalkan',
