@@ -67,91 +67,209 @@ ADMIN (/admin/*)
 SKEMA DATABASE (MySQL) - VERSI BARU
 --------------------------------------------------------------------------------
 users
-  id, name, email (unique), phone_number, password_hash, role (customer/admin/staff),
-  is_active, created_at, updated_at
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  name (VARCHAR(100))
+  email (VARCHAR(100)) (UNIQUE)
+  phone_number (VARCHAR(20))
+  password_hash (VARCHAR(255))
+  role (ENUM('customer','admin','staff')) (DEFAULT 'customer')
+  is_active (TINYINT(1)) (DEFAULT 1)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
+  updated_at (DATETIME) (ON UPDATE CURRENT_TIMESTAMP)
 
 categories
-  id, name, slug
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  name (VARCHAR(100))
+  slug (VARCHAR(120)) (UNIQUE)
 
 jastip_trips
-  id, title, slug, country, city_or_area, description, terms, cover_image_url,
-  currency, exchange_rate, fee_type (percent/flat), fee_value,
-  open_date, close_date, departure_date, estimated_arrival_date,
-  quota_total (nullable), status (draft/open/closed/purchasing/arrived/
-  completed/cancelled), created_by, created_at, updated_at
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  title (VARCHAR(150))
+  slug (VARCHAR(170)) (UNIQUE)
+  country (VARCHAR(80))
+  city_or_area (VARCHAR(100)) (NULL)
+  description (TEXT) (NULL)
+  terms (TEXT) (NULL)
+  cover_image_url (VARCHAR(500)) (NULL)
+  currency (CHAR(3))
+  exchange_rate (DECIMAL(18,6))
+  fee_type (ENUM('percent','flat'))
+  fee_value (DECIMAL(15,2))
+  open_date (DATETIME)
+  close_date (DATETIME)
+  departure_date (DATE) (NULL)
+  estimated_arrival_date (DATE) (NULL)
+  quota_total (INT UNSIGNED) (NULL)
+  status (ENUM('draft','open','closed','purchasing','arrived','completed','cancelled')) (DEFAULT 'draft')
+  created_by (INT UNSIGNED) (FK -> users.id)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
+  updated_at (DATETIME) (ON UPDATE CURRENT_TIMESTAMP)
 
 products
-  id, name, slug, description, category_id,
-  product_type (ready/jastip), trip_id (nullable, wajib jika jastip),
-  price (harga jual rupiah), original_price, original_currency, source_store,
-  variants (JSON: ukuran/warna), image_url,
-  stock_status (in_stock/out_of_stock), stock_quantity (khusus ready),
-  quota (khusus jastip, nullable), max_qty_per_order,
-  is_active, deleted_at (soft delete), created_at, updated_at
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  name (VARCHAR(200))
+  slug (VARCHAR(220)) (UNIQUE)
+  description (TEXT) (NULL)
+  category_id (INT UNSIGNED) (FK -> categories.id)
+  product_type (ENUM('ready','jastip'))
+  trip_id (INT UNSIGNED) (FK -> jastip_trips.id) (NULL, wajib jika jastip)
+  price (DECIMAL(15,2))
+  original_price (DECIMAL(15,2)) (NULL)
+  original_currency (CHAR(3)) (NULL)
+  source_store (VARCHAR(150)) (NULL)
+  variants (JSON) (NULL)
+  image_url (VARCHAR(500)) (NULL)
+  stock_status (ENUM('in_stock','out_of_stock')) (DEFAULT 'in_stock')
+  stock_quantity (INT UNSIGNED) (NULL, khusus ready)
+  quota (INT UNSIGNED) (NULL, khusus jastip)
+  max_qty_per_order (INT UNSIGNED) (NULL)
+  is_active (TINYINT(1)) (DEFAULT 1)
+  deleted_at (DATETIME) (NULL)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
+  updated_at (DATETIME) (ON UPDATE CURRENT_TIMESTAMP)
 
 product_images
-  id, product_id, image_url, sort_order
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  product_id (INT UNSIGNED) (FK -> products.id)
+  image_url (VARCHAR(500))
+  sort_order (SMALLINT UNSIGNED) (DEFAULT 0)
 
 product_requests
-  id, user_id, product_name, description, reference_image_url, reference_link,
-  trip_id (nullable, trip tujuan jika ada),
-  status (pending/reviewed/quoted/accepted/available/rejected),
-  quoted_price, quote_note, quote_expires_at, admin_note,
-  created_at, updated_at
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  user_id (INT UNSIGNED) (FK -> users.id)
+  product_name (VARCHAR(200))
+  description (TEXT) (NULL)
+  reference_image_url (VARCHAR(500)) (NULL)
+  reference_link (VARCHAR(500)) (NULL)
+  trip_id (INT UNSIGNED) (FK -> jastip_trips.id) (NULL)
+  status (ENUM('pending','reviewed','quoted','accepted','available','rejected')) (DEFAULT 'pending')
+  quoted_price (DECIMAL(15,2)) (NULL)
+  quote_note (TEXT) (NULL)
+  quote_expires_at (DATETIME) (NULL)
+  admin_note (TEXT) (NULL)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
+  updated_at (DATETIME) (ON UPDATE CURRENT_TIMESTAMP)
 
-chat_rooms (chat umum: satu room per customer)
-  id, customer_id (unique), last_message,
-  unread_admin_count, unread_customer_count, updated_at
+chat_rooms
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  customer_id (INT UNSIGNED) (FK -> users.id) (UNIQUE)
+  last_message (VARCHAR(255)) (NULL)
+  unread_admin_count (INT UNSIGNED) (DEFAULT 0)
+  unread_customer_count (INT UNSIGNED) (DEFAULT 0)
+  updated_at (DATETIME) (ON UPDATE CURRENT_TIMESTAMP)
 
 chat_messages
-  id, room_id, sender_id, sender_role, message_type (text/image/product),
-  content, image_url, product_id (nullable, untuk kartu produk yang dibagikan),
-  is_read, created_at
+  id (BIGINT UNSIGNED AUTO_INCREMENT) (PK)
+  room_id (INT UNSIGNED) (FK -> chat_rooms.id)
+  sender_id (INT UNSIGNED) (FK -> users.id)
+  sender_role (ENUM('customer','admin','staff'))
+  message_type (ENUM('text','image','product')) (DEFAULT 'text')
+  content (TEXT) (NULL)
+  image_url (VARCHAR(500)) (NULL)
+  product_id (INT UNSIGNED) (FK -> products.id) (NULL)
+  is_read (TINYINT(1)) (DEFAULT 0)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
 
 orders
-  id, order_code (unik, contoh JST-20261002-001), user_id,
-  order_type (ready/jastip), trip_id (nullable),
-  subtotal, unique_code (3 digit), total_amount,
-  payment_type (full/dp), dp_amount, paid_amount, remaining_amount,
-  order_status (pending_approval/pending_payment/payment_uploaded/verified/purchasing/
-  arrived/ready_handover/completed/rejected/cancelled/expired),
-  rejection_reason (text, nullable), approved_at (timestamp, nullable),
-  payment_deadline, fulfillment_method (pickup/delivery),
-  recipient_name, recipient_phone, shipping_address (wajib jika delivery; disimpan
-  sebagai salinan per order), shipping_cost (opsional, diisi admin saat ACC),
-  customer_note, admin_note, created_at, updated_at
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  order_code (VARCHAR(30)) (UNIQUE)
+  user_id (INT UNSIGNED) (FK -> users.id)
+  order_type (ENUM('ready','jastip'))
+  trip_id (INT UNSIGNED) (FK -> jastip_trips.id) (NULL)
+  subtotal (DECIMAL(15,2))
+  unique_code (SMALLINT UNSIGNED)
+  total_amount (DECIMAL(15,2))
+  payment_type (ENUM('full','dp')) (DEFAULT 'full')
+  dp_amount (DECIMAL(15,2)) (NULL)
+  paid_amount (DECIMAL(15,2)) (DEFAULT 0)
+  remaining_amount (DECIMAL(15,2)) (DEFAULT 0)
+  order_status (ENUM('pending_approval','pending_payment','payment_uploaded','verified','purchasing','arrived','ready_handover','completed','rejected','cancelled','expired')) (DEFAULT 'pending_approval')
+  rejection_reason (TEXT) (NULL)
+  approved_at (DATETIME) (NULL)
+  payment_deadline (DATETIME) (NULL)
+  fulfillment_method (ENUM('pickup','delivery'))
+  recipient_name (VARCHAR(100)) (NULL)
+  recipient_phone (VARCHAR(20)) (NULL)
+  shipping_address (TEXT) (NULL, wajib jika delivery)
+  shipping_cost (DECIMAL(15,2)) (NULL)
+  customer_note (TEXT) (NULL)
+  admin_note (TEXT) (NULL)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
+  updated_at (DATETIME) (ON UPDATE CURRENT_TIMESTAMP)
 
 order_items
-  id, order_id, product_id, product_name_snapshot, variant_snapshot,
-  qty, price_at_order, subtotal
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  order_id (INT UNSIGNED) (FK -> orders.id)
+  product_id (INT UNSIGNED) (FK -> products.id)
+  product_name_snapshot (VARCHAR(200))
+  variant_snapshot (VARCHAR(255)) (NULL)
+  qty (INT UNSIGNED)
+  price_at_order (DECIMAL(15,2))
+  subtotal (DECIMAL(15,2))
 
 order_status_logs
-  id, order_id, from_status, to_status, changed_by, note, proof_image_url
-  (foto struk/bukti pembelian dari admin, opsional), created_at
+  id (BIGINT UNSIGNED AUTO_INCREMENT) (PK)
+  order_id (INT UNSIGNED) (FK -> orders.id)
+  from_status (VARCHAR(30)) (NULL)
+  to_status (VARCHAR(30))
+  changed_by (INT UNSIGNED) (FK -> users.id)
+  note (TEXT) (NULL)
+  proof_image_url (VARCHAR(500)) (NULL)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
 
 payments
-  id, order_id, payment_kind (dp/full/remaining), bank_account_id,
-  sender_name, sender_bank, amount, receipt_url, receipt_hash,
-  status (pending/verified/rejected), admin_note,
-  verified_by, verified_at, created_at
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  order_id (INT UNSIGNED) (FK -> orders.id)
+  payment_kind (ENUM('dp','full','remaining'))
+  bank_account_id (INT UNSIGNED) (FK -> bank_accounts.id)
+  sender_name (VARCHAR(100))
+  sender_bank (VARCHAR(50)) (NULL)
+  amount (DECIMAL(15,2))
+  receipt_url (VARCHAR(500))
+  receipt_hash (CHAR(64)) (NULL)
+  status (ENUM('pending','verified','rejected')) (DEFAULT 'pending')
+  admin_note (TEXT) (NULL)
+  verified_by (INT UNSIGNED) (FK -> users.id) (NULL)
+  verified_at (DATETIME) (NULL)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
 
 bank_accounts
-  id, bank_name, account_number, account_holder, qris_image_url (opsional),
-  is_active
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  bank_name (VARCHAR(50))
+  account_number (VARCHAR(30))
+  account_holder (VARCHAR(100))
+  qris_image_url (VARCHAR(500)) (NULL)
+  is_active (TINYINT(1)) (DEFAULT 1)
 
 wishlists
-  id, user_id, product_id, created_at
-  (unique constraint: user_id + product_id)
+  id (INT UNSIGNED AUTO_INCREMENT) (PK)
+  user_id (INT UNSIGNED) (FK -> users.id)
+  product_id (INT UNSIGNED) (FK -> products.id)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
+  UNIQUE (user_id, product_id)
 
 notifications
-  id, user_id, type, title, body, link_url, is_read, created_at
+  id (BIGINT UNSIGNED AUTO_INCREMENT) (PK)
+  user_id (INT UNSIGNED) (FK -> users.id)
+  type (VARCHAR(50))
+  title (VARCHAR(150))
+  body (TEXT) (NULL)
+  link_url (VARCHAR(500)) (NULL)
+  is_read (TINYINT(1)) (DEFAULT 0)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
 
 store_settings
-  key, value (rekening default, fee default, kurs default, jam operasional,
-  status toko buka/tutup, kontak WhatsApp, durasi batas bayar)
+  setting_key (VARCHAR(100)) (PK)
+  setting_value (TEXT)
 
 audit_logs (opsional)
-  id, user_id, action, entity_type, entity_id, detail (JSON), created_at
+  id (BIGINT UNSIGNED AUTO_INCREMENT) (PK)
+  user_id (INT UNSIGNED) (FK -> users.id) (NULL)
+  action (VARCHAR(100))
+  entity_type (VARCHAR(50))
+  entity_id (INT UNSIGNED) (NULL)
+  detail (JSON) (NULL)
+  created_at (DATETIME) (DEFAULT CURRENT_TIMESTAMP)
 
 Catatan relasi penting:
 - products.trip_id -> jastip_trips.id (hanya untuk product_type = jastip)
