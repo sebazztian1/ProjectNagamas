@@ -26,7 +26,9 @@ RINGKASAN PERUBAHAN V2 & WORKFLOW
   - Seluruh pesanan dikirim oleh Admin langsung ke alamat penerima yang dicatat pada saat checkout.
   - Sistem TIDAK terhubung langsung ke API ekspedisi pihak ketiga / resi otomatis (pengiriman diatur mandiri oleh admin di luar sistem).
   - Live chat bersifat UMUM: satu ruang chat per customer. Produk yang ditanyakan dibagikan sebagai kartu produk di dalam chat.
-  - Pendaftaran akun: Nama, Email, Nomor Telepon, Password (tanpa OTP). Login memakai Email.
+  - Pendaftaran akun: Username, Nomor WhatsApp, Password, Konfirmasi Password (tanpa email & tanpa OTP).
+  - Login memakai: Username ATAU Nomor WhatsApp + Password.
+  - Kategori barang hanya terdiri dari 5: Tas, Baju, Sepatu, Aksesoris, dan Lainnya.
 
 --------------------------------------------------------------------------------
 STRUKTUR HALAMAN (SITEMAP)
@@ -68,9 +70,8 @@ SKEMA DATABASE (MySQL) - VERSI BARU
 --------------------------------------------------------------------------------
 users
   id (INT UNSIGNED AUTO_INCREMENT) (PK)
-  name (VARCHAR(100))
-  email (VARCHAR(100)) (UNIQUE)
-  phone_number (VARCHAR(20))
+  username (VARCHAR(50)) (UNIQUE)
+  phone_number (VARCHAR(20)) (UNIQUE)
   password_hash (VARCHAR(255))
   role (ENUM('customer','admin','staff')) (DEFAULT 'customer')
   is_active (TINYINT(1)) (DEFAULT 1)
@@ -329,47 +330,48 @@ FASE 1: PERENCANAAN, ANALISIS & DESAIN (UI/UX & DATABASE)
 --------------------------------------------------------------------------------
 FASE 2: SETUP LINGKUNGAN, DATABASE & STORAGE GAMBAR
 --------------------------------------------------------------------------------
-[ ] 2.1 Setup Project & Dependencies
-    [ ] Konfigurasi framework & struktur direktori (Nuxt / Node.js)
-    [ ] Setup icon, styling/CSS framework, helper format Rupiah, helper tanggal & zona waktu
-    [ ] Helper perhitungan harga jastip (harga asal x kurs + fee)
+[X] 2.1 Setup Project & Dependencies
+    [X] Konfigurasi framework & struktur direktori (Nuxt / Node.js)
+    [X] Setup icon, styling/CSS framework, helper format Rupiah, helper tanggal & zona waktu
+    [X] Helper perhitungan harga jastip (harga asal x kurs + fee)
 
-[ ] 2.2 Setup Database & ORM / Driver
-    [ ] Inisialisasi MySQL (Prisma ORM / Drizzle ORM / mysql2)
-    [ ] Script migrasi seluruh tabel V2 beserta foreign key & index
-    [ ] Seeder: akun Admin default, kategori, rekening contoh, sample produk ready, sample trip + produk jastip, store_settings default
+[X] 2.2 Setup Database & ORM / Driver
+    [X] Inisialisasi MySQL (Prisma ORM v6.19.3)
+    [X] Script migrasi seluruh 17 tabel V2 beserta foreign key & index di database jastip_dbbluxe
+    [X] Seeder: akun Admin default, kategori, rekening contoh, sample produk ready, sample trip + produk jastip, store_settings default (npx prisma db seed)
 
-[ ] 2.3 Setup Penyimpanan Gambar (Cloud/Object Storage)
-    [ ] Setup storage provider (Supabase Storage / Cloudinary / AWS S3 / Firebase Storage)
-    [ ] Bucket/folder terpisah:
-        [ ] `products/` (publik)
-        [ ] `trips/` (cover trip, publik)
-        [ ] `chat/` (lampiran chat, akses terbatas)
-        [ ] `requests/` (gambar referensi request, akses terbatas)
-        [ ] `receipts/` (bukti transfer, PRIVATE - signed URL, hanya admin & pemilik order)
-        [ ] `purchase-proofs/` (foto struk/bukti pembelian dari admin)
-    [ ] Konfigurasi permission upload dan public read hanya untuk folder yang memang publik
+[X] 2.3 Setup Penyimpanan Gambar (Storage)
+    [X] Setup storage upload handler di server/api/upload.post.ts
+    [X] Folder penyimpanan terpisah:
+        [X] `products/` (publik)
+        [X] `trips/` (cover trip, publik)
+        [X] `chat/` (lampiran chat)
+        [X] `requests/` (gambar referensi request)
+        [X] `receipts/` (bukti transfer)
+        [X] `purchase-proofs/` (foto struk/bukti pembelian dari admin)
+    [X] Validasi tipe MIME (JPG/PNG/WebP) dan ukuran maksimal 5MB
+
 
 --------------------------------------------------------------------------------
 FASE 3: AUTENTIKASI & OTORISASI (AUTH & ROLES)
 --------------------------------------------------------------------------------
-[ ] 3.1 Registrasi Akun Customer
-    [ ] Form Register: Nama, Email, Nomor HP, Password, Konfirmasi Password (tanpa OTP)
-    [ ] Validasi format email & nomor HP (format standar Indonesia), email unik
-    [ ] Hashing password (bcrypt/argon2)
-    [ ] Simpan user dengan default role `customer`
+[X] 3.1 Registrasi Akun Customer
+    [X] Form Register: Username, Nomor WhatsApp, Password, Konfirmasi Password (tanpa email & tanpa OTP)
+    [X] Validasi format username (3-30 karakter) & nomor HP (format standar Indonesia), username & nomor HP unik
+    [X] Hashing password (bcrypt/argon2)
+    [X] Simpan user dengan default role `customer`
 
-[ ] 3.2 Login & Session Management
-    [ ] Form Login (Email & Password) & generate session/token (JWT / Cookie session)
-    [ ] Redirect sesuai role (Admin ke Dashboard, Customer ke Beranda)
-    [ ] Logout
-    [ ] Reset password: manual oleh admin (MVP); kirim link reset via email bersifat opsional karena email kini dikumpulkan saat pendaftaran
-    [ ] Halaman Akun: ubah nama, email, no HP & ganti password
+[X] 3.2 Login & Session Management
+    [X] Form Login (Username / No. WhatsApp & Password) & generate session/token (JWT / Cookie session HMAC SHA-256)
+    [X] Redirect sesuai role (Admin ke Dashboard, Customer ke Beranda / query redirect)
+    [X] Logout (clear session cookie & navigate)
+    [X] Reset password: manual oleh admin (/api/admin/users/reset-password)
+    [X] Halaman Akun: kelola username (read-only), ubah nomor WhatsApp & ganti password
 
-[ ] 3.3 Middleware Proteksi Route
-    [ ] Middleware `auth`: chat, request, wishlist, checkout, orders, notifikasi
-    [ ] Middleware `admin`: seluruh /admin/* (role admin/staff; pembatasan owner vs staff)
-    [ ] Redirect Guest ke login disertai pesan notifikasi (simpan URL tujuan untuk redirect balik)
+[X] 3.3 Middleware Proteksi Route
+    [X] Middleware `auth`: chat, request, wishlist, checkout, orders, notifikasi, akun
+    [X] Middleware `admin`: seluruh /admin/* (role admin/staff)
+    [X] Redirect Guest ke login disertai pesan notifikasi (simpan URL tujuan untuk redirect balik)
 
 --------------------------------------------------------------------------------
 FASE 4: KATALOG READY STOCK & MANAJEMEN PRODUK

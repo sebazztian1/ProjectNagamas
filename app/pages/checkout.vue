@@ -118,10 +118,16 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { mockUnifiedProducts, mockOrders } from '../data/mockJastipData'
+import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+
+definePageMeta({
+  middleware: 'auth'
+})
 
 const route = useRoute()
 const router = useRouter()
+const { currentUser } = useAuth()
 const { showToast } = useToast()
 
 const productId = route.query.productId as string
@@ -131,10 +137,10 @@ const itemProduct = computed(() => {
   return mockUnifiedProducts.find(p => p.id === productId) || mockUnifiedProducts[0]
 })
 
-const customerName = ref('Siti Rahmawati')
-const customerPhone = ref('0812-3456-7890')
+const customerUsername = ref(currentUser.value?.username || '')
+const customerPhone = ref(currentUser.value?.phone_number || '')
 const fulfillment = ref<'shipping'>('shipping')
-const shippingAddress = ref('Jl. Senopati No. 28, Kebayoran Baru, Jakarta Selatan 12190')
+const shippingAddress = ref('')
 const paymentType = ref<'full' | 'dp'>('full')
 
 const subtotal = computed(() => itemProduct.value.price * qty.value)
@@ -143,11 +149,7 @@ const totalTagihan = computed(() => subtotal.value + uniqueCode.value)
 
 const handleCreateOrder = () => {
   if (!shippingAddress.value.trim()) {
-    showToast({
-      title: 'Alamat Wajib Diisi',
-      message: 'Mohon masukkan alamat lengkap pengiriman pesanan Anda.',
-      type: 'error'
-    })
+    showToast('Alamat Wajib Diisi', 'Mohon masukkan alamat lengkap pengiriman pesanan Anda.', 'warning')
     return
   }
   const newOrderCode = (itemProduct.value.productType === 'ready' ? 'RDY-' : 'JST-') + '20261002-' + Math.floor(100 + Math.random() * 900)
@@ -156,8 +158,8 @@ const handleCreateOrder = () => {
   mockOrders.unshift({
     id: 'ord-new-' + Date.now(),
     orderCode: newOrderCode,
-    userId: 'user-01',
-    customerName: customerName.value,
+    userId: String(currentUser.value?.id || 'user-01'),
+    customerName: customerUsername.value || currentUser.value?.username || 'Customer',
     customerPhone: customerPhone.value,
     orderType: itemProduct.value.productType,
     tripId: itemProduct.value.tripId,
@@ -197,11 +199,7 @@ const handleCreateOrder = () => {
     createdAt: 'Baru saja'
   })
 
-  showToast({
-    title: 'Pesanan Berhasil Diajukan!',
-    message: `Kode pesanan #${newOrderCode}. Menunggu persetujuan (ACC) dari Admin dbb_luxe.`,
-    type: 'success'
-  })
+  showToast('Pesanan Berhasil Diajukan!', `Kode pesanan #${newOrderCode}. Menunggu persetujuan (ACC) dari Admin dbb_luxe.`, 'success')
   
   // Redirect to order detail page (not directly to pay)
   router.push(`/orders/${newOrderCode}`)

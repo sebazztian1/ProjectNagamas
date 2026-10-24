@@ -12,7 +12,7 @@
     <Footer v-if="!isAdminRoute" />
 
     <!-- Floating Customer to Admin Live Chat Mockup Widget -->
-    <CustomerChatWidget v-if="!isAdminRoute" />
+    <CustomerChatWidget v-if="showChatWidget" />
 
     <!-- Global Toast Notifications -->
     <ToastNotification :toasts="toasts" @remove="removeToast" />
@@ -32,6 +32,14 @@ const { toasts, removeToast } = useToast()
 
 const isAdminRoute = computed(() => {
   return route.path.startsWith('/admin')
+})
+
+const isAuthRoute = computed(() => {
+  return route.path === '/login' || route.path === '/register'
+})
+
+const showChatWidget = computed(() => {
+  return !isAdminRoute.value && !isAuthRoute.value && route.path !== '/chat'
 })
 </script>
 

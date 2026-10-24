@@ -57,16 +57,16 @@ import { ref } from 'vue'
 import { mockUnifiedProducts } from '../data/mockJastipData'
 import { useToast } from '../composables/useToast'
 
+definePageMeta({
+  middleware: 'auth'
+})
+
 const { showToast } = useToast()
 const wishlistItems = ref([...mockUnifiedProducts.slice(0, 3)])
 
 const removeItem = (id: string) => {
   wishlistItems.value = wishlistItems.value.filter(item => item.id !== id)
-  showToast({
-    title: 'Dihapus',
-    message: 'Barang berhasil dihapus dari Wishlist.',
-    type: 'info'
-  })
+  showToast('Dihapus', 'Barang berhasil dihapus dari Wishlist.', 'info')
 }
 
 const formatRupiah = (val: number) => {

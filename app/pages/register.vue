@@ -22,41 +22,25 @@
       <!-- Form -->
       <form @submit.prevent="handleRegister" class="auth-form">
         <div class="form-group">
-          <label for="reg-name">Nama Lengkap</label>
+          <label for="reg-username">Username</label>
           <div class="input-wrap">
             <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
             <input 
-              id="reg-name" 
-              v-model="form.name"
+              id="reg-username" 
+              v-model="form.username"
               type="text" 
-              placeholder="Contoh: Budi Santoso" 
+              placeholder="Contoh: sitirahma (huruf/angka/underscore)" 
+              minlength="3"
               required 
             />
           </div>
         </div>
 
         <div class="form-group">
-          <label for="reg-email">Alamat Email</label>
-          <div class="input-wrap">
-            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-            </svg>
-            <input 
-              id="reg-email" 
-              v-model="form.email"
-              type="email" 
-              placeholder="nama@email.com" 
-              required 
-            />
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label for="reg-phone">Nomor WhatsApp</label>
+          <label for="reg-phone">Nomor WhatsApp Aktif</label>
           <div class="input-wrap">
             <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
@@ -65,7 +49,7 @@
               id="reg-phone" 
               v-model="form.phone"
               type="tel" 
-              placeholder="08123456789" 
+              placeholder="Contoh: 081234567890" 
               required 
             />
           </div>
@@ -93,6 +77,24 @@
             >
               {{ showPassword ? 'Sembunyikan' : 'Lihat' }}
             </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-confirm-password">Konfirmasi Kata Sandi</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+            <input 
+              id="reg-confirm-password" 
+              v-model="form.confirmPassword"
+              :type="showPassword ? 'text' : 'password'" 
+              placeholder="Ulangi kata sandi Anda" 
+              minlength="6"
+              required 
+            />
           </div>
         </div>
 
@@ -126,34 +128,43 @@ useHead({
   title: 'Daftar Akun | dbb_luxe'
 })
 
-const { login } = useAuth()
+const { register } = useAuth()
 const { showToast } = useToast()
 
 const showPassword = ref(false)
 const isLoading = ref(false)
 
 const form = reactive({
-  name: '',
-  email: '',
+  username: '',
   phone: '',
   password: '',
+  confirmPassword: '',
   agreeTerms: true
 })
 
-const handleRegister = () => {
+const handleRegister = async () => {
+  if (form.password !== form.confirmPassword) {
+    showToast('Kata Sandi Tidak Cocok', 'Konfirmasi kata sandi harus sama dengan kata sandi baru.', 'warning')
+    return
+  }
+
   isLoading.value = true
-  setTimeout(() => {
-    isLoading.value = false
-    
-    login({
-      name: form.name,
-      email: form.email,
-      phone: form.phone
+  try {
+    const user = await register({
+      username: form.username,
+      phone_number: form.phone,
+      password: form.password,
+      confirmPassword: form.confirmPassword
     })
 
-    showToast('Pendaftaran Berhasil', `Akun Anda berhasil dibuat. Selamat datang, ${form.name}!`, 'success')
+    showToast('Pendaftaran Berhasil', `Akun Anda berhasil dibuat. Selamat datang, ${user.username}!`, 'success')
     navigateTo('/')
-  }, 600)
+  } catch (err: any) {
+    const message = err?.data?.message || err?.message || 'Gagal mendaftarkan akun. Silakan periksa kembali data Anda.'
+    showToast('Pendaftaran Gagal', message, 'warning')
+  } finally {
+    isLoading.value = false
+  }
 }
 </script>
 

@@ -1,0 +1,413 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model audit_logs {
+  id          BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id     Int?     @db.UnsignedInt
+  action      String   @db.VarChar(100)
+  entity_type String   @db.VarChar(50)
+  entity_id   Int?     @db.UnsignedInt
+  detail      Json?
+  created_at  DateTime @default(now()) @db.DateTime(0)
+  users       users?   @relation(fields: [user_id], references: [id], onUpdate: NoAction, map: "fk_audit_user")
+
+  @@index([entity_type, entity_id], map: "idx_audit_entity")
+  @@index([user_id], map: "idx_audit_user")
+}
+
+model bank_accounts {
+  id             Int        @id @default(autoincrement()) @db.UnsignedInt
+  bank_name      String     @db.VarChar(50)
+  account_number String     @db.VarChar(30)
+  account_holder String     @db.VarChar(100)
+  qris_image_url String?    @db.VarChar(500)
+  is_active      Boolean    @default(true)
+  payments       payments[]
+}
+
+model categories {
+  id       Int        @id @default(autoincrement()) @db.UnsignedInt
+  name     String     @db.VarChar(100)
+  slug     String     @unique(map: "uq_categories_slug") @db.VarChar(120)
+  products products[]
+}
+
+model chat_messages {
+  id           BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  room_id      Int                        @db.UnsignedInt
+  sender_id    Int                        @db.UnsignedInt
+  sender_role  chat_messages_sender_role
+  message_type chat_messages_message_type @default(text)
+  content      String?                    @db.Text
+  image_url    String?                    @db.VarChar(500)
+  product_id   Int?                       @db.UnsignedInt
+  is_read      Boolean                    @default(false)
+  created_at   DateTime                   @default(now()) @db.DateTime(0)
+  products     products?                  @relation(fields: [product_id], references: [id], onUpdate: NoAction, map: "fk_chat_messages_product")
+  chat_rooms   chat_rooms                 @relation(fields: [room_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_chat_messages_room")
+  users        users                      @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_chat_messages_sender")
+
+  @@index([product_id], map: "idx_chat_messages_product")
+  @@index([room_id, created_at], map: "idx_chat_messages_room")
+  @@index([sender_id], map: "idx_chat_messages_sender")
+}
+
+model chat_rooms {
+  id                    Int             @id @default(autoincrement()) @db.UnsignedInt
+  customer_id           Int             @unique(map: "uq_chat_rooms_customer") @db.UnsignedInt
+  last_message          String?         @db.VarChar(255)
+  unread_admin_count    Int             @default(0) @db.UnsignedInt
+  unread_customer_count Int             @default(0) @db.UnsignedInt
+  updated_at            DateTime?       @db.DateTime(0)
+  chat_messages         chat_messages[]
+  users                 users           @relation(fields: [customer_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_chat_rooms_customer")
+}
+
+model jastip_trips {
+  id                     Int                   @id @default(autoincrement()) @db.UnsignedInt
+  title                  String                @db.VarChar(150)
+  slug                   String                @unique(map: "uq_trips_slug") @db.VarChar(170)
+  country                String                @db.VarChar(80)
+  city_or_area           String?               @db.VarChar(100)
+  description            String?               @db.Text
+  terms                  String?               @db.Text
+  cover_image_url        String?               @db.VarChar(500)
+  currency               String                @db.Char(3)
+  exchange_rate          Decimal               @db.Decimal(18, 6)
+  fee_type               jastip_trips_fee_type
+  fee_value              Decimal               @db.Decimal(15, 2)
+  open_date              DateTime              @db.DateTime(0)
+  close_date             DateTime              @db.DateTime(0)
+  departure_date         DateTime?             @db.Date
+  estimated_arrival_date DateTime?             @db.Date
+  quota_total            Int?                  @db.UnsignedInt
+  status                 jastip_trips_status   @default(draft)
+  created_by             Int                   @db.UnsignedInt
+  created_at             DateTime              @default(now()) @db.DateTime(0)
+  updated_at             DateTime?             @db.DateTime(0)
+  users                  users                 @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_trips_created_by")
+  orders                 orders[]
+  product_requests       product_requests[]
+  products               products[]
+
+  @@index([created_by], map: "idx_trips_created_by")
+  @@index([status], map: "idx_trips_status")
+}
+
+model notifications {
+  id         BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  user_id    Int      @db.UnsignedInt
+  type       String   @db.VarChar(50)
+  title      String   @db.VarChar(150)
+  body       String?  @db.Text
+  link_url   String?  @db.VarChar(500)
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now()) @db.DateTime(0)
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_notifications_user")
+
+  @@index([user_id, is_read, created_at], map: "idx_notifications_user")
+}
+
+model order_items {
+  id                    Int      @id @default(autoincrement()) @db.UnsignedInt
+  order_id              Int      @db.UnsignedInt
+  product_id            Int      @db.UnsignedInt
+  product_name_snapshot String   @db.VarChar(200)
+  variant_snapshot      String?  @db.VarChar(255)
+  qty                   Int      @db.UnsignedInt
+  price_at_order        Decimal  @db.Decimal(15, 2)
+  subtotal              Decimal  @db.Decimal(15, 2)
+  orders                orders   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_order_items_order")
+  products              products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_product")
+
+  @@index([order_id], map: "idx_order_items_order")
+  @@index([product_id], map: "idx_order_items_product")
+}
+
+model order_status_logs {
+  id              BigInt   @id @default(autoincrement()) @db.UnsignedBigInt
+  order_id        Int      @db.UnsignedInt
+  from_status     String?  @db.VarChar(30)
+  to_status       String   @db.VarChar(30)
+  changed_by      Int      @db.UnsignedInt
+  note            String?  @db.Text
+  proof_image_url String?  @db.VarChar(500)
+  created_at      DateTime @default(now()) @db.DateTime(0)
+  orders          orders   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_status_logs_order")
+  users           users    @relation(fields: [changed_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_status_logs_user")
+
+  @@index([changed_by], map: "idx_status_logs_changed_by")
+  @@index([order_id, created_at], map: "idx_status_logs_order")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model orders {
+  id                 Int                       @id @default(autoincrement()) @db.UnsignedInt
+  order_code         String                    @unique(map: "uq_orders_code") @db.VarChar(30)
+  user_id            Int                       @db.UnsignedInt
+  order_type         orders_order_type
+  trip_id            Int?                      @db.UnsignedInt
+  subtotal           Decimal                   @db.Decimal(15, 2)
+  unique_code        Int                       @default(0) @db.UnsignedSmallInt
+  total_amount       Decimal                   @db.Decimal(15, 2)
+  payment_type       orders_payment_type       @default(full)
+  dp_amount          Decimal?                  @db.Decimal(15, 2)
+  paid_amount        Decimal                   @default(0.00) @db.Decimal(15, 2)
+  remaining_amount   Decimal                   @default(0.00) @db.Decimal(15, 2)
+  order_status       orders_order_status       @default(pending_approval)
+  rejection_reason   String?                   @db.Text
+  approved_at        DateTime?                 @db.DateTime(0)
+  payment_deadline   DateTime?                 @db.DateTime(0)
+  fulfillment_method orders_fulfillment_method
+  recipient_name     String?                   @db.VarChar(100)
+  recipient_phone    String?                   @db.VarChar(20)
+  shipping_address   String?                   @db.Text
+  shipping_cost      Decimal?                  @db.Decimal(15, 2)
+  customer_note      String?                   @db.Text
+  admin_note         String?                   @db.Text
+  created_at         DateTime                  @default(now()) @db.DateTime(0)
+  updated_at         DateTime?                 @db.DateTime(0)
+  order_items        order_items[]
+  order_status_logs  order_status_logs[]
+  jastip_trips       jastip_trips?             @relation(fields: [trip_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_trip")
+  users              users                     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_orders_user")
+  payments           payments[]
+
+  @@index([created_at], map: "idx_orders_created")
+  @@index([order_status], map: "idx_orders_status")
+  @@index([trip_id], map: "idx_orders_trip")
+  @@index([user_id], map: "idx_orders_user")
+}
+
+model payments {
+  id              Int                   @id @default(autoincrement()) @db.UnsignedInt
+  order_id        Int                   @db.UnsignedInt
+  payment_kind    payments_payment_kind
+  bank_account_id Int                   @db.UnsignedInt
+  sender_name     String                @db.VarChar(100)
+  sender_bank     String?               @db.VarChar(50)
+  amount          Decimal               @db.Decimal(15, 2)
+  receipt_url     String                @db.VarChar(500)
+  receipt_hash    String?               @db.Char(64)
+  status          payments_status       @default(pending)
+  admin_note      String?               @db.Text
+  verified_by     Int?                  @db.UnsignedInt
+  verified_at     DateTime?             @db.DateTime(0)
+  created_at      DateTime              @default(now()) @db.DateTime(0)
+  bank_accounts   bank_accounts         @relation(fields: [bank_account_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_payments_bank")
+  orders          orders                @relation(fields: [order_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_payments_order")
+  users           users?                @relation(fields: [verified_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_payments_verified_by")
+
+  @@index([bank_account_id], map: "idx_payments_bank")
+  @@index([order_id], map: "idx_payments_order")
+  @@index([receipt_hash], map: "idx_payments_receipt_hash")
+  @@index([status], map: "idx_payments_status")
+  @@index([verified_by], map: "idx_payments_verified_by")
+}
+
+model product_images {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  product_id Int      @db.UnsignedInt
+  image_url  String   @db.VarChar(500)
+  sort_order Int      @default(0) @db.UnsignedSmallInt
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_images_product")
+
+  @@index([product_id, sort_order], map: "idx_product_images_product")
+}
+
+model product_requests {
+  id                  Int                     @id @default(autoincrement()) @db.UnsignedInt
+  user_id             Int                     @db.UnsignedInt
+  product_name        String                  @db.VarChar(200)
+  description         String?                 @db.Text
+  reference_image_url String?                 @db.VarChar(500)
+  reference_link      String?                 @db.VarChar(500)
+  trip_id             Int?                    @db.UnsignedInt
+  status              product_requests_status @default(pending)
+  quoted_price        Decimal?                @db.Decimal(15, 2)
+  quote_note          String?                 @db.Text
+  quote_expires_at    DateTime?               @db.DateTime(0)
+  admin_note          String?                 @db.Text
+  created_at          DateTime                @default(now()) @db.DateTime(0)
+  updated_at          DateTime?               @db.DateTime(0)
+  jastip_trips        jastip_trips?           @relation(fields: [trip_id], references: [id], onUpdate: NoAction, map: "fk_requests_trip")
+  users               users                   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_requests_user")
+
+  @@index([status], map: "idx_requests_status")
+  @@index([trip_id], map: "idx_requests_trip")
+  @@index([user_id], map: "idx_requests_user")
+}
+
+/// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model products {
+  id                Int                   @id @default(autoincrement()) @db.UnsignedInt
+  name              String                @db.VarChar(200)
+  slug              String                @unique(map: "uq_products_slug") @db.VarChar(220)
+  description       String?               @db.Text
+  category_id       Int                   @db.UnsignedInt
+  product_type      products_product_type
+  trip_id           Int?                  @db.UnsignedInt
+  price             Decimal               @db.Decimal(15, 2)
+  original_price    Decimal?              @db.Decimal(15, 2)
+  original_currency String?               @db.Char(3)
+  source_store      String?               @db.VarChar(150)
+  variants          Json?
+  image_url         String?               @db.VarChar(500)
+  stock_status      products_stock_status @default(in_stock)
+  stock_quantity    Int?                  @db.UnsignedInt
+  quota             Int?                  @db.UnsignedInt
+  max_qty_per_order Int?                  @db.UnsignedInt
+  is_active         Boolean               @default(true)
+  deleted_at        DateTime?             @db.DateTime(0)
+  created_at        DateTime              @default(now()) @db.DateTime(0)
+  updated_at        DateTime?             @db.DateTime(0)
+  chat_messages     chat_messages[]
+  order_items       order_items[]
+  product_images    product_images[]
+  categories        categories            @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
+  jastip_trips      jastip_trips?         @relation(fields: [trip_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_trip")
+  wishlists         wishlists[]
+
+  @@index([category_id], map: "idx_products_category")
+  @@index([trip_id], map: "idx_products_trip")
+  @@index([product_type, is_active, deleted_at], map: "idx_products_type_active")
+}
+
+model store_settings {
+  setting_key   String  @id @db.VarChar(100)
+  setting_value String? @db.Text
+}
+
+model users {
+  id                Int                 @id @default(autoincrement()) @db.UnsignedInt
+  username          String              @unique(map: "uq_users_username") @db.VarChar(50)
+  phone_number      String              @unique(map: "uq_users_phone") @db.VarChar(20)
+  password_hash     String              @db.VarChar(255)
+  role              users_role          @default(customer)
+  is_active         Boolean             @default(true)
+  created_at        DateTime            @default(now()) @db.DateTime(0)
+  updated_at        DateTime?           @db.DateTime(0)
+  audit_logs        audit_logs[]
+  chat_messages     chat_messages[]
+  chat_rooms        chat_rooms?
+  jastip_trips      jastip_trips[]
+  notifications     notifications[]
+  order_status_logs order_status_logs[]
+  orders            orders[]
+  payments          payments[]
+  product_requests  product_requests[]
+  wishlists         wishlists[]
+}
+
+model wishlists {
+  id         Int      @id @default(autoincrement()) @db.UnsignedInt
+  user_id    Int      @db.UnsignedInt
+  product_id Int      @db.UnsignedInt
+  created_at DateTime @default(now()) @db.DateTime(0)
+  products   products @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_wishlists_product")
+  users      users    @relation(fields: [user_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_wishlists_user")
+
+  @@unique([user_id, product_id], map: "uq_wishlists_user_product")
+  @@index([product_id], map: "idx_wishlists_product")
+}
+
+enum payments_payment_kind {
+  dp
+  full
+  remaining
+}
+
+enum chat_messages_sender_role {
+  customer
+  admin
+  staff
+}
+
+enum orders_order_type {
+  ready
+  jastip
+}
+
+enum chat_messages_message_type {
+  text
+  image
+  product
+}
+
+enum products_product_type {
+  ready
+  jastip
+}
+
+enum users_role {
+  customer
+  admin
+  staff
+}
+
+enum product_requests_status {
+  pending
+  reviewed
+  quoted
+  accepted
+  available
+  rejected
+}
+
+enum orders_payment_type {
+  full
+  dp
+}
+
+enum payments_status {
+  pending
+  verified
+  rejected
+}
+
+enum jastip_trips_fee_type {
+  percent
+  flat
+}
+
+enum orders_order_status {
+  pending_approval
+  pending_payment
+  payment_uploaded
+  verified
+  purchasing
+  arrived
+  ready_handover
+  completed
+  rejected
+  cancelled
+  expired
+}
+
+enum products_stock_status {
+  in_stock
+  out_of_stock
+}
+
+enum orders_fulfillment_method {
+  pickup
+  delivery
+}
+
+enum jastip_trips_status {
+  draft
+  open
+  closed
+  purchasing
+  arrived
+  completed
+  cancelled
+}

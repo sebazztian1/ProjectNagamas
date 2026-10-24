@@ -89,6 +89,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+definePageMeta({
+  middleware: 'auth'
+})
+
 const inputMessage = ref('')
 
 const chatRooms = ref([
@@ -96,7 +100,7 @@ const chatRooms = ref([
     id: 'room-1',
     productName: 'SK-II Facial Treatment Essence',
     lastTime: '10:30',
-    lastMessage: 'Halo kak, stok di toko Jakarta ready 12 pcs ya!',
+    lastMessage: 'Halo kak, stok ready kami ada 12 pcs ya kak!',
     messages: [
       { sender: 'me', text: 'Halo admin, apakah produk SK-II ini asli beli di Jepang?', time: '10:28' },
       { sender: 'admin', text: 'Halo kak, betul 100% original dari Don Quijote Shinjuku Tokyo ya kak. Di struk ada serial number dan barcode resminya.', time: '10:30' }

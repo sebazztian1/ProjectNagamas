@@ -37,17 +37,17 @@
           </div>
 
           <div class="form-group">
-            <label for="login-email">Email atau No. WhatsApp</label>
+            <label for="login-identifier">Username atau No. WhatsApp</label>
             <div class="input-wrap">
               <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                <circle cx="12" cy="7" r="4"></circle>
               </svg>
               <input 
-                id="login-email" 
-                v-model="loginForm.email"
+                id="login-identifier" 
+                v-model="loginForm.identifier"
                 type="text" 
-                placeholder="nama@email.com" 
+                placeholder="Contoh: sitirahma atau 081234567890" 
                 required 
               />
             </div>
@@ -102,71 +102,73 @@
         <form v-else @submit.prevent="handleRegister" class="auth-form">
           <div class="form-header">
             <h3>Buat Akun Baru</h3>
-            <p>Daftarkan akun untuk mendapatkan info katalog terbaru dan promo khusus.</p>
+            <p>Daftarkan akun cukup dengan username dan nomor WhatsApp Anda.</p>
           </div>
 
           <div class="form-group">
-            <label for="reg-name">Nama Lengkap</label>
+            <label for="modal-reg-username">Username</label>
             <div class="input-wrap">
               <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
                 <circle cx="12" cy="7" r="4"></circle>
               </svg>
               <input 
-                id="reg-name" 
-                v-model="registerForm.name"
+                id="modal-reg-username" 
+                v-model="registerForm.username"
                 type="text" 
-                placeholder="Contoh: Budi Santoso" 
+                placeholder="Contoh: sitirahma" 
+                minlength="3"
                 required 
               />
             </div>
           </div>
 
           <div class="form-group">
-            <label for="reg-email">Alamat Email</label>
-            <div class="input-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
-              </svg>
-              <input 
-                id="reg-email" 
-                v-model="registerForm.email"
-                type="email" 
-                placeholder="nama@email.com" 
-                required 
-              />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label for="reg-phone">Nomor WhatsApp</label>
+            <label for="modal-reg-phone">Nomor WhatsApp</label>
             <div class="input-wrap">
               <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
               </svg>
               <input 
-                id="reg-phone" 
+                id="modal-reg-phone" 
                 v-model="registerForm.phone"
                 type="tel" 
-                placeholder="08123456789" 
+                placeholder="Contoh: 081234567890" 
                 required 
               />
             </div>
           </div>
 
           <div class="form-group">
-            <label for="reg-pass">Kata Sandi</label>
+            <label for="modal-reg-pass">Kata Sandi</label>
             <div class="input-wrap">
               <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
                 <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
               </svg>
               <input 
-                id="reg-pass" 
+                id="modal-reg-pass" 
                 v-model="registerForm.password"
                 :type="showPassword ? 'text' : 'password'" 
                 placeholder="Minimal 6 karakter" 
+                minlength="6"
+                required 
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="modal-reg-confirm-pass">Konfirmasi Kata Sandi</label>
+            <div class="input-wrap">
+              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+              </svg>
+              <input 
+                id="modal-reg-confirm-pass" 
+                v-model="registerForm.confirmPassword"
+                :type="showPassword ? 'text' : 'password'" 
+                placeholder="Ulangi kata sandi Anda" 
                 minlength="6"
                 required 
               />
@@ -197,6 +199,7 @@
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue'
+import { useAuth } from '../composables/useAuth'
 
 const props = withDefaults(
   defineProps<{
@@ -209,69 +212,105 @@ const props = withDefaults(
 
 const emit = defineEmits<{
   (e: 'close'): void
-  (e: 'loginSuccess', user: { name: string; email: string }): void
+  (e: 'loginSuccess', user: { username: string; phone_number: string }): void
   (e: 'toast', payload: { title: string; message: string; type: 'success' | 'info' | 'warning' }): void
 }>()
+
+const { login, register } = useAuth()
 
 const currentTab = ref<'login' | 'register'>(props.initialTab)
 const showPassword = ref(false)
 const isLoading = ref(false)
 
 const loginForm = reactive({
-  email: '',
+  identifier: '',
   password: '',
   rememberMe: true
 })
 
 const registerForm = reactive({
-  name: '',
-  email: '',
+  username: '',
   phone: '',
   password: '',
+  confirmPassword: '',
   agreeTerms: true
 })
 
-const handleLogin = () => {
+const handleLogin = async () => {
   isLoading.value = true
-  setTimeout(() => {
-    isLoading.value = false
-    const username = loginForm.email.split('@')[0] || 'Pengguna'
-    const capitalized = username.charAt(0).toUpperCase() + username.slice(1)
-    
+  try {
+    const user = await login({
+      identifier: loginForm.identifier,
+      password: loginForm.password
+    })
+
     emit('loginSuccess', {
-      name: capitalized,
-      email: loginForm.email
+      username: user.username,
+      phone_number: user.phone_number
     })
     emit('toast', {
       title: 'Berhasil Masuk',
-      message: `Selamat datang kembali, ${capitalized}!`,
+      message: `Selamat datang kembali, ${user.username}!`,
       type: 'success'
     })
     emit('close')
-  }, 600)
+  } catch (err: any) {
+    const message = err?.data?.message || err?.message || 'Username / No. WhatsApp atau kata sandi tidak cocok'
+    emit('toast', {
+      title: 'Gagal Masuk',
+      message,
+      type: 'warning'
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 
-const handleRegister = () => {
+const handleRegister = async () => {
+  if (registerForm.password !== registerForm.confirmPassword) {
+    emit('toast', {
+      title: 'Kata Sandi Tidak Cocok',
+      message: 'Konfirmasi kata sandi harus sama dengan kata sandi baru.',
+      type: 'warning'
+    })
+    return
+  }
+
   isLoading.value = true
-  setTimeout(() => {
-    isLoading.value = false
+  try {
+    const user = await register({
+      username: registerForm.username,
+      phone_number: registerForm.phone,
+      password: registerForm.password,
+      confirmPassword: registerForm.confirmPassword
+    })
+
     emit('loginSuccess', {
-      name: registerForm.name,
-      email: registerForm.email
+      username: user.username,
+      phone_number: user.phone_number
     })
     emit('toast', {
       title: 'Pendaftaran Berhasil',
-      message: `Akun Anda berhasil dibuat. Selamat datang, ${registerForm.name}!`,
+      message: `Akun Anda berhasil dibuat. Selamat datang, ${user.username}!`,
       type: 'success'
     })
     emit('close')
-  }, 600)
+  } catch (err: any) {
+    const message = err?.data?.message || err?.message || 'Gagal mendaftar akun'
+    emit('toast', {
+      title: 'Pendaftaran Gagal',
+      message,
+      type: 'warning'
+    })
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const forgotPassword = () => {
   emit('toast', {
     title: 'Lupa Kata Sandi',
-    message: 'Tautan reset sandi telah dikirimkan ke email/nomor Anda.',
+    message: 'Silakan hubungi customer service dbb_luxe untuk bantuan reset kata sandi akun Anda.',
     type: 'info'
   })
 }

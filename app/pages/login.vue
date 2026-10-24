@@ -16,23 +16,23 @@
       <div class="auth-header">
         <div class="brand-badge">DBB_LUXE</div>
         <h1 class="auth-title">Masuk ke Akun</h1>
-        <p class="auth-subtitle">Masukkan email dan kata sandi Anda untuk mengakses akun.</p>
+        <p class="auth-subtitle">Masukkan username atau nomor WhatsApp dan kata sandi Anda untuk mengakses akun.</p>
       </div>
 
       <!-- Form -->
       <form @submit.prevent="handleLogin" class="auth-form">
         <div class="form-group">
-          <label for="email">Alamat Email atau No. WhatsApp</label>
+          <label for="identifier">Username atau No. WhatsApp</label>
           <div class="input-wrap">
             <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect width="20" height="16" x="2" y="4" rx="2"></rect>
-              <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
             </svg>
             <input 
-              id="email" 
-              v-model="form.email"
+              id="identifier" 
+              v-model="form.identifier"
               type="text" 
-              placeholder="nama@email.com / 0812..." 
+              placeholder="Contoh: sitirahma atau 081234567890" 
               required 
             />
           </div>
@@ -95,37 +95,51 @@ useHead({
   title: 'Masuk | dbb_luxe'
 })
 
+const route = useRoute()
 const { login } = useAuth()
 const { showToast } = useToast()
 
 const showPassword = ref(false)
 const isLoading = ref(false)
+const errorMessage = ref('')
 
 const form = reactive({
-  email: '',
+  identifier: '',
   password: '',
   rememberMe: true
 })
 
-const handleLogin = () => {
+const handleLogin = async () => {
+  errorMessage.value = ''
   isLoading.value = true
-  setTimeout(() => {
-    isLoading.value = false
-    const username = form.email.split('@')[0] || 'Pengguna'
-    const capitalized = username.charAt(0).toUpperCase() + username.slice(1)
-    
-    login({
-      name: capitalized,
-      email: form.email
+
+  try {
+    const user = await login({
+      identifier: form.identifier,
+      password: form.password
     })
 
-    showToast('Berhasil Masuk', `Selamat datang kembali, ${capitalized}!`, 'success')
-    navigateTo('/')
-  }, 600)
+    showToast('Berhasil Masuk', `Selamat datang kembali, ${user.username}!`, 'success')
+
+    // Role-based redirection
+    if (user.role === 'admin' || user.role === 'staff') {
+      navigateTo('/admin')
+    } else if (route.query.redirect && typeof route.query.redirect === 'string') {
+      navigateTo(route.query.redirect)
+    } else {
+      navigateTo('/')
+    }
+  } catch (err: any) {
+    const message = err?.data?.message || err?.message || 'Username / No. WhatsApp atau kata sandi tidak cocok'
+    errorMessage.value = message
+    showToast('Gagal Masuk', message, 'warning')
+  } finally {
+    isLoading.value = false
+  }
 }
 
 const forgotPassword = () => {
-  showToast('Reset Password', 'Tautan pemulihan kata sandi telah dikirim ke kontak Anda.', 'info')
+  showToast('Reset Password', 'Silakan hubungi customer service dbb_luxe untuk bantuan reset kata sandi akun Anda.', 'info')
 }
 </script>
 

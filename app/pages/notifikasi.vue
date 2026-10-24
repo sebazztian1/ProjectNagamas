@@ -60,16 +60,16 @@ import { ref } from 'vue'
 import { mockNotifications, type AppNotification } from '../data/mockJastipData'
 import { useToast } from '../composables/useToast'
 
+definePageMeta({
+  middleware: 'auth'
+})
+
 const { showToast } = useToast()
 const notifications = ref<AppNotification[]>([...mockNotifications])
 
 const markAllAsRead = () => {
   notifications.value.forEach(n => n.isRead = true)
-  showToast({
-    title: 'Sukses',
-    message: 'Semua notifikasi telah ditandai dibaca.',
-    type: 'info'
-  })
+  showToast('Sukses', 'Semua notifikasi telah ditandai dibaca.', 'info')
 }
 
 const readNotif = (notif: AppNotification) => {

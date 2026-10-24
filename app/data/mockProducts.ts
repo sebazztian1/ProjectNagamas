@@ -2,10 +2,11 @@ import type { Product } from '../types/product'
 
 export const mockCategories = [
   { id: 'all', name: 'Semua Produk' },
-  { id: 'tas', name: 'Tas & Backpack' },
-  { id: 'pakaian', name: 'Pakaian & Baju' },
-  { id: 'outerwear', name: 'Outerwear & Jaket' },
-  { id: 'aksesoris', name: 'Aksesoris & Topi' }
+  { id: 'tas', name: 'Tas' },
+  { id: 'baju', name: 'Baju' },
+  { id: 'sepatu', name: 'Sepatu' },
+  { id: 'aksesoris', name: 'Aksesoris' },
+  { id: 'lainnya', name: 'Lainnya' }
 ]
 
 export const mockProducts: Product[] = [
@@ -35,7 +36,7 @@ export const mockProducts: Product[] = [
   {
     id: 'prod-002',
     name: 'Oversized French Linen Shirt',
-    category: 'pakaian',
+    category: 'baju',
     price: 279000,
     rating: 4.8,
     reviewsCount: 98,
@@ -77,7 +78,7 @@ export const mockProducts: Product[] = [
   {
     id: 'prod-004',
     name: 'Vintage Washed Denim Chore Jacket',
-    category: 'outerwear',
+    category: 'baju',
     price: 529000,
     rating: 4.9,
     reviewsCount: 110,
@@ -118,7 +119,7 @@ export const mockProducts: Product[] = [
   {
     id: 'prod-006',
     name: 'Heavyweight Relaxed Cotton T-Shirt',
-    category: 'pakaian',
+    category: 'baju',
     price: 165000,
     rating: 4.85,
     reviewsCount: 215,
@@ -181,7 +182,7 @@ export const mockProducts: Product[] = [
   {
     id: 'prod-009',
     name: 'Cozy Wool-Blend Knit Cardigan',
-    category: 'outerwear',
+    category: 'baju',
     price: 389000,
     rating: 4.75,
     reviewsCount: 52,
@@ -218,5 +219,26 @@ export const mockProducts: Product[] = [
     badge: 'New',
     inStock: true,
     stockCount: 22
+  },
+  {
+    id: 'prod-011',
+    name: 'Retro Classic Court Sneakers',
+    category: 'sepatu',
+    price: 789000,
+    rating: 4.9,
+    reviewsCount: 68,
+    image: 'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=800&q=80',
+    gallery: [
+      'https://images.unsplash.com/photo-1584735935682-2f2b69dff9d2?auto=format&fit=crop&w=800&q=80'
+    ],
+    description: 'Sepatu sneaker kulit kasual klasik dengan sol karet empuk anti-selip dan insole berbahan memory foam.',
+    specifications: {
+      'Bahan': 'Full Grain Calfskin Leather',
+      'Ukuran': '39, 40, 41, 42, 43, 44',
+      'Warna': 'Vintage Chalk White'
+    },
+    badge: 'Popular',
+    inStock: true,
+    stockCount: 14
   }
 ]

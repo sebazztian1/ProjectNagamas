@@ -110,8 +110,7 @@ import { mockUnifiedProducts } from '../../data/mockJastipData'
 const searchQuery = ref('')
 const selectedCat = ref('Semua')
 const sortBy = ref('default')
-
-const categories = ['Semua', 'Skincare & Kecantikan', 'Makanan & Snack', 'Fashion & Pakaian', 'Tas & Aksesoris']
+const categories = ['Semua', 'Tas', 'Baju', 'Sepatu', 'Aksesoris', 'Lainnya']
 
 const readyProducts = computed(() => {
   return mockUnifiedProducts.filter(p => p.productType === 'ready')

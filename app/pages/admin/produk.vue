@@ -110,10 +110,11 @@
             <div class="f-group">
               <label>Kategori:</label>
               <select v-model="form.category">
-                <option>Skincare & Kecantikan</option>
-                <option>Makanan & Snack</option>
-                <option>Fashion & Pakaian</option>
-                <option>Tas & Aksesoris</option>
+                <option>Tas</option>
+                <option>Baju</option>
+                <option>Sepatu</option>
+                <option>Aksesoris</option>
+                <option>Lainnya</option>
               </select>
             </div>
             <div class="f-group">
@@ -165,7 +166,7 @@ const showModal = ref(false)
 
 const form = ref({
   name: '',
-  category: 'Skincare & Kecantikan',
+  category: 'Tas',
   productType: 'ready',
   tripId: 'trip-jpn-01',
   price: 250000,

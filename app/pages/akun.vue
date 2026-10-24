@@ -20,32 +20,28 @@
           <form @submit.prevent="saveProfile" class="acc-form">
             <div class="avatar-row">
               <div class="user-avatar-circle">
-                {{ user.name ? user.name.charAt(0).toUpperCase() : 'U' }}
+                {{ user.username ? user.username.charAt(0).toUpperCase() : 'U' }}
               </div>
               <div>
-                <strong>{{ user.name }}</strong>
-                <span class="role-badge">Customer Terdaftar</span>
+                <strong>@{{ user.username || 'pengguna' }}</strong>
+                <span class="role-badge">{{ userRoleLabel }}</span>
               </div>
             </div>
 
             <div class="form-group">
-              <label>Nama Lengkap:</label>
-              <input v-model="user.name" type="text" required />
-            </div>
-
-            <div class="form-group">
-              <label>Username:</label>
+              <label>Username Akun:</label>
               <input v-model="user.username" type="text" disabled class="input-disabled" />
-              <span class="field-hint">Username tidak dapat diubah setelah terdaftar.</span>
+              <span class="field-hint">Username digunakan sebagai identitas akun Anda untuk masuk (login) dan tidak dapat diubah.</span>
             </div>
 
             <div class="form-group">
-              <label>Nomor WhatsApp (Aktif untuk Konfirmasi):</label>
-              <input v-model="user.phone" type="tel" required />
+              <label>Nomor WhatsApp (Aktif untuk Konfirmasi & Notifikasi):</label>
+              <input v-model="user.phone" type="tel" placeholder="Contoh: 081234567890" required />
+              <span class="field-hint">Nomor ini dapat digunakan untuk masuk ke akun Anda serta menerima info status titipan jastip.</span>
             </div>
 
-            <button type="submit" class="btn-save">
-              Simpan Perubahan Profil
+            <button type="submit" class="btn-save" :disabled="isSavingProfile">
+              {{ isSavingProfile ? 'Menyimpan...' : 'Simpan Nomor WhatsApp' }}
             </button>
           </form>
         </div>
@@ -54,7 +50,7 @@
         <div class="card-box">
           <h3 class="card-title">Keamanan & Kata Sandi</h3>
 
-          <form @submit.prevent="changePassword" class="acc-form">
+          <form @submit.prevent="handleChangePassword" class="acc-form">
             <div class="form-group">
               <label>Kata Sandi Saat Ini:</label>
               <input v-model="pass.current" type="password" placeholder="••••••••" required />
@@ -62,16 +58,16 @@
 
             <div class="form-group">
               <label>Kata Sandi Baru:</label>
-              <input v-model="pass.newPass" type="password" placeholder="Minimal 8 karakter" required />
+              <input v-model="pass.newPass" type="password" placeholder="Minimal 6 karakter" minlength="6" required />
             </div>
 
             <div class="form-group">
               <label>Konfirmasi Kata Sandi Baru:</label>
-              <input v-model="pass.confirmPass" type="password" placeholder="Ulangi kata sandi baru" required />
+              <input v-model="pass.confirmPass" type="password" placeholder="Ulangi kata sandi baru" minlength="6" required />
             </div>
 
-            <button type="submit" class="btn-change-pass">
-              Ubah Kata Sandi
+            <button type="submit" class="btn-change-pass" :disabled="isChangingPassword">
+              {{ isChangingPassword ? 'Memperbarui...' : 'Ubah Kata Sandi' }}
             </button>
           </form>
         </div>
@@ -81,15 +77,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 
+definePageMeta({
+  middleware: 'auth'
+})
+
+useHead({
+  title: 'Profil Akun Saya | dbb_luxe'
+})
+
+const { currentUser, updateProfile, changePassword: submitChangePassword } = useAuth()
 const { showToast } = useToast()
 
 const user = ref({
-  name: 'Siti Rahmawati',
-  username: 'sitirahma',
-  phone: '0812-3456-7890'
+  username: '',
+  phone: ''
 })
 
 const pass = ref({
@@ -98,32 +103,75 @@ const pass = ref({
   confirmPass: ''
 })
 
-const saveProfile = () => {
-  showToast({
-    title: 'Profil Diperbarui',
-    message: 'Data nama dan nomor WhatsApp Anda berhasil disimpan.',
-    type: 'success'
-  })
+const isSavingProfile = ref(false)
+const isChangingPassword = ref(false)
+
+const userRoleLabel = computed(() => {
+  if (currentUser.value?.role === 'admin') return 'Administrator Toko'
+  if (currentUser.value?.role === 'staff') return 'Staff Operasional'
+  return 'Customer Terdaftar'
+})
+
+const populateUserData = () => {
+  if (currentUser.value) {
+    user.value.username = currentUser.value.username || ''
+    user.value.phone = currentUser.value.phone_number || ''
+  }
 }
 
-const changePassword = () => {
-  if (pass.value.newPass !== pass.value.confirmPass) {
-    showToast({
-      title: 'Kata Sandi Tidak Cocok',
-      message: 'Konfirmasi kata sandi baru tidak sama.',
-      type: 'warning'
+onMounted(() => {
+  populateUserData()
+})
+
+watch(currentUser, () => {
+  populateUserData()
+}, { immediate: true })
+
+const saveProfile = async () => {
+  isSavingProfile.value = true
+  try {
+    const updated = await updateProfile({
+      phone_number: user.value.phone
     })
+    showToast('Profil Diperbarui', 'Nomor WhatsApp Anda berhasil disimpan.', 'success')
+    user.value.phone = updated.phone_number || ''
+  } catch (err: any) {
+    const message = err?.data?.message || err?.message || 'Gagal menyimpan profil.'
+    showToast('Gagal Simpan', message, 'warning')
+  } finally {
+    isSavingProfile.value = false
+  }
+}
+
+const handleChangePassword = async () => {
+  if (pass.value.newPass !== pass.value.confirmPass) {
+    showToast('Kata Sandi Tidak Cocok', 'Konfirmasi kata sandi baru tidak sama.', 'warning')
     return
   }
 
-  showToast({
-    title: 'Kata Sandi Diperbarui',
-    message: 'Kata sandi akun Anda berhasil diubah.',
-    type: 'success'
-  })
-  pass.value.current = ''
-  pass.value.newPass = ''
-  pass.value.confirmPass = ''
+  if (pass.value.newPass.length < 6) {
+    showToast('Kata Sandi Terlalu Pendek', 'Kata sandi baru minimal 6 karakter.', 'warning')
+    return
+  }
+
+  isChangingPassword.value = true
+  try {
+    await submitChangePassword({
+      currentPassword: pass.value.current,
+      newPassword: pass.value.newPass,
+      confirmPassword: pass.value.confirmPass
+    })
+
+    showToast('Kata Sandi Diperbarui', 'Kata sandi akun Anda berhasil diubah.', 'success')
+    pass.value.current = ''
+    pass.value.newPass = ''
+    pass.value.confirmPass = ''
+  } catch (err: any) {
+    const message = err?.data?.message || err?.message || 'Gagal mengubah kata sandi.'
+    showToast('Gagal Ubah Sandi', message, 'warning')
+  } finally {
+    isChangingPassword.value = false
+  }
 }
 </script>
 

@@ -156,6 +156,10 @@
 import { computed } from 'vue'
 import { mockOrders } from '../../../data/mockJastipData'
 
+definePageMeta({
+  middleware: 'auth'
+})
+
 const route = useRoute()
 const orderCode = route.params.orderCode as string
 

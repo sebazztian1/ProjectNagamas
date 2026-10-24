@@ -351,7 +351,7 @@ onBeforeUnmount(() => {
   stopAutoplay()
 })
 
-const categories = ['Semua', 'Skincare & Kecantikan', 'Makanan & Snack', 'Fashion & Pakaian', 'Tas & Aksesoris']
+const categories = ['Semua', 'Tas', 'Baju', 'Sepatu', 'Aksesoris', 'Lainnya']
 const selectedCategory = ref('Semua')
 
 const readyProducts = computed(() => {

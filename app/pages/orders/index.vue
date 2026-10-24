@@ -86,6 +86,10 @@
 import { ref, computed } from 'vue'
 import { mockOrders } from '../../data/mockJastipData'
 
+definePageMeta({
+  middleware: 'auth'
+})
+
 const currentTab = ref('all')
 
 const filterTabs = [
@@ -93,7 +97,7 @@ const filterTabs = [
   { key: 'pending_approval', label: 'Menunggu ACC' },
   { key: 'pending_payment', label: 'Menunggu Bayar' },
   { key: 'purchasing', label: 'Sedang Dibelikan' },
-  { key: 'ready_pickup', label: 'Siap Diambil' }
+  { key: 'ready_pickup', label: 'Siap Dikirim' }
 ]
 
 const filteredOrders = computed(() => {

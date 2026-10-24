@@ -128,6 +128,10 @@ import { ref, computed } from 'vue'
 import { mockBankAccounts, mockOrders } from '../../../data/mockJastipData'
 import { useToast } from '../../../composables/useToast'
 
+definePageMeta({
+  middleware: 'auth'
+})
+
 const route = useRoute()
 const router = useRouter()
 const { showToast } = useToast()
@@ -156,20 +160,12 @@ if (order.value) {
 
 const copyText = (txt: string) => {
   navigator.clipboard.writeText(txt)
-  showToast({
-    title: 'Tersalin',
-    message: `Teks "${txt}" berhasil disalin ke clipboard.`,
-    type: 'success'
-  })
+  showToast('Tersalin', `Teks "${txt}" berhasil disalin ke clipboard.`, 'success')
 }
 
 const triggerUpload = () => {
   uploadedFileName.value = 'bukti_transfer_bca_sitirahma.jpg'
-  showToast({
-    title: 'File Terpilih',
-    message: 'File bukti_transfer_bca_sitirahma.jpg siap diunggah.',
-    type: 'info'
-  })
+  showToast('File Terpilih', 'File bukti_transfer_bca_sitirahma.jpg siap diunggah.', 'info')
 }
 
 const submitReceipt = () => {

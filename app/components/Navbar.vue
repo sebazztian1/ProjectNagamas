@@ -60,9 +60,12 @@
 
         <!-- Logged in -->
         <div v-if="currentUser" class="user-menu">
-          <NuxtLink to="/akun" class="user-pill" :title="currentUser.email">
-            <span class="user-avatar">{{ currentUser.name ? currentUser.name.charAt(0).toUpperCase() : 'U' }}</span>
-            <span class="user-name hide-sm">{{ currentUser.name || currentUser.username }}</span>
+          <NuxtLink v-if="currentUser.role === 'admin' || currentUser.role === 'staff'" to="/admin" class="btn-text hide-sm" style="font-weight: 700; color: var(--color-primary);">
+            Panel Admin
+          </NuxtLink>
+          <NuxtLink to="/akun" class="user-pill" :title="'@' + currentUser.username + ' (' + currentUser.phone_number + ')'">
+            <span class="user-avatar">{{ currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U' }}</span>
+            <span class="user-name hide-sm">@{{ currentUser.username }}</span>
           </NuxtLink>
           <button class="icon-btn hide-sm" title="Keluar" @click="handleLogout">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
@@ -157,13 +160,10 @@ watch(() => route.path, () => {
   searchOpen.value = false
 })
 
-const handleLogout = () => {
-  logout()
-  showToast({
-    title: 'Berhasil Keluar',
-    message: 'Anda telah keluar dari akun.',
-    type: 'info'
-  })
+const handleLogout = async () => {
+  await logout()
+  showToast('Berhasil Keluar', 'Anda telah keluar dari akun.', 'info')
+  navigateTo('/')
 }
 </script>
 

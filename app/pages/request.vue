@@ -117,6 +117,10 @@ import { ref } from 'vue'
 import { mockProductRequests, type ProductRequest } from '../data/mockJastipData'
 import { useToast } from '../composables/useToast'
 
+definePageMeta({
+  middleware: 'auth'
+})
+
 const { showToast } = useToast()
 const requests = ref<ProductRequest[]>([...mockProductRequests])
 
@@ -145,22 +149,14 @@ const submitRequest = () => {
   form.value.description = ''
   form.value.referenceLink = ''
 
-  showToast({
-    title: 'Request Berhasil Dikirim',
-    message: 'Admin akan memeriksa produk dan memberikan penawaran harga.',
-    type: 'success'
-  })
+  showToast('Request Berhasil Dikirim', 'Admin akan memeriksa produk dan memberikan penawaran harga.', 'success')
 }
 
 const rejectQuote = (id: string) => {
   const target = requests.value.find(r => r.id === id)
   if (target) {
     target.status = 'rejected'
-    showToast({
-      title: 'Penawaran Ditolak',
-      message: 'Anda telah menolak penawaran harga ini.',
-      type: 'info'
-    })
+    showToast('Penawaran Ditolak', 'Anda telah menolak penawaran harga ini.', 'info')
   }
 }
 

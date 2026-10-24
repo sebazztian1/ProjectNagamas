@@ -131,9 +131,17 @@
           </NuxtLink>
 
           <div class="admin-user-pill">
-            <span class="avatar-letter">A</span>
-            <span class="user-label">Admin dbb_luxe</span>
+            <span class="avatar-letter">{{ currentUser?.username ? currentUser.username.charAt(0).toUpperCase() : 'A' }}</span>
+            <span class="user-label">@{{ currentUser?.username || 'admin' }}</span>
           </div>
+
+          <button class="icon-btn-round" title="Keluar dari Admin" @click="handleAdminLogout">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+              <polyline points="16 17 21 12 16 7"></polyline>
+              <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -144,6 +152,28 @@
     </div>
   </div>
 </template>
+
+<script setup lang="ts">
+import { useAuth } from '../composables/useAuth'
+import { useToast } from '../composables/useToast'
+
+definePageMeta({
+  middleware: 'admin'
+})
+
+useHead({
+  title: 'Admin Panel | dbb_luxe'
+})
+
+const { currentUser, logout } = useAuth()
+const { showToast } = useToast()
+
+const handleAdminLogout = async () => {
+  await logout()
+  showToast('Berhasil Keluar', 'Anda telah keluar dari panel admin.', 'info')
+  navigateTo('/login')
+}
+</script>
 
 <style scoped>
 .admin-wrapper {

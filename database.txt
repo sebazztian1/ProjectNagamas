@@ -1,0 +1,364 @@
+-- =====================================================
+-- Database Web Jastip
+-- Kompatibel dengan MySQL 8.0.16+ (CHECK constraint & JSON)
+-- =====================================================
+
+CREATE DATABASE IF NOT EXISTS jastip_dbbluxe
+  CHARACTER SET utf8mb4
+  COLLATE utf8mb4_unicode_ci;
+
+USE jastip_dbbluxe;
+
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- -----------------------------------------------------
+-- users
+-- -----------------------------------------------------
+CREATE TABLE users (
+  id            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  username      VARCHAR(50)  NOT NULL,
+  phone_number  VARCHAR(20)  NOT NULL COMMENT 'Identitas login, simpan format ternormalisasi (mis. 628xxx)',
+  password_hash VARCHAR(255) NOT NULL,
+  ROLE          ENUM('customer','admin','staff') NOT NULL DEFAULT 'customer',
+  is_active     TINYINT(1)   NOT NULL DEFAULT 1,
+  created_at    DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at    DATETIME     NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_users_username (username),
+  UNIQUE KEY uq_users_phone (phone_number)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- categories
+-- -----------------------------------------------------
+CREATE TABLE categories (
+  id   INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  NAME VARCHAR(100) NOT NULL,
+  slug VARCHAR(120) NOT NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_categories_slug (slug)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- jastip_trips
+-- -----------------------------------------------------
+CREATE TABLE jastip_trips (
+  id                     INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  title                  VARCHAR(150) NOT NULL,
+  slug                   VARCHAR(170) NOT NULL,
+  country                VARCHAR(80)  NOT NULL,
+  city_or_area           VARCHAR(100) NULL,
+  DESCRIPTION            TEXT         NULL,
+  terms                  TEXT         NULL,
+  cover_image_url        VARCHAR(500) NULL,
+  currency               CHAR(3)      NOT NULL,
+  exchange_rate          DECIMAL(18,6) NOT NULL,
+  fee_type               ENUM('percent','flat') NOT NULL,
+  fee_value              DECIMAL(15,2) NOT NULL,
+  open_date              DATETIME     NOT NULL,
+  close_date             DATETIME     NOT NULL,
+  departure_date         DATE         NULL,
+  estimated_arrival_date DATE         NULL,
+  quota_total            INT UNSIGNED NULL,
+  STATUS                 ENUM('draft','open','closed','purchasing','arrived','completed','cancelled') NOT NULL DEFAULT 'draft',
+  created_by             INT UNSIGNED NOT NULL,
+  created_at             DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at             DATETIME     NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_trips_slug (slug),
+  KEY idx_trips_status (STATUS),
+  KEY idx_trips_created_by (created_by),
+  CONSTRAINT fk_trips_created_by FOREIGN KEY (created_by) REFERENCES users (id)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- products
+-- -----------------------------------------------------
+CREATE TABLE products (
+  id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  NAME              VARCHAR(200) NOT NULL,
+  slug              VARCHAR(220) NOT NULL,
+  DESCRIPTION       TEXT         NULL,
+  category_id       INT UNSIGNED NOT NULL,
+  product_type      ENUM('ready','jastip') NOT NULL,
+  trip_id           INT UNSIGNED NULL COMMENT 'Wajib diisi jika product_type = jastip',
+  price             DECIMAL(15,2) NOT NULL,
+  original_price    DECIMAL(15,2) NULL,
+  original_currency CHAR(3)      NULL,
+  source_store      VARCHAR(150) NULL,
+  variants          JSON         NULL,
+  image_url         VARCHAR(500) NULL,
+  stock_status      ENUM('in_stock','out_of_stock') NOT NULL DEFAULT 'in_stock',
+  stock_quantity    INT UNSIGNED NULL COMMENT 'Khusus produk ready',
+  quota             INT UNSIGNED NULL COMMENT 'Khusus produk jastip',
+  max_qty_per_order INT UNSIGNED NULL,
+  is_active         TINYINT(1)   NOT NULL DEFAULT 1,
+  deleted_at        DATETIME     NULL,
+  created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        DATETIME     NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_products_slug (slug),
+  KEY idx_products_category (category_id),
+  KEY idx_products_trip (trip_id),
+  KEY idx_products_type_active (product_type, is_active, deleted_at),
+  CONSTRAINT fk_products_category FOREIGN KEY (category_id) REFERENCES categories (id),
+  CONSTRAINT fk_products_trip FOREIGN KEY (trip_id) REFERENCES jastip_trips (id),
+  CONSTRAINT chk_products_trip_required CHECK (product_type <> 'jastip' OR trip_id IS NOT NULL)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- product_images
+-- -----------------------------------------------------
+CREATE TABLE product_images (
+  id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  product_id INT UNSIGNED NOT NULL,
+  image_url  VARCHAR(500) NOT NULL,
+  sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  PRIMARY KEY (id),
+  KEY idx_product_images_product (product_id, sort_order),
+  CONSTRAINT fk_product_images_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- product_requests
+-- -----------------------------------------------------
+CREATE TABLE product_requests (
+  id                  INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id             INT UNSIGNED NOT NULL,
+  product_name        VARCHAR(200) NOT NULL,
+  DESCRIPTION         TEXT         NULL,
+  reference_image_url VARCHAR(500) NULL,
+  reference_link      VARCHAR(500) NULL,
+  trip_id             INT UNSIGNED NULL,
+  STATUS              ENUM('pending','reviewed','quoted','accepted','available','rejected') NOT NULL DEFAULT 'pending',
+  quoted_price        DECIMAL(15,2) NULL,
+  quote_note          TEXT         NULL,
+  quote_expires_at    DATETIME     NULL,
+  admin_note          TEXT         NULL,
+  created_at          DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at          DATETIME     NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_requests_user (user_id),
+  KEY idx_requests_trip (trip_id),
+  KEY idx_requests_status (STATUS),
+  CONSTRAINT fk_requests_user FOREIGN KEY (user_id) REFERENCES users (id),
+  CONSTRAINT fk_requests_trip FOREIGN KEY (trip_id) REFERENCES jastip_trips (id) ON DELETE SET NULL
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- chat_rooms
+-- -----------------------------------------------------
+CREATE TABLE chat_rooms (
+  id                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  customer_id           INT UNSIGNED NOT NULL,
+  last_message          VARCHAR(255) NULL,
+  unread_admin_count    INT UNSIGNED NOT NULL DEFAULT 0,
+  unread_customer_count INT UNSIGNED NOT NULL DEFAULT 0,
+  updated_at            DATETIME     NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_chat_rooms_customer (customer_id),
+  CONSTRAINT fk_chat_rooms_customer FOREIGN KEY (customer_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- chat_messages
+-- -----------------------------------------------------
+CREATE TABLE chat_messages (
+  id           BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  room_id      INT UNSIGNED NOT NULL,
+  sender_id    INT UNSIGNED NOT NULL,
+  sender_role  ENUM('customer','admin','staff') NOT NULL,
+  message_type ENUM('text','image','product') NOT NULL DEFAULT 'text',
+  content      TEXT         NULL,
+  image_url    VARCHAR(500) NULL,
+  product_id   INT UNSIGNED NULL,
+  is_read      TINYINT(1)   NOT NULL DEFAULT 0,
+  created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_chat_messages_room (room_id, created_at),
+  KEY idx_chat_messages_sender (sender_id),
+  KEY idx_chat_messages_product (product_id),
+  CONSTRAINT fk_chat_messages_room FOREIGN KEY (room_id) REFERENCES chat_rooms (id) ON DELETE CASCADE,
+  CONSTRAINT fk_chat_messages_sender FOREIGN KEY (sender_id) REFERENCES users (id),
+  CONSTRAINT fk_chat_messages_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE SET NULL
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- orders
+-- -----------------------------------------------------
+CREATE TABLE orders (
+  id                INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_code        VARCHAR(30)  NOT NULL,
+  user_id           INT UNSIGNED NOT NULL,
+  order_type        ENUM('ready','jastip') NOT NULL,
+  trip_id           INT UNSIGNED NULL,
+  subtotal          DECIMAL(15,2) NOT NULL,
+  unique_code       SMALLINT UNSIGNED NOT NULL DEFAULT 0,
+  total_amount      DECIMAL(15,2) NOT NULL,
+  payment_type      ENUM('full','dp') NOT NULL DEFAULT 'full',
+  dp_amount         DECIMAL(15,2) NULL,
+  paid_amount       DECIMAL(15,2) NOT NULL DEFAULT 0,
+  remaining_amount  DECIMAL(15,2) NOT NULL DEFAULT 0,
+  order_status      ENUM('pending_approval','pending_payment','payment_uploaded','verified','purchasing','arrived','ready_handover','completed','rejected','cancelled','expired') NOT NULL DEFAULT 'pending_approval',
+  rejection_reason  TEXT         NULL,
+  approved_at       DATETIME     NULL,
+  payment_deadline  DATETIME     NULL,
+  fulfillment_method ENUM('pickup','delivery') NOT NULL,
+  recipient_name    VARCHAR(100) NULL,
+  recipient_phone   VARCHAR(20)  NULL,
+  shipping_address  TEXT         NULL COMMENT 'Wajib jika fulfillment_method = delivery',
+  shipping_cost     DECIMAL(15,2) NULL,
+  customer_note     TEXT         NULL,
+  admin_note        TEXT         NULL,
+  created_at        DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at        DATETIME     NULL ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_orders_code (order_code),
+  KEY idx_orders_user (user_id),
+  KEY idx_orders_trip (trip_id),
+  KEY idx_orders_status (order_status),
+  KEY idx_orders_created (created_at),
+  CONSTRAINT fk_orders_user FOREIGN KEY (user_id) REFERENCES users (id),
+  CONSTRAINT fk_orders_trip FOREIGN KEY (trip_id) REFERENCES jastip_trips (id),
+  CONSTRAINT chk_orders_shipping_address CHECK (fulfillment_method <> 'delivery' OR shipping_address IS NOT NULL)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- order_items
+-- -----------------------------------------------------
+CREATE TABLE order_items (
+  id                    INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_id              INT UNSIGNED NOT NULL,
+  product_id            INT UNSIGNED NOT NULL,
+  product_name_snapshot VARCHAR(200) NOT NULL,
+  variant_snapshot      VARCHAR(255) NULL,
+  qty                   INT UNSIGNED NOT NULL,
+  price_at_order        DECIMAL(15,2) NOT NULL,
+  subtotal              DECIMAL(15,2) NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_order_items_order (order_id),
+  KEY idx_order_items_product (product_id),
+  CONSTRAINT fk_order_items_order FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+  CONSTRAINT fk_order_items_product FOREIGN KEY (product_id) REFERENCES products (id)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- order_status_logs
+-- -----------------------------------------------------
+CREATE TABLE order_status_logs (
+  id              BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_id        INT UNSIGNED NOT NULL,
+  from_status     VARCHAR(30)  NULL,
+  to_status       VARCHAR(30)  NOT NULL,
+  changed_by      INT UNSIGNED NOT NULL,
+  note            TEXT         NULL,
+  proof_image_url VARCHAR(500) NULL,
+  created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_status_logs_order (order_id, created_at),
+  KEY idx_status_logs_changed_by (changed_by),
+  CONSTRAINT fk_status_logs_order FOREIGN KEY (order_id) REFERENCES orders (id) ON DELETE CASCADE,
+  CONSTRAINT fk_status_logs_user FOREIGN KEY (changed_by) REFERENCES users (id)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- bank_accounts
+-- -----------------------------------------------------
+CREATE TABLE bank_accounts (
+  id             INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  bank_name      VARCHAR(50)  NOT NULL,
+  account_number VARCHAR(30)  NOT NULL,
+  account_holder VARCHAR(100) NOT NULL,
+  qris_image_url VARCHAR(500) NULL,
+  is_active      TINYINT(1)   NOT NULL DEFAULT 1,
+  PRIMARY KEY (id)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- payments
+-- -----------------------------------------------------
+CREATE TABLE payments (
+  id              INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  order_id        INT UNSIGNED NOT NULL,
+  payment_kind    ENUM('dp','full','remaining') NOT NULL,
+  bank_account_id INT UNSIGNED NOT NULL,
+  sender_name     VARCHAR(100) NOT NULL,
+  sender_bank     VARCHAR(50)  NULL,
+  amount          DECIMAL(15,2) NOT NULL,
+  receipt_url     VARCHAR(500) NOT NULL,
+  receipt_hash    CHAR(64)     NULL,
+  STATUS          ENUM('pending','verified','rejected') NOT NULL DEFAULT 'pending',
+  admin_note      TEXT         NULL,
+  verified_by     INT UNSIGNED NULL,
+  verified_at     DATETIME     NULL,
+  created_at      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_payments_order (order_id),
+  KEY idx_payments_bank (bank_account_id),
+  KEY idx_payments_status (STATUS),
+  KEY idx_payments_receipt_hash (receipt_hash),
+  KEY idx_payments_verified_by (verified_by),
+  CONSTRAINT fk_payments_order FOREIGN KEY (order_id) REFERENCES orders (id),
+  CONSTRAINT fk_payments_bank FOREIGN KEY (bank_account_id) REFERENCES bank_accounts (id),
+  CONSTRAINT fk_payments_verified_by FOREIGN KEY (verified_by) REFERENCES users (id)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- wishlists
+-- -----------------------------------------------------
+CREATE TABLE wishlists (
+  id         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    INT UNSIGNED NOT NULL,
+  product_id INT UNSIGNED NOT NULL,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  UNIQUE KEY uq_wishlists_user_product (user_id, product_id),
+  KEY idx_wishlists_product (product_id),
+  CONSTRAINT fk_wishlists_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+  CONSTRAINT fk_wishlists_product FOREIGN KEY (product_id) REFERENCES products (id) ON DELETE CASCADE
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- notifications
+-- -----------------------------------------------------
+CREATE TABLE notifications (
+  id         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id    INT UNSIGNED NOT NULL,
+  TYPE       VARCHAR(50)  NOT NULL,
+  title      VARCHAR(150) NOT NULL,
+  BODY       TEXT         NULL,
+  link_url   VARCHAR(500) NULL,
+  is_read    TINYINT(1)   NOT NULL DEFAULT 0,
+  created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_notifications_user (user_id, is_read, created_at),
+  CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- store_settings
+-- -----------------------------------------------------
+CREATE TABLE store_settings (
+  setting_key   VARCHAR(100) NOT NULL,
+  setting_value TEXT         NULL,
+  PRIMARY KEY (setting_key)
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- -----------------------------------------------------
+-- audit_logs (opsional)
+-- -----------------------------------------------------
+CREATE TABLE audit_logs (
+  id          BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+  user_id     INT UNSIGNED NULL,
+  ACTION      VARCHAR(100) NOT NULL,
+  entity_type VARCHAR(50)  NOT NULL,
+  entity_id   INT UNSIGNED NULL,
+  detail      JSON         NULL,
+  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id),
+  KEY idx_audit_user (user_id),
+  KEY idx_audit_entity (entity_type, entity_id),
+  CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE SET NULL
+) ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+SET FOREIGN_KEY_CHECKS = 1;
