@@ -135,7 +135,7 @@
           </div>
           <h2 class="section-title">Katalog Ready Stock</h2>
           <p class="section-desc">
-            Seluruh barang di bawah ini tersedia di warehouse dbb_luxe Jakarta. Siap diproses dan langsung dikirim ke alamat Anda tanpa menunggu jadwal trip jastip.
+            Produk yang tersedia di bawah ini siap diproses dan dikirimkan langsung ke alamat Anda.
           </p>
         </div>
 
@@ -174,13 +174,6 @@
           <NuxtLink :to="`/ready/${product.slug}`" class="card-thumb-link">
             <div class="card-thumb">
               <img :src="product.image" :alt="product.name" loading="lazy" />
-              <span class="badge-stock-ready">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                Ready Stock
-              </span>
-              <span class="badge-country">{{ product.flag }} {{ product.country }}</span>
             </div>
           </NuxtLink>
 
@@ -189,11 +182,6 @@
             <NuxtLink :to="`/ready/${product.slug}`" class="card-name-link">
               <h3 class="card-title">{{ product.name }}</h3>
             </NuxtLink>
-
-            <div class="card-stock-row">
-              <span class="stock-label">Stok Tersedia:</span>
-              <span class="stock-qty">{{ product.stockQuantity }} pcs</span>
-            </div>
 
             <div class="card-price-row">
               <div class="price-val">{{ formatRupiah(product.price) }}</div>
@@ -792,7 +780,7 @@ const formatDate = (dateStr: string) => {
 
 /* Main Catalog Area */
 .main-catalog-container {
-  max-width: 1240px;
+  max-width: 1440px;
   margin: 56px auto 0;
   padding: 0 24px;
 }
@@ -904,11 +892,10 @@ const formatDate = (dateStr: string) => {
   color: var(--color-text-muted);
 }
 
-/* Products Grid */
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(265px, 1fr));
-  gap: 28px;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 16px;
 }
 
 .product-card {
@@ -982,19 +969,19 @@ const formatDate = (dateStr: string) => {
 }
 
 .card-info {
-  padding: 18px 20px 20px;
+  padding: 14px 14px 16px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .card-cat {
-  font-size: 0.74rem;
+  font-size: 0.68rem;
   color: var(--brand-accent);
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.06em;
-  margin-bottom: 6px;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
 }
 
 .card-name-link {
@@ -1003,11 +990,11 @@ const formatDate = (dateStr: string) => {
 }
 
 .card-title {
-  font-size: 0.98rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-text);
-  line-height: 1.45;
-  margin-bottom: 12px;
+  line-height: 1.35;
+  margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1019,47 +1006,33 @@ const formatDate = (dateStr: string) => {
   color: var(--brand-accent);
 }
 
-.card-stock-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 0.8rem;
-  color: var(--color-text-muted);
-  margin-bottom: 12px;
-}
-
-.stock-qty {
-  font-weight: 700;
-  color: var(--color-ready);
-}
-
 .card-price-row {
   margin-top: auto;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
 }
 
 .price-val {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: var(--brand-accent);
   letter-spacing: -0.01em;
 }
 
 .card-actions {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 .btn-detail {
   text-decoration: none;
   text-align: center;
-  font-size: 0.84rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: var(--brand-accent);
   background: var(--brand-neutral);
   border: 1px solid var(--brand-primary);
-  padding: 9px 12px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
 }
@@ -1072,11 +1045,11 @@ const formatDate = (dateStr: string) => {
 .btn-buy {
   text-decoration: none;
   text-align: center;
-  font-size: 0.84rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: #FFFBF2;
   background: var(--brand-accent);
-  padding: 9px 12px;
+  padding: 6px 10px;
   border-radius: var(--radius-sm);
   transition: all 0.2s ease;
   border: 1px solid var(--brand-accent);
@@ -1086,6 +1059,34 @@ const formatDate = (dateStr: string) => {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
   transform: translateY(-1px);
+}
+
+@media (max-width: 1400px) {
+  .products-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (max-width: 1100px) {
+  .products-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+  }
+}
+
+@media (max-width: 860px) {
+  .products-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+}
+
+@media (max-width: 600px) {
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
 }
 
 /* Empty State */

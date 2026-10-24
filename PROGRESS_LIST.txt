@@ -29,6 +29,7 @@ RINGKASAN PERUBAHAN V2 & WORKFLOW
   - Pendaftaran akun: Username, Nomor WhatsApp, Password, Konfirmasi Password (tanpa email & tanpa OTP).
   - Login memakai: Username ATAU Nomor WhatsApp + Password.
   - Kategori barang hanya terdiri dari 5: Tas, Baju, Sepatu, Aksesoris, dan Lainnya.
+  - Kode unik transfer ditiadakan: Total tagihan pembayaran murni subtotal pesanan.
 
 --------------------------------------------------------------------------------
 STRUKTUR HALAMAN (SITEMAP)

@@ -85,10 +85,6 @@
                 <span>Subtotal Barang:</span>
                 <span>{{ formatRupiah(subtotal) }}</span>
               </div>
-              <div class="calc-row unique-code-row">
-                <span>Kode Unik Transfer (3 Digit):</span>
-                <span class="unique-highlight">+{{ uniqueCode }}</span>
-              </div>
               <div class="calc-row total-row">
                 <span>Total Tagihan:</span>
                 <span class="total-price">{{ formatRupiah(totalTagihan) }}</span>
@@ -144,8 +140,7 @@ const shippingAddress = ref('')
 const paymentType = ref<'full' | 'dp'>('full')
 
 const subtotal = computed(() => itemProduct.value.price * qty.value)
-const uniqueCode = ref(Math.floor(100 + Math.random() * 899))
-const totalTagihan = computed(() => subtotal.value + uniqueCode.value)
+const totalTagihan = computed(() => subtotal.value)
 
 const handleCreateOrder = () => {
   if (!shippingAddress.value.trim()) {
@@ -177,7 +172,7 @@ const handleCreateOrder = () => {
       }
     ],
     subtotal: subtotal.value,
-    uniqueCode: uniqueCode.value,
+    uniqueCode: 0,
     totalAmount: totalTagihan.value,
     paymentType: paymentType.value,
     dpAmount: paymentType.value === 'dp' ? Math.ceil(totalTagihan.value / 2) : 0,

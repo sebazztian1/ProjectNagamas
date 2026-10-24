@@ -31,7 +31,7 @@
             <th>Kode & Waktu</th>
             <th>Customer</th>
             <th>Tipe Order</th>
-            <th>Tagihan (+Kode Unik)</th>
+            <th>Total Tagihan</th>
             <th>Status Order</th>
             <th>Bukti Transfer</th>
             <th>Aksi & Manajemen Alur</th>
@@ -54,7 +54,7 @@
             </td>
             <td>
               <strong>{{ formatRupiah(ord.totalAmount) }}</strong>
-              <span class="unique-badge">Unik: +{{ ord.uniqueCode }}</span>
+              <span v-if="ord.uniqueCode > 0" class="unique-badge">Unik: +{{ ord.uniqueCode }}</span>
             </td>
             <td>
               <span class="status-pill" :class="ord.orderStatus">
@@ -155,7 +155,7 @@
               <span>Total Tagihan Sistem:</span>
               <strong class="highlight-price">{{ formatRupiah(selectedOrderForProof.totalAmount) }}</strong>
             </div>
-            <div class="box-stat">
+            <div v-if="selectedOrderForProof.uniqueCode > 0" class="box-stat">
               <span>Kode Unik 3 Digit:</span>
               <strong>+{{ selectedOrderForProof.uniqueCode }}</strong>
             </div>

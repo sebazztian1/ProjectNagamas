@@ -12,7 +12,7 @@
         loading="lazy" 
         class="product-img"
       />
-      <span v-if="product.badge" class="product-badge">
+      <span v-if="product.badge && product.badge !== 'Ready Stock'" class="product-badge">
         {{ product.badge }}
       </span>
       <span v-if="!product.inStock" class="stock-badge">
@@ -146,27 +146,27 @@ const formatPrice = (value: number) => {
 
 /* Info */
 .card-info {
-  padding: 18px 18px 16px;
+  padding: 12px 14px 14px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .category-name {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   color: var(--brand-accent, #8C6D3F);
   font-weight: 700;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 
 .product-title {
-  font-size: 0.96rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--color-text, #2B2116);
-  line-height: 1.45;
-  margin: 0 0 12px 0;
+  line-height: 1.35;
+  margin: 0 0 8px 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -183,9 +183,9 @@ const formatPrice = (value: number) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-top: 12px;
+  padding-top: 10px;
   border-top: 1px solid var(--brand-primary, #EFE1C6);
-  gap: 10px;
+  gap: 8px;
 }
 
 .price-box {
@@ -194,7 +194,7 @@ const formatPrice = (value: number) => {
 }
 
 .price-value {
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 800;
   color: var(--brand-accent, #8C6D3F);
   letter-spacing: -0.01em;
@@ -203,13 +203,13 @@ const formatPrice = (value: number) => {
 .wa-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   background: var(--brand-neutral, #FFFBF2);
   color: var(--brand-accent, #8C6D3F);
   border: 1px solid var(--brand-secondary, #D8B978);
-  border-radius: 8px;
-  padding: 7px 12px;
-  font-size: 0.8rem;
+  border-radius: 6px;
+  padding: 5px 9px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;

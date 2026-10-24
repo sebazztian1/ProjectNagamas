@@ -123,7 +123,7 @@
                 <span>Subtotal:</span>
                 <span>{{ formatRupiah(order.subtotal) }}</span>
               </div>
-              <div class="f-row">
+              <div v-if="order.uniqueCode > 0" class="f-row">
                 <span>Kode Unik Transfer:</span>
                 <span>+{{ order.uniqueCode }}</span>
               </div>

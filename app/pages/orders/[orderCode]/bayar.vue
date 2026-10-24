@@ -50,7 +50,7 @@
               <strong class="tagihan-num">{{ formatRupiah(totalTransfer) }}</strong>
               <button class="btn-copy" @click="copyText(totalTransfer.toString())">Salin Nominal</button>
             </div>
-            <div class="kode-unik-alert">
+            <div v-if="uniqueCode > 0" class="kode-unik-alert">
               ⚠️ Termasuk <strong>Kode Unik 3 Digit ({{ uniqueCode }})</strong>. Jangan bulatkan nominal transfer agar pembayaran diverifikasi secara otomatis.
             </div>
           </div>
@@ -141,7 +141,7 @@ const order = computed(() => {
   return mockOrders.find(o => o.orderCode === orderCode)
 })
 
-const uniqueCode = computed(() => order.value?.uniqueCode || 147)
+const uniqueCode = computed(() => order.value?.uniqueCode || 0)
 const totalTransfer = computed(() => order.value?.totalAmount || 430147)
 
 const uploadedFileName = ref('')
