@@ -1,0 +1,152 @@
+================================================================================
+           PANDUAN LENGKAP CARA MENJALANKAN PROGRAM SECARA LOKAL
+                 WEBSITE JASTIP & READY STOCK "dbb_luxe"
+================================================================================
+
+Dokumen ini berisi panduan langkah demi langkah untuk menjalankan aplikasi
+dbb_luxe di komputer lokal (Localhost) berbasis Nuxt 3/4, Vue 3, Prisma ORM,
+dan Database MySQL.
+
+--------------------------------------------------------------------------------
+1. PRASYARAT SISTEM (PREREQUISITES)
+--------------------------------------------------------------------------------
+Sebelum memulai, pastikan perangkat Anda sudah terinstal:
+1. Node.js (Versi LTS direkomendasikan, v18.x, v20.x, atau v22+)
+   - Cek instalasi via terminal:
+     node -v
+     npm -v
+2. MySQL Database Server
+   - Anda dapat menggunakan Laragon (direkomendasikan), XAMPP, atau MySQL Server mandiri.
+   - Pastikan service MySQL sedang aktif (Running pada port 3306).
+3. Web Browser (Google Chrome, Microsoft Edge, Mozilla Firefox, dll.)
+4. Terminal / Shell (PowerShell, Command Prompt, atau Git Bash).
+
+--------------------------------------------------------------------------------
+2. SETUP DATABASE MYSQL
+--------------------------------------------------------------------------------
+1. Buka MySQL Manager (phpMyAdmin, HeidiSQL, atau DBeaver).
+2. Buat database baru bernama:
+   jastip_dbbluxe
+
+   Query SQL alternatif jika melalui MySQL CLI / phpMyAdmin SQL tab:
+   CREATE DATABASE IF NOT EXISTS jastip_dbbluxe CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+--------------------------------------------------------------------------------
+3. SETUP ENVIRONMENT FILE (.env)
+--------------------------------------------------------------------------------
+1. Buka folder proyek "ProjectNagamas" di terminal atau code editor (VS Code).
+2. Periksa apakah file ".env" sudah ada di root folder.
+   Jika belum ada, duplikat file ".env.example" lalu ubah namanya menjadi ".env".
+3. Buka file ".env" dan sesuaikan koneksi database Anda:
+
+   DATABASE_URL="mysql://<user>:<password>@localhost:3306/jastip_dbbluxe"
+   NUXT_SESSION_PASSWORD="rahasia-32-karakter-session-dbbluxe-2026"
+
+   Contoh default jika menggunakan XAMPP / Laragon (tanpa password):
+   DATABASE_URL="mysql://root:@localhost:3306/jastip_dbbluxe"
+
+   Contoh jika MySQL Anda memiliki password "root123":
+   DATABASE_URL="mysql://root:root123@localhost:3306/jastip_dbbluxe"
+
+--------------------------------------------------------------------------------
+4. INSTALASI DEPENDENSI & SINKRONISASI PRISMA
+--------------------------------------------------------------------------------
+Buka terminal di root folder proyek, lalu jalankan perintah berikut secara berurutan:
+
+1. Install seluruh package npm:
+   npm install
+
+2. Sinkronkan skema tabel ke database MySQL:
+   npx prisma db push
+
+   (Perintah ini akan membuat seluruh tabel di database jastip_dbbluxe secara otomatis)
+
+3. Generate Prisma Client:
+   npx prisma generate
+
+--------------------------------------------------------------------------------
+5. SEEDING DATA AWAL (KATEGORI, PRODUK, DAN AKUN LOGIN)
+--------------------------------------------------------------------------------
+Jalankan perintah seeder database untuk mengisi data awal:
+   npx prisma db seed
+
+Proses ini akan otomatis mengisi:
+- Akun default Admin & Customer
+- 5 Kategori resmi: Tas, Baju, Sepatu, Aksesoris, dan Lainnya
+- Rekening transfer bank & QRIS toko
+- Jadwal trip jastip (Jepang, Korea, Thailand)
+- Katalog produk ready stock & produk jastip
+- Pengaturan umum toko dbb_luxe
+
+--------------------------------------------------------------------------------
+6. MENJALANKAN APLIKASI (DEVELOPMENT SERVER)
+--------------------------------------------------------------------------------
+Jalankan dev server dengan perintah:
+   npm run dev
+
+Setelah muncul pesan server siap (biasanya memakan waktu beberapa detik):
+  ➜ Local:   http://localhost:3000/
+  ➜ Network: use --host to expose
+
+Buka browser Anda dan akses:
+   http://localhost:3000
+
+--------------------------------------------------------------------------------
+7. DAFTAR AKUN DEMO UNTUK LOGIN & PENGUJIAN
+--------------------------------------------------------------------------------
+Sistem login menggunakan Username ATAU Nomor WhatsApp + Password:
+
+1. AKUN ADMIN:
+   - Akses Portal Admin : http://localhost:3000/admin atau via menu login
+   - Username           : admin
+   - Nomor WhatsApp     : 081298765432
+   - Password           : admin123
+   - Hak Akses          : Manajemen produk, jadwal trip, review ACC order,
+                          verifikasi pembayaran manual, & chat customer.
+
+2. AKUN CUSTOMER:
+   - Akses Halaman Login: http://localhost:3000/login
+   - Username           : sitirahma
+   - Nomor WhatsApp     : 081234567890
+   - Password           : password123
+   - Hak Akses          : Checkout pesanan, katalog ready/jastip, wishlist,
+                          request barang PO, live chat admin, profil akun.
+
+3. PENDAFTARAN AKUN BARU:
+   - Anda juga dapat membuat akun baru melalui halaman: http://localhost:3000/register
+   - Cukup masukkan Username, Nomor WhatsApp, dan Password (tanpa email & tanpa OTP).
+
+--------------------------------------------------------------------------------
+8. STRUKTUR HALAMAN UTAMA (SITEMAP)
+--------------------------------------------------------------------------------
+- Beranda Katalog           : http://localhost:3000/
+- Katalog Ready Stock       : http://localhost:3000/ready
+- Jadwal & Trip Jastip      : http://localhost:3000/jastip
+- Form Request Produk PO    : http://localhost:3000/request
+- Wishlist Favorit          : http://localhost:3000/wishlist
+- Live Chat Customer        : http://localhost:3000/chat
+- Checkout & Order          : http://localhost:3000/checkout
+- Pesanan Saya              : http://localhost:3000/orders
+- Pengaturan Profil Akun    : http://localhost:3000/akun
+- Portal Admin Toko         : http://localhost:3000/admin
+
+--------------------------------------------------------------------------------
+9. TROUBLESHOOTING / PEMECAHAN MASALAH
+--------------------------------------------------------------------------------
+1. Error: "Can't reach database server at localhost:3306"
+   -> Solusi: Pastikan Laragon/XAMPP sudah ditekan tombol "Start" pada bagian MySQL.
+
+2. Error: "The datasource.url property is required"
+   -> Solusi: Pastikan file ".env" berada di root folder dan variabel DATABASE_URL terisi.
+
+3. Error Prisma EPERM query_engine-windows.dll.node saat prisma generate di Windows:
+   -> Solusi: Matikan dev server terlebih dahulu (tekan Ctrl+C di terminal), lalu jalankan
+      ulang `npx prisma generate`, kemudian jalankan kembali `npm run dev`.
+
+4. Port 3000 sudah terpakai (Port in use):
+   -> Nuxt akan otomatis mengalihkan ke port berikutnya (misal: http://localhost:3001)
+      atau Anda dapat menghentikan proses Node.js yang sedang berjalan sebelumnya.
+
+================================================================================
+                         SELAMAT MENGEMBANGKAN!
+================================================================================
