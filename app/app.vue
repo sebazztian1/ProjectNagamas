@@ -14,21 +14,44 @@
     <!-- Floating Customer to Admin Live Chat Mockup Widget -->
     <CustomerChatWidget v-if="showChatWidget" />
 
+    <!-- Guest Wishlist Login Prompt Modal -->
+    <WishlistLoginModal />
+
     <!-- Global Toast Notifications -->
     <ToastNotification :toasts="toasts" @remove="removeToast" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
 import CustomerChatWidget from './components/CustomerChatWidget.vue'
+import WishlistLoginModal from './components/WishlistLoginModal.vue'
 import ToastNotification from './components/ToastNotification.vue'
 import { useToast } from './composables/useToast'
+import { useAuth } from './composables/useAuth'
+import { useWishlist } from './composables/useWishlist'
 
 const route = useRoute()
 const { toasts, removeToast } = useToast()
+const { currentUser } = useAuth()
+const { fetchWishlist, syncGuestWishlist } = useWishlist()
+
+onMounted(async () => {
+  await fetchWishlist()
+  if (currentUser.value) {
+    await syncGuestWishlist()
+  }
+})
+
+watch(currentUser, async (user) => {
+  if (user) {
+    await syncGuestWishlist()
+  } else {
+    await fetchWishlist()
+  }
+})
 
 const isAdminRoute = computed(() => {
   return route.path.startsWith('/admin')

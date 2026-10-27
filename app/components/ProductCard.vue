@@ -18,6 +18,19 @@
       <span v-if="!product.inStock" class="stock-badge">
         Out of Stock
       </span>
+
+      <!-- Wishlist Love Button -->
+      <button 
+        class="card-wishlist-btn" 
+        :class="{ active: isWishlisted(product.id) }"
+        @click.stop="toggleWishlist(product)"
+        :title="isWishlisted(product.id) ? 'Hapus dari Wishlist' : 'Simpan ke Wishlist'"
+        aria-label="Wishlist"
+      >
+        <svg width="17" height="17" viewBox="0 0 24 24" :fill="isWishlisted(product.id) ? '#E53935' : 'none'" :stroke="isWishlisted(product.id) ? '#E53935' : 'currentColor'" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+      </button>
     </div>
 
     <!-- Details -->
@@ -51,6 +64,7 @@
 <script setup lang="ts">
 import type { Product } from '../types/product'
 import { useCustomerChat } from '../composables/useCustomerChat'
+import { useWishlist } from '../composables/useWishlist'
 
 const props = defineProps<{
   product: Product
@@ -62,6 +76,7 @@ defineEmits<{
 }>()
 
 const { openChatWithProduct } = useCustomerChat()
+const { isWishlisted, toggleWishlist } = useWishlist()
 
 const handleChatClick = (product: Product) => {
   openChatWithProduct(product)
@@ -134,14 +149,58 @@ const formatPrice = (value: number) => {
 
 .stock-badge {
   position: absolute;
-  top: 10px;
-  right: 10px;
+  bottom: 10px;
+  left: 10px;
   background: var(--color-danger, #A33A2A);
   color: #ffffff;
   font-size: 0.7rem;
   font-weight: 600;
   padding: 3px 8px;
   border-radius: 6px;
+  z-index: 2;
+}
+
+.card-wishlist-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(4px);
+  border: 1px solid rgba(43, 33, 22, 0.1);
+  color: #7A6A55;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.card-wishlist-btn:hover {
+  transform: scale(1.15);
+  background: #ffffff;
+  color: #D32F2F;
+  border-color: rgba(211, 47, 47, 0.3);
+}
+
+.card-wishlist-btn.active {
+  background: #ffffff;
+  color: #D32F2F;
+  border-color: rgba(211, 47, 47, 0.4);
+}
+
+.card-wishlist-btn.active svg {
+  animation: heartPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes heartPop {
+  0% { transform: scale(0.7); }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); }
 }
 
 /* Info */

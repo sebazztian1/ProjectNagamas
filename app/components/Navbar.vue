@@ -40,7 +40,7 @@
           <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
             <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
           </svg>
-          <span class="dot-badge">2</span>
+          <span v-if="wishlistCount > 0" class="dot-badge">{{ wishlistCount }}</span>
         </NuxtLink>
 
         <NuxtLink to="/notifikasi" class="icon-btn hide-sm" title="Notifikasi">
@@ -122,6 +122,7 @@
 import { ref, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+import { useWishlist } from '../composables/useWishlist'
 
 defineProps<{
   searchQuery?: string
@@ -133,6 +134,7 @@ defineEmits<{
 
 const { currentUser, logout } = useAuth()
 const { showToast } = useToast()
+const { wishlistCount } = useWishlist()
 const route = useRoute()
 
 const searchOpen = ref(false)

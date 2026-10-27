@@ -423,15 +423,15 @@ FASE 5: JADWAL JASTIP (TRIP) & KATALOG JASTIP
 --------------------------------------------------------------------------------
 FASE 6: WISHLIST CUSTOMER
 --------------------------------------------------------------------------------
-[ ] 6.1 Fitur Wishlist
-    [ ] Tombol toggle Love pada card produk (ready & jastip) dan modal detail
-    [ ] Drawer/Halaman Wishlist dengan penanda tipe produk
-    [ ] Badge jumlah wishlist di Navbar (real-time counter)
-    [ ] Aksi: Hapus, Chat Admin (live chat, mengirim kartu produk), Beli Sekarang
-    [ ] Tombol beli dinonaktifkan jika produk jastip & trip sudah tutup / ready habis
-    [ ] Modal peringatan login jika guest mencoba menyimpan
-    [ ] Persistensi: local storage + database per akun, gabung (merge) saat login, cegah duplikasi
-    [ ] Opsional: pengingat berkala mengenai barang wishlist (notifikasi in-app / email), sesuai permintaan narasumber
+[X] 6.1 Fitur Wishlist
+    [X] Tombol toggle Love pada card produk (ready & jastip) dan modal detail
+    [X] Drawer/Halaman Wishlist dengan penanda tipe produk
+    [X] Badge jumlah wishlist di Navbar (real-time counter)
+    [X] Aksi: Hapus, Chat Admin (live chat, mengirim kartu produk), Beli Sekarang
+    [X] Tombol beli dinonaktifkan jika produk jastip & trip sudah tutup / ready habis
+    [X] Modal peringatan login jika guest mencoba menyimpan
+    [X] Persistensi: local storage + database per akun, gabung (merge) saat login, cegah duplikasi
+    [X] Opsional: pengingat berkala mengenai barang wishlist (notifikasi in-app / email), sesuai permintaan narasumber
 
 --------------------------------------------------------------------------------
 FASE 7: REQUEST PRODUK & PENAWARAN (QUOTE)

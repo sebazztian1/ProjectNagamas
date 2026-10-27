@@ -97,15 +97,35 @@
 
           <!-- Action Buttons -->
           <div class="cta-actions">
-            <NuxtLink :to="`/checkout?productId=${product.id}&qty=${qty}&variant=${selectedVariant || ''}&tripSlug=${tripSlug}`" class="btn-po-now">
+            <NuxtLink 
+              v-if="isTripOpen" 
+              :to="`/checkout?productId=${product.id}&qty=${qty}&variant=${selectedVariant || ''}&tripSlug=${tripSlug}`" 
+              class="btn-po-now"
+            >
               Titip Sekarang (Checkout PO)
             </NuxtLink>
-            <button class="btn-chat-admin" @click="handleChatAdmin">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              </svg>
-              Chat Tanya Produk
+            <button v-else disabled class="btn-po-now disabled">
+              PO Telah Ditutup
             </button>
+            <div class="cta-sub-row">
+              <button class="btn-chat-admin" @click="handleChatAdmin">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                Chat Tanya
+              </button>
+              <button 
+                class="btn-wishlist-detail"
+                :class="{ active: isWishlisted(product.id) }"
+                @click="toggleWishlist(product)"
+                :title="isWishlisted(product.id) ? 'Hapus dari Wishlist' : 'Simpan ke Wishlist'"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" :fill="isWishlisted(product.id) ? '#E53935' : 'none'" :stroke="isWishlisted(product.id) ? '#E53935' : 'currentColor'" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <span>{{ isWishlisted(product.id) ? 'Favorit' : 'Wishlist' }}</span>
+              </button>
+            </div>
           </div>
 
           <!-- Jastip Guarantees -->
@@ -146,14 +166,24 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useCustomerChat } from '../../../composables/useCustomerChat'
+import { useWishlist } from '../../../composables/useWishlist'
 import type { ApiProduct } from '../../../composables/useProducts'
 
 const route = useRoute()
 const tripSlug = route.params.tripSlug as string
 const slug = route.params.slug as string
 const { openChat, openChatWithProduct } = useCustomerChat()
+const { isWishlisted, toggleWishlist } = useWishlist()
 
 const { data: product } = await useFetch<ApiProduct>(`/api/products/${slug}`)
+
+const isTripOpen = computed(() => {
+  if (!product.value?.trip) return true
+  const trip = product.value.trip
+  const isStatusOpen = trip.status === 'open'
+  const isNotExpired = new Date(trip.closeDate) > new Date()
+  return isStatusOpen && isNotExpired
+})
 
 const qty = ref(1)
 const selectedVariant = ref('')
@@ -458,10 +488,16 @@ const handleChatAdmin = () => {
 }
 
 .cta-actions {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   margin-bottom: 24px;
+}
+
+.cta-sub-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
 }
 
 .btn-po-now {
@@ -473,11 +509,18 @@ const handleChatAdmin = () => {
   font-weight: 700;
   padding: 13px;
   border-radius: 8px;
+  border: none;
   transition: all 0.15s;
 }
 
-.btn-po-now:hover {
+.btn-po-now:hover:not(.disabled) {
   background: var(--color-primary-hover, #6F5530);
+}
+
+.btn-po-now.disabled {
+  background: #D9D2C5;
+  color: #7A6A55;
+  cursor: not-allowed;
 }
 
 .btn-chat-admin {
@@ -486,13 +529,48 @@ const handleChatAdmin = () => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
   font-weight: 700;
-  padding: 13px;
+  padding: 12px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-chat-admin:hover {
+  background: var(--color-secondary, #EFE1C6);
+}
+
+.btn-wishlist-detail {
+  background: #FAF8F4;
+  color: #7A6A55;
+  border: 1px solid rgba(140, 109, 63, 0.25);
+  font-size: 0.88rem;
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-wishlist-detail:hover {
+  border-color: #D32F2F;
+  color: #D32F2F;
+  background: #FFF1F0;
+}
+
+.btn-wishlist-detail.active {
+  border-color: #D32F2F;
+  color: #D32F2F;
+  background: #FFF1F0;
+  font-weight: 700;
+}
 }
 
 .guarantee-box {

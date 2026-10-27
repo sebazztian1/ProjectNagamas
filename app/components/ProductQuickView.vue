@@ -46,6 +46,33 @@
           </div>
 
           <div class="modal-actions">
+            <!-- Buy Now & Wishlist row -->
+            <div class="primary-action-row">
+              <NuxtLink 
+                v-if="product.inStock" 
+                :to="`/checkout?productId=${product.id}&qty=1`" 
+                class="btn-quick-buy"
+                @click="$emit('close')"
+              >
+                Beli Sekarang (Checkout)
+              </NuxtLink>
+              <button v-else disabled class="btn-quick-buy disabled">
+                Stok Habis
+              </button>
+
+              <button 
+                class="quickview-wishlist-btn"
+                :class="{ active: isWishlisted(product.id) }"
+                @click="toggleWishlist(product)"
+                :title="isWishlisted(product.id) ? 'Hapus dari Wishlist' : 'Simpan ke Wishlist'"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" :fill="isWishlisted(product.id) ? '#E53935' : 'none'" :stroke="isWishlisted(product.id) ? '#E53935' : 'currentColor'" stroke-width="2">
+                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                </svg>
+                <span>{{ isWishlisted(product.id) ? 'Tersimpan' : 'Wishlist' }}</span>
+              </button>
+            </div>
+
             <!-- Chat via Live Chat Button -->
             <button 
               class="chat-main-btn"
@@ -55,18 +82,6 @@
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
               </svg>
               <span>Chat Langsung dengan Admin</span>
-            </button>
-
-            <!-- Chat via WhatsApp Button -->
-            <button 
-              class="wa-secondary-btn"
-              @click="handleChatWhatsApp"
-              title="Chat via WhatsApp"
-            >
-              <svg class="wa-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.196 8.196 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.02-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.44.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.44 1.03 2.61.13.17 1.77 2.7 4.29 3.79.6.26 1.07.41 1.44.53.6.19 1.15.16 1.58.1.48-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.11-.23-.17-.48-.3z"/>
-              </svg>
-              <span>WhatsApp</span>
             </button>
           </div>
         </div>
@@ -79,6 +94,7 @@
 import { ref, computed, watch } from 'vue'
 import type { Product } from '../types/product'
 import { useCustomerChat } from '../composables/useCustomerChat'
+import { useWishlist } from '../composables/useWishlist'
 
 const props = defineProps<{
   product: Product
@@ -90,6 +106,7 @@ const emit = defineEmits<{
 }>()
 
 const { openChatWithProduct } = useCustomerChat()
+const { isWishlisted, toggleWishlist } = useWishlist()
 
 const activeImage = ref(props.product.image)
 
@@ -286,8 +303,73 @@ const handleChatWhatsApp = () => {
 
 .modal-actions {
   display: flex;
+  flex-direction: column;
   gap: 10px;
   margin-top: auto;
+}
+
+.primary-action-row {
+  display: flex;
+  gap: 10px;
+}
+
+.btn-quick-buy {
+  flex: 1;
+  background: var(--brand-accent, #8C6D3F);
+  color: #ffffff;
+  border-radius: 10px;
+  height: 46px;
+  font-weight: 700;
+  font-size: 0.88rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  border: none;
+  box-shadow: 0 4px 14px rgba(140, 109, 63, 0.25);
+  transition: all 0.2s;
+}
+
+.btn-quick-buy:hover:not(.disabled) {
+  background: #73572E;
+  transform: translateY(-1px);
+}
+
+.btn-quick-buy.disabled {
+  background: #D9D2C5;
+  color: #7A6A55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.quickview-wishlist-btn {
+  background: #FAF8F4;
+  border: 1px solid rgba(140, 109, 63, 0.3);
+  color: #7A6A55;
+  border-radius: 10px;
+  height: 46px;
+  padding: 0 16px;
+  font-weight: 600;
+  font-size: 0.84rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.quickview-wishlist-btn:hover {
+  border-color: #D32F2F;
+  color: #D32F2F;
+  background: #FFF1F0;
+}
+
+.quickview-wishlist-btn.active {
+  border-color: #D32F2F;
+  color: #D32F2F;
+  background: #FFF1F0;
+  font-weight: 700;
 }
 
 .chat-main-btn {
