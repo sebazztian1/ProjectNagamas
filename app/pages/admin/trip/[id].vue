@@ -139,10 +139,10 @@
                 <span>{{ ord.customerName }}</span>
                 <span class="variant-text">{{ ord.customerPhone }}</span>
               </td>
-              <td>{{ ord.items.map(i => `${i.productName} (${i.quantity}x)`).join(', ') }}</td>
+              <td>{{ ord.itemsCount }} item</td>
               <td><strong>{{ formatRupiah(ord.totalAmount) }}</strong></td>
               <td>
-                <span class="status-pill verified">Terverifikasi Lunas</span>
+                <span class="status-pill verified">{{ ord.status }}</span>
               </td>
             </tr>
           </tbody>
@@ -153,9 +153,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { mockJastipTrips, mockUnifiedProducts, mockOrders } from '../../../data/mockJastipData'
+import { ref, computed, watch } from 'vue'
 import { useToast } from '../../../composables/useToast'
+
+definePageMeta({
+  middleware: 'admin'
+})
 
 const route = useRoute()
 const { showToast } = useToast()
@@ -163,52 +166,22 @@ const tripId = route.params.id as string
 
 const currentTab = ref<'shopping' | 'products' | 'orders'>('shopping')
 
-const trip = computed(() => {
-  return mockJastipTrips.find(t => t.id === tripId) || mockJastipTrips[0]
-})
+const { data: opData } = await useFetch<any>(`/api/admin/trips/${tripId}/operations`)
 
-const tripProducts = computed(() => {
-  return mockUnifiedProducts.filter(p => p.productType === 'jastip')
-})
+const trip = computed(() => opData.value?.trip)
+const tripProducts = computed(() => opData.value?.products || [])
+const tripOrders = computed(() => opData.value?.orders || [])
 
-const tripOrders = computed(() => {
-  return mockOrders.filter(o => o.orderType === 'jastip')
-})
+const shoppingList = ref<any[]>([])
 
-const shoppingList = ref([
-  {
-    id: 'shop-1',
-    name: 'Shiroi Koibito White Chocolate Cookies',
-    variant: 'Box isi 18 pcs',
-    store: 'Haneda Airport / Don Quijote',
-    currency: 'JPY',
-    originalPrice: 1500,
-    totalQty: 6,
-    bought: true
-  },
-  {
-    id: 'shop-2',
-    name: 'Rohto Melano CC Intensive Anti-Spot Essence',
-    variant: '20ml Tube',
-    store: 'Matsumoto Kiyoshi Shinjuku',
-    currency: 'JPY',
-    originalPrice: 1100,
-    totalQty: 10,
-    bought: false
-  },
-  {
-    id: 'shop-3',
-    name: 'Starbucks Japan Sakura Tumbler 2026',
-    variant: '473ml Limited Edition',
-    store: 'Starbucks Reserve Ginza',
-    currency: 'JPY',
-    originalPrice: 2800,
-    totalQty: 2,
-    bought: false
+watch(() => opData.value?.shoppingList, (val) => {
+  if (val) {
+    shoppingList.value = val.map((i: any) => ({ ...i, bought: false }))
   }
-])
+}, { immediate: true })
 
 const exportCSV = () => {
+  if (!trip.value) return
   const headers = 'Nama Barang,Varian,Toko Sumber,Qty,Harga Asli,Status\n'
   const rows = shoppingList.value.map(i => `"${i.name}","${i.variant}","${i.store}",${i.totalQty},"${i.currency} ${i.originalPrice}",${i.bought ? 'Sudah Dibeli' : 'Belum'}`).join('\n')
   
@@ -216,18 +189,14 @@ const exportCSV = () => {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `daftar_belanja_${trip.value.slug}.csv`
+  a.download = `daftar_belanja_${trip.value.slug || tripId}.csv`
   a.click()
 
-  showToast({
-    title: 'CSV Berhasil Diekspor',
-    message: 'File daftar belanja trip telah diunduh.',
-    type: 'success'
-  })
+  showToast('CSV Berhasil Diekspor', 'File daftar belanja trip telah diunduh.', 'success')
 }
 
 const formatRupiah = (val: number) => {
-  return 'Rp ' + val.toLocaleString('id-ID')
+  return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 </script>
 

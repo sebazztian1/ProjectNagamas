@@ -36,27 +36,24 @@
           </div>
         </div>
 
-        <!-- Info / Buying Action -->
+          <!-- Info / Buying Action -->
         <div class="info-col">
           <div class="origin-tag">
-            <span>{{ product.flag }} Produk Impor Asli ({{ product.country }})</span>
+            <span>Produk Impor Asli ({{ product.sourceStore || 'Store Resmi' }})</span>
           </div>
 
           <h1 class="product-name">{{ product.name }}</h1>
 
           <div class="rating-stock-row">
-            <div class="rating-pill">
-              ⭐ <strong>{{ product.rating || 4.9 }}</strong> ({{ product.reviewsCount || 20 }} ulasan)
-            </div>
-            <div class="stock-pill">
-              Stok Gudang: <strong>{{ product.stockQuantity }} pcs</strong>
+            <div class="stock-pill" :class="{ 'out': !product.inStock }">
+              Status Stok: <strong>{{ product.inStock ? 'Tersedia (' + product.stockQuantity + ' pcs)' : 'Habis' }}</strong>
             </div>
           </div>
 
           <div class="price-box">
             <span class="price-label">Harga Barang Ready:</span>
             <div class="price-amount">{{ formatRupiah(product.price) }}</div>
-            <span class="tax-note">*Harga pas di toko (tanpa tambahan kurs/fee jastip).</span>
+            <span class="tax-note">*Harga pas di toko (tanpa biaya jastip tambahan).</span>
           </div>
 
           <!-- Variants selection if any -->
@@ -78,7 +75,7 @@
           </div>
 
           <!-- Quantity Selector -->
-          <div class="qty-section">
+          <div class="qty-section" v-if="product.inStock">
             <label class="qty-label">Jumlah Pembelian:</label>
             <div class="qty-ctrl">
               <button @click="qty > 1 ? qty-- : null" :disabled="qty <= 1">-</button>
@@ -90,9 +87,16 @@
 
           <!-- Action Buttons -->
           <div class="cta-actions">
-            <NuxtLink :to="`/checkout?productId=${product.id}&qty=${qty}&variant=${selectedVariant || ''}`" class="btn-buy-now">
+            <NuxtLink 
+              v-if="product.inStock" 
+              :to="`/checkout?productId=${product.id}&qty=${qty}&variant=${selectedVariant || ''}`" 
+              class="btn-buy-now"
+            >
               Beli Sekarang (Checkout)
             </NuxtLink>
+            <button v-else disabled class="btn-buy-now disabled">
+              Stok Habis
+            </button>
             <button class="btn-chat-admin" @click="handleChatAdmin">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
@@ -116,7 +120,7 @@
           <!-- Description -->
           <div class="desc-section">
             <h3>Deskripsi Produk</h3>
-            <p>{{ product.description }}</p>
+            <p>{{ product.description || 'Tidak ada deskripsi tambahan.' }}</p>
           </div>
         </div>
       </div>
@@ -130,32 +134,43 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { mockUnifiedProducts } from '../../data/mockJastipData'
+import { ref, computed, watch } from 'vue'
 import { useCustomerChat } from '../../composables/useCustomerChat'
+import type { ApiProduct } from '../../composables/useProducts'
 
 const route = useRoute()
-const router = useRouter()
-const { openChat } = useCustomerChat()
+const { openChat, openChatWithProduct } = useCustomerChat()
 
 const slug = route.params.slug as string
-const product = computed(() => {
-  return mockUnifiedProducts.find(p => p.slug === slug && p.productType === 'ready') || mockUnifiedProducts[0]
-})
+const { data: product } = await useFetch<ApiProduct>(`/api/products/${slug}`)
 
-const activeImage = ref(product.value ? product.value.image : '')
+const activeImage = ref(product.value?.image || '')
+watch(product, (p) => {
+  if (p) activeImage.value = p.image
+}, { immediate: true })
+
 const qty = ref(1)
 
 const selectedVariant = ref(
-  product.value?.variants ? Object.values(product.value.variants)[0][0] : ''
+  product.value?.variants ? Object.values(product.value.variants)[0]?.[0] || '' : ''
 )
 
 const formatRupiah = (val: number) => {
-  return 'Rp ' + val.toLocaleString('id-ID')
+  return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 
 const handleChatAdmin = () => {
-  openChat()
+  if (product.value) {
+    openChatWithProduct({
+      id: String(product.value.id),
+      name: product.value.name,
+      price: product.value.price,
+      image: product.value.image,
+      category: product.value.category
+    } as any)
+  } else {
+    openChat()
+  }
 }
 </script>
 

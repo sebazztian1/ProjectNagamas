@@ -54,18 +54,19 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { mockUnifiedProducts } from '../data/mockJastipData'
 import { useToast } from '../composables/useToast'
+import type { ApiProduct } from '../composables/useProducts'
 
 definePageMeta({
   middleware: 'auth'
 })
 
 const { showToast } = useToast()
-const wishlistItems = ref([...mockUnifiedProducts.slice(0, 3)])
+const { data: dbProducts } = await useFetch<ApiProduct[]>('/api/products')
+const wishlistItems = ref<ApiProduct[]>(dbProducts.value?.slice(0, 3) || [])
 
-const removeItem = (id: string) => {
-  wishlistItems.value = wishlistItems.value.filter(item => item.id !== id)
+const removeItem = (id: number | string) => {
+  wishlistItems.value = wishlistItems.value.filter(item => String(item.id) !== String(id))
   showToast('Dihapus', 'Barang berhasil dihapus dari Wishlist.', 'info')
 }
 

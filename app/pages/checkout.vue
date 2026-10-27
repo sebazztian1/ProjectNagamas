@@ -113,9 +113,10 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { mockUnifiedProducts, mockOrders } from '../data/mockJastipData'
+import { mockOrders } from '../data/mockJastipData'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+import type { ApiProduct } from '../composables/useProducts'
 
 definePageMeta({
   middleware: 'auth'
@@ -129,8 +130,24 @@ const { showToast } = useToast()
 const productId = route.query.productId as string
 const qty = ref(Number(route.query.qty) || 1)
 
+const { data: dbProducts } = await useFetch<ApiProduct[]>('/api/products')
+
 const itemProduct = computed(() => {
-  return mockUnifiedProducts.find(p => p.id === productId) || mockUnifiedProducts[0]
+  if (dbProducts.value && dbProducts.value.length > 0) {
+    const found = dbProducts.value.find(p => String(p.id) === String(productId) || p.slug === String(productId))
+    if (found) return found
+    return dbProducts.value[0]
+  }
+  return {
+    id: 1,
+    name: 'Produk',
+    slug: 'produk',
+    price: 0,
+    image: '',
+    productType: 'ready',
+    tripId: null,
+    trip: null
+  } as unknown as ApiProduct
 })
 
 const customerUsername = ref(currentUser.value?.username || '')

@@ -54,14 +54,14 @@
           class="trip-card"
           :class="{ 'is-closed': trip.status === 'closed' }"
         >
-          <div class="card-cover" :style="{ backgroundImage: `linear-gradient(rgba(43, 33, 22, 0.4), rgba(43, 33, 22, 0.8)), url(${trip.coverImageUrl})` }">
-            <div class="cover-top">
+          <div class="card-head-clean">
+            <div class="head-top">
               <span class="country-badge">{{ trip.flag }} {{ trip.country }}</span>
               <span v-if="trip.status === 'open'" class="status-badge open">Open PO</span>
               <span v-else class="status-badge closed">Tutup PO</span>
             </div>
 
-            <div class="cover-bottom">
+            <div class="head-body">
               <span class="city-label">{{ trip.cityOrArea }}</span>
               <h2 class="trip-card-title">{{ trip.title }}</h2>
             </div>
@@ -110,21 +110,25 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { mockJastipTrips } from '../../data/mockJastipData'
+import type { ApiTrip } from '../../composables/useTrips'
+
+const { data: dbTrips, status, refresh } = await useFetch<ApiTrip[]>('/api/trips')
 
 const activeStatusTab = ref<'open' | 'closed'>('open')
 
-const openTripsCount = computed(() => mockJastipTrips.filter(t => t.status === 'open').length)
-const closedTripsCount = computed(() => mockJastipTrips.filter(t => t.status !== 'open').length)
+const allTrips = computed(() => dbTrips.value || [])
+const openTripsCount = computed(() => allTrips.value.filter(t => t.status === 'open').length)
+const closedTripsCount = computed(() => allTrips.value.filter(t => t.status !== 'open').length)
 
 const displayedTrips = computed(() => {
   if (activeStatusTab.value === 'open') {
-    return mockJastipTrips.filter(t => t.status === 'open')
+    return allTrips.value.filter(t => t.status === 'open')
   }
-  return mockJastipTrips.filter(t => t.status !== 'open')
+  return allTrips.value.filter(t => t.status !== 'open')
 })
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr?: string | null) => {
+  if (!dateStr) return '-'
   const d = new Date(dateStr)
   return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
@@ -309,46 +313,30 @@ const formatDate = (dateStr: string) => {
   opacity: 0.85;
 }
 
-.card-cover {
-  height: 200px;
-  background-size: cover;
-  background-position: center;
-  padding: 20px;
+.card-head-clean {
+  padding: 22px 20px 16px;
+  background: linear-gradient(135deg, #2B2116 0%, #443422 100%);
+  color: #FFFBF2;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  color: #FFFBF2;
-  position: relative;
+  gap: 12px;
 }
 
-.card-cover::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(180deg, rgba(28, 20, 12, 0.4) 0%, rgba(28, 20, 12, 0.75) 100%);
-  pointer-events: none;
-}
-
-.cover-top, .cover-bottom {
-  position: relative;
-  z-index: 1;
-}
-
-.cover-top {
+.head-top {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .country-badge {
-  background: rgba(28, 20, 12, 0.6);
+  background: rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(6px);
-  padding: 5px 12px;
+  padding: 4px 12px;
   border-radius: var(--radius-full);
-  font-size: 0.76rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: var(--brand-primary);
-  border: 1px solid rgba(216, 185, 120, 0.25);
+  color: #FFFBF2;
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 .status-badge {

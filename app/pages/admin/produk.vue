@@ -3,17 +3,17 @@
     <div class="page-head">
       <div>
         <h1 class="page-title">Manajemen Produk (Ready Stock & Jastip)</h1>
-        <p class="page-subtitle">Kelola inventaris barang ready di toko Jakarta serta katalog titip beli luar negeri per jadwal trip.</p>
+        <p class="page-subtitle">Kelola inventaris barang ready di toko serta katalog titip beli luar negeri per jadwal trip langsung dari database.</p>
       </div>
-      <button class="btn-add-product" @click="showModal = true">+ Tambah Produk Baru</button>
+      <button class="btn-add-product" @click="openCreateModal">+ Tambah Produk Baru</button>
     </div>
 
-    <!-- Filter Tabs (Ready vs Jastip) -->
+    <!-- Filter Tabs (Ready vs Jastip) & Search -->
     <div class="type-filter-bar">
       <div class="tabs">
         <button class="t-btn" :class="{ active: typeFilter === 'all' }" @click="typeFilter = 'all'">Semua ({{ products.length }})</button>
-        <button class="t-btn" :class="{ active: typeFilter === 'ready' }" @click="typeFilter = 'ready'">Ready Stock</button>
-        <button class="t-btn" :class="{ active: typeFilter === 'jastip' }" @click="typeFilter = 'jastip'">Jastip (Pre-Order)</button>
+        <button class="t-btn" :class="{ active: typeFilter === 'ready' }" @click="typeFilter = 'ready'">Ready Stock ({{ readyCount }})</button>
+        <button class="t-btn" :class="{ active: typeFilter === 'jastip' }" @click="typeFilter = 'jastip'">Jastip PO ({{ jastipCount }})</button>
       </div>
 
       <div class="search-input-box">
@@ -21,54 +21,70 @@
       </div>
     </div>
 
+    <!-- Loading State -->
+    <div v-if="status === 'pending'" class="loading-state">
+      <div class="spinner"></div>
+      <p>Memuat data produk dari database...</p>
+    </div>
+
     <!-- Products Table -->
-    <div class="table-card">
+    <div v-else class="table-card">
       <table class="admin-table">
         <thead>
           <tr>
             <th>Produk</th>
             <th>Tipe & Asal</th>
             <th>Harga Jual (IDR)</th>
-            <th>Stok / Kuota</th>
+            <th>Stok / Status</th>
             <th>Trip Terkait</th>
             <th>Aksi</th>
           </tr>
         </thead>
-        <tbody>
+        <tbody v-if="filteredProducts.length > 0">
           <tr v-for="p in filteredProducts" :key="p.id">
             <td class="col-product">
               <div class="prod-thumb">
-                <img :src="p.image" :alt="p.name" />
+                <img :src="p.imageUrl || 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80'" :alt="p.name" />
               </div>
               <div class="prod-info-txt">
                 <strong>{{ p.name }}</strong>
-                <span>{{ p.category }}</span>
+                <span>{{ p.categoryName }} &bull; slug: {{ p.slug }}</span>
               </div>
             </td>
             <td>
               <span class="type-badge" :class="p.productType">
-                {{ p.productType === 'ready' ? 'Ready Stock' : 'Jastip Luar Negeri' }}
+                {{ p.productType === 'ready' ? 'Ready Stock' : 'Jastip PO' }}
               </span>
-              <span class="country-text">{{ p.flag }} {{ p.country }}</span>
+              <span class="country-text">{{ p.sourceStore || (p.tripCountry ? 'Store di ' + p.tripCountry : 'Store Resmi') }}</span>
             </td>
             <td class="col-price">
               <strong>{{ formatRupiah(p.price) }}</strong>
               <span v-if="p.originalPrice" class="calc-hint">{{ p.originalCurrency }} {{ p.originalPrice }}</span>
             </td>
             <td>
-              <span v-if="p.productType === 'ready'" class="stock-status in-stock">
-                {{ p.stockQuantity }} pcs
-              </span>
-              <span v-else class="quota-status">
-                {{ p.quotaRemaining }}/{{ p.quota }} slot
-              </span>
+              <button 
+                class="stock-toggle-btn"
+                :class="p.stockStatus"
+                @click="toggleStockStatus(p)"
+                :title="p.stockStatus === 'in_stock' ? 'Klik untuk ubah jadi Habis' : 'Klik untuk ubah jadi Tersedia'"
+              >
+                {{ p.stockStatus === 'in_stock' ? (p.productType === 'ready' ? `Tersedia (${p.stockQuantity} pcs)` : `Buka (${p.quota} slot)`) : 'Habis (Out of Stock)' }}
+              </button>
             </td>
             <td>
               <span class="trip-tag">{{ p.tripTitle || '-' }}</span>
             </td>
             <td class="col-actions">
-              <button class="btn-action edit" @click="editProduct(p)">Edit</button>
-              <button class="btn-action delete" @click="deleteProduct(p.id)">Hapus</button>
+              <button class="btn-action edit" @click="editProduct(p)" title="Edit rincian produk">Edit</button>
+              <button class="btn-action duplicate" @click="duplicateProduct(p)" title="Duplikasi produk">Salin</button>
+              <button class="btn-action delete" @click="deleteProduct(p)" title="Hapus produk (soft delete)">Hapus</button>
+            </td>
+          </tr>
+        </tbody>
+        <tbody v-else>
+          <tr>
+            <td colspan="6" class="empty-cell">
+              Tidak ada produk yang cocok dengan filter atau pencarian.
             </td>
           </tr>
         </tbody>
@@ -79,7 +95,7 @@
     <div v-if="showModal" class="modal-backdrop" @click.self="showModal = false">
       <div class="modal-box">
         <div class="modal-head">
-          <h3>Tambah Produk Baru</h3>
+          <h3>{{ isEditing ? 'Edit Produk' : 'Tambah Produk Baru' }}</h3>
           <button class="close-x" @click="showModal = false">&times;</button>
         </div>
 
@@ -88,64 +104,100 @@
             <div class="f-group">
               <label>Tipe Produk:</label>
               <select v-model="form.productType">
-                <option value="ready">Ready Stock (Toko Jakarta)</option>
+                <option value="ready">Ready Stock</option>
                 <option value="jastip">Jastip Pre-Order (Luar Negeri)</option>
               </select>
             </div>
             <div class="f-group" v-if="form.productType === 'jastip'">
               <label>Tautkan ke Jadwal Trip:</label>
               <select v-model="form.tripId">
-                <option value="trip-jpn-01">🇯🇵 Japan Autumn Special Trip</option>
-                <option value="trip-kor-02">🇰🇷 Korea K-Beauty Trip</option>
+                <option :value="null">-- Pilih Trip --</option>
+                <option v-for="t in trips" :key="t.id" :value="t.id">
+                  {{ t.country }} - {{ t.title }}
+                </option>
+              </select>
+            </div>
+            <div class="f-group" v-else>
+              <label>Status Stok:</label>
+              <select v-model="form.stockStatus">
+                <option value="in_stock">Tersedia (In Stock)</option>
+                <option value="out_of_stock">Habis (Out of Stock)</option>
               </select>
             </div>
           </div>
 
           <div class="f-group">
             <label>Nama Produk:</label>
-            <input v-model="form.name" type="text" placeholder="Contoh: Rohto Melano CC Essence" required />
+            <input v-model="form.name" type="text" placeholder="Contoh: Aethel Minimalist Leather Tote Bag" required />
           </div>
 
           <div class="form-row-2">
             <div class="f-group">
               <label>Kategori:</label>
-              <select v-model="form.category">
-                <option>Tas</option>
-                <option>Baju</option>
-                <option>Sepatu</option>
-                <option>Aksesoris</option>
-                <option>Lainnya</option>
+              <select v-model="form.categoryId" required>
+                <option v-for="c in categories" :key="c.id" :value="c.id">
+                  {{ c.name }}
+                </option>
               </select>
             </div>
             <div class="f-group">
               <label>Harga Jual Akhir (IDR):</label>
-              <input v-model.number="form.price" type="number" placeholder="Contoh: 165000" required />
+              <input v-model.number="form.price" type="number" placeholder="Contoh: 1250000" min="1" required />
             </div>
           </div>
 
           <div class="form-row-2">
             <div class="f-group" v-if="form.productType === 'ready'">
               <label>Jumlah Stok Fisik:</label>
-              <input v-model.number="form.stockQuantity" type="number" placeholder="10" />
+              <input v-model.number="form.stockQuantity" type="number" placeholder="10" min="0" />
             </div>
             <div class="f-group" v-else>
               <label>Batas Kuota Titip:</label>
-              <input v-model.number="form.quota" type="number" placeholder="25" />
+              <input v-model.number="form.quota" type="number" placeholder="25" min="1" />
             </div>
             <div class="f-group">
-              <label>Negara / Toko Asal:</label>
-              <input v-model="form.country" type="text" placeholder="Jepang / Don Quijote" />
+              <label>Toko Sumber / Asal:</label>
+              <input v-model="form.sourceStore" type="text" placeholder="Contoh: Don Quijote Ginza / Store Resmi" />
+            </div>
+          </div>
+
+          <!-- Jastip Price Converter Assistance -->
+          <div v-if="form.productType === 'jastip'" class="form-row-2 jastip-calc-row">
+            <div class="f-group">
+              <label>Harga Asli Asing (Mata Uang Asal):</label>
+              <input v-model.number="form.originalPrice" type="number" placeholder="1500" />
+            </div>
+            <div class="f-group">
+              <label>Mata Uang:</label>
+              <input v-model="form.originalCurrency" type="text" placeholder="JPY / KRW / THB" maxlength="3" />
+            </div>
+          </div>
+
+          <!-- Image URL and File Upload -->
+          <div class="f-group">
+            <label>URL Gambar Utama:</label>
+            <div class="image-input-wrap">
+              <input v-model="form.imageUrl" type="text" placeholder="https://images.unsplash.com/... atau upload" />
+              <label class="btn-upload-file">
+                <span>Upload Foto</span>
+                <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleFileUpload" style="display:none;" />
+              </label>
+            </div>
+            <div v-if="form.imageUrl" class="image-preview">
+              <img :src="form.imageUrl" alt="Preview Gambar" />
             </div>
           </div>
 
           <div class="f-group">
             <label>Deskripsi Singkat:</label>
-            <textarea v-model="form.description" rows="2" placeholder="Keterangan produk..."></textarea>
+            <textarea v-model="form.description" rows="3" placeholder="Keterangan lengkap produk, bahan, spesifikasi..."></textarea>
           </div>
 
           <div class="modal-foot">
             <button type="button" class="btn-cancel" @click="showModal = false">Batal</button>
-            <button type="submit" class="btn-save">Simpan Produk</button>
+            <button type="submit" class="btn-save" :disabled="isSaving">
+              {{ isSaving ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Tambahkan Produk') }}
+            </button>
           </div>
         </form>
       </div>
@@ -155,24 +207,73 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { mockUnifiedProducts, type UnifiedProduct } from '../../data/mockJastipData'
 import { useToast } from '../../composables/useToast'
 
+definePageMeta({
+  middleware: 'admin'
+})
+
 const { showToast } = useToast()
-const products = ref<UnifiedProduct[]>([...mockUnifiedProducts])
+
+interface AdminProduct {
+  id: number
+  name: string
+  slug: string
+  description: string
+  categoryId: number
+  categoryName: string
+  productType: 'ready' | 'jastip'
+  tripId: number | null
+  tripTitle: string | null
+  tripCountry: string | null
+  price: number
+  originalPrice: number | null
+  originalCurrency: string | null
+  sourceStore: string | null
+  imageUrl: string
+  stockStatus: 'in_stock' | 'out_of_stock'
+  stockQuantity: number
+  quota: number
+  maxQtyPerOrder: number
+  variants: any
+  isActive: boolean
+  createdAt: string
+  updatedAt?: string | null
+}
+
+const { data: adminData, status, refresh } = await useFetch<{
+  products: AdminProduct[]
+  categories: { id: number; name: string; slug: string }[]
+  trips: { id: number; title: string; slug: string; country: string; status: string }[]
+}>('/api/admin/products')
+
+const products = computed(() => adminData.value?.products || [])
+const categories = computed(() => adminData.value?.categories || [])
+const trips = computed(() => adminData.value?.trips || [])
+
+const readyCount = computed(() => products.value.filter(p => p.productType === 'ready').length)
+const jastipCount = computed(() => products.value.filter(p => p.productType === 'jastip').length)
+
 const typeFilter = ref<'all' | 'ready' | 'jastip'>('all')
 const searchQuery = ref('')
 const showModal = ref(false)
+const isEditing = ref(false)
+const editingId = ref<number | null>(null)
+const isSaving = ref(false)
 
 const form = ref({
   name: '',
-  category: 'Tas',
-  productType: 'ready',
-  tripId: 'trip-jpn-01',
+  categoryId: 1,
+  productType: 'ready' as 'ready' | 'jastip',
+  tripId: null as number | null,
   price: 250000,
+  stockStatus: 'in_stock' as 'in_stock' | 'out_of_stock',
   stockQuantity: 10,
   quota: 20,
-  country: 'Jepang',
+  originalPrice: null as number | null,
+  originalCurrency: '',
+  sourceStore: '',
+  imageUrl: '',
   description: ''
 })
 
@@ -183,56 +284,147 @@ const filteredProducts = computed(() => {
   }
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase()
-    list = list.filter(p => p.name.toLowerCase().includes(q))
+    list = list.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
   }
   return list
 })
 
-const deleteProduct = (id: string) => {
-  products.value = products.value.filter(p => p.id !== id)
-  showToast({
-    title: 'Produk Dihapus (Soft Delete)',
-    message: 'Data riwayat order lama tetap aman.',
-    type: 'info'
-  })
-}
-
-const editProduct = (p: UnifiedProduct) => {
-  showToast({
-    title: 'Edit Produk',
-    message: `Mode edit untuk ${p.name}`,
-    type: 'info'
-  })
-}
-
-const saveProduct = () => {
-  const newP: UnifiedProduct = {
-    id: 'prod-' + Date.now(),
-    name: form.value.name,
-    slug: form.value.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-    description: form.value.description,
-    category: form.value.category,
-    productType: form.value.productType as 'ready' | 'jastip',
-    country: form.value.country,
-    flag: form.value.country.includes('Jepang') ? '🇯🇵' : '🇰🇷',
-    price: form.value.price,
+const openCreateModal = () => {
+  isEditing.value = false
+  editingId.value = null
+  form.value = {
+    name: '',
+    categoryId: categories.value[0]?.id || 1,
+    productType: 'ready',
+    tripId: trips.value[0]?.id || null,
+    price: 150000,
     stockStatus: 'in_stock',
-    stockQuantity: form.value.stockQuantity,
-    quota: form.value.quota,
-    quotaRemaining: form.value.quota,
-    image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=600&q=80'
+    stockQuantity: 10,
+    quota: 20,
+    originalPrice: null,
+    originalCurrency: '',
+    sourceStore: '',
+    imageUrl: '',
+    description: ''
   }
-  products.value.unshift(newP)
-  showModal.value = false
-  showToast({
-    title: 'Sukses',
-    message: 'Produk baru berhasil ditambahkan.',
-    type: 'success'
-  })
+  showModal.value = true
+}
+
+const editProduct = (p: AdminProduct) => {
+  isEditing.value = true
+  editingId.value = p.id
+  form.value = {
+    name: p.name,
+    categoryId: p.categoryId,
+    productType: p.productType,
+    tripId: p.tripId,
+    price: p.price,
+    stockStatus: p.stockStatus,
+    stockQuantity: p.stockQuantity,
+    quota: p.quota,
+    originalPrice: p.originalPrice,
+    originalCurrency: p.originalCurrency || '',
+    sourceStore: p.sourceStore || '',
+    imageUrl: p.imageUrl || '',
+    description: p.description || ''
+  }
+  showModal.value = true
+}
+
+const toggleStockStatus = async (p: AdminProduct) => {
+  try {
+    const res = await $fetch<{ success: boolean; message: string; product: any }>(`/api/admin/products/${p.id}/stock`, {
+      method: 'PATCH',
+      body: {}
+    })
+    showToast('Stok Diperbarui', res.message, 'success')
+    await refresh()
+  } catch (err: any) {
+    showToast('Gagal', err?.data?.message || 'Gagal mengubah status stok', 'warning')
+  }
+}
+
+const duplicateProduct = async (p: AdminProduct) => {
+  const confirmDuplicate = confirm(`Duplikasi produk "${p.name}"?`)
+  if (!confirmDuplicate) return
+
+  try {
+    const res = await $fetch<{ success: boolean; message: string }>(`/api/admin/products/${p.id}/duplicate`, {
+      method: 'POST',
+      body: {}
+    })
+    showToast('Sukses', res.message, 'success')
+    await refresh()
+  } catch (err: any) {
+    showToast('Gagal', err?.data?.message || 'Gagal menduplikasi produk', 'warning')
+  }
+}
+
+const deleteProduct = async (p: AdminProduct) => {
+  const confirmDelete = confirm(`Hapus produk "${p.name}"? (Data riwayat pesanan lama tetap aman).`)
+  if (!confirmDelete) return
+
+  try {
+    const res = await $fetch<{ success: boolean; message: string }>(`/api/admin/products/${p.id}`, {
+      method: 'DELETE'
+    })
+    showToast('Produk Dihapus', res.message, 'info')
+    await refresh()
+  } catch (err: any) {
+    showToast('Gagal', err?.data?.message || 'Gagal menghapus produk', 'warning')
+  }
+}
+
+const handleFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  const formData = new FormData()
+  formData.append('file', file)
+  formData.append('folder', 'products')
+
+  try {
+    const res = await $fetch<{ success: boolean; url?: string; fileUrl?: string }>('/api/upload', {
+      method: 'POST',
+      body: formData
+    })
+    form.value.imageUrl = res.url || res.fileUrl || ''
+    showToast('Foto Diunggah', 'Gambar produk berhasil diupload ke server.', 'success')
+  } catch (err: any) {
+    showToast('Gagal Upload', err?.data?.message || 'Gagal mengupload gambar', 'warning')
+  } finally {
+    target.value = ''
+  }
+}
+
+const saveProduct = async () => {
+  isSaving.value = true
+  try {
+    if (isEditing.value && editingId.value) {
+      await $fetch(`/api/admin/products/${editingId.value}`, {
+        method: 'PUT',
+        body: form.value
+      })
+      showToast('Berhasil', 'Perubahan produk berhasil disimpan.', 'success')
+    } else {
+      await $fetch('/api/admin/products', {
+        method: 'POST',
+        body: form.value
+      })
+      showToast('Berhasil', 'Produk baru berhasil ditambahkan ke database.', 'success')
+    }
+    showModal.value = false
+    await refresh()
+  } catch (err: any) {
+    showToast('Gagal Menyimpan', err?.data?.message || 'Terjadi kesalahan saat menyimpan produk', 'warning')
+  } finally {
+    isSaving.value = false
+  }
 }
 
 const formatRupiah = (val: number) => {
-  return 'Rp ' + val.toLocaleString('id-ID')
+  return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 </script>
 
@@ -272,6 +464,7 @@ const formatRupiah = (val: number) => {
   padding: 10px 18px;
   border-radius: 8px;
   cursor: pointer;
+  transition: background 0.2s;
 }
 
 .btn-add-product:hover {
@@ -300,6 +493,7 @@ const formatRupiah = (val: number) => {
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s;
 }
 
 .t-btn.active {
@@ -313,8 +507,17 @@ const formatRupiah = (val: number) => {
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
-  width: 220px;
+  width: 240px;
   outline: none;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 48px;
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 12px;
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .table-card {
@@ -413,14 +616,24 @@ const formatRupiah = (val: number) => {
   color: var(--color-text-muted, #7A6A55);
 }
 
-.stock-status {
+.stock-toggle-btn {
+  border: none;
+  font-size: 0.78rem;
   font-weight: 700;
-  color: var(--color-ready, #059669);
+  padding: 4px 10px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.quota-status {
-  font-weight: 700;
-  color: var(--color-primary, #8C6D3F);
+.stock-toggle-btn.in_stock {
+  background: #DCFCE7;
+  color: #059669;
+}
+
+.stock-toggle-btn.out_of_stock {
+  background: #FEE2E2;
+  color: #DC2626;
 }
 
 .trip-tag {
@@ -440,10 +653,17 @@ const formatRupiah = (val: number) => {
   font-size: 0.75rem;
   cursor: pointer;
   margin-right: 6px;
+  transition: all 0.15s;
 }
 
 .btn-action.edit:hover {
   background: var(--color-secondary, #EFE1C6);
+}
+
+.btn-action.duplicate:hover {
+  background: #E0E7FF;
+  border-color: #C7D2FE;
+  color: #3730A3;
 }
 
 .btn-action.delete {
@@ -452,6 +672,13 @@ const formatRupiah = (val: number) => {
 
 .btn-action.delete:hover {
   background: #FEE2E2;
+  border-color: #FECACA;
+}
+
+.empty-cell {
+  text-align: center;
+  padding: 40px;
+  color: var(--color-text-muted, #7A6A55);
 }
 
 /* Modal */
@@ -470,7 +697,7 @@ const formatRupiah = (val: number) => {
   background: #ffffff;
   border-radius: 12px;
   width: 100%;
-  max-width: 580px;
+  max-width: 600px;
   padding: 24px;
   max-height: 90vh;
   overflow-y: auto;
@@ -525,6 +752,43 @@ const formatRupiah = (val: number) => {
   outline: none;
 }
 
+.image-input-wrap {
+  display: flex;
+  gap: 8px;
+}
+
+.image-input-wrap input {
+  flex: 1;
+}
+
+.btn-upload-file {
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-primary, #8C6D3F);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+}
+
+.image-preview {
+  margin-top: 6px;
+  width: 70px;
+  height: 70px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+}
+
+.image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .modal-foot {
   display: flex;
   justify-content: flex-end;
@@ -552,5 +816,10 @@ const formatRupiah = (val: number) => {
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 </style>

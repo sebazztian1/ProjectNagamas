@@ -12,26 +12,26 @@
     <div class="kpi-grid">
       <div class="kpi-card">
         <span class="kpi-label">Menunggu Verifikasi Pembayaran</span>
-        <strong class="kpi-val warning">2 Order</strong>
-        <span class="kpi-sub">Total Rp 755.366 (perlu dicek mutasi)</span>
+        <strong class="kpi-val warning">{{ stats?.pendingOrdersCount || 0 }} Order</strong>
+        <span class="kpi-sub">Pesanan baru yang perlu diverifikasi</span>
       </div>
 
       <div class="kpi-card">
         <span class="kpi-label">Trip Jastip Sedang Buka (Open PO)</span>
-        <strong class="kpi-val">2 Trip Aktif</strong>
-        <span class="kpi-sub">Jepang Autumn & Korea K-Beauty</span>
+        <strong class="kpi-val">{{ stats?.openTripsCount || 0 }} Trip Aktif</strong>
+        <span class="kpi-sub">{{ activeTripsSummary }}</span>
       </div>
 
       <div class="kpi-card">
-        <span class="kpi-label">Total Omzet Batch Berjalan</span>
-        <strong class="kpi-val highlight">Rp 14.850.000</strong>
-        <span class="kpi-sub">53 items dipesan customer</span>
+        <span class="kpi-label">Total Omzet Pesanan</span>
+        <strong class="kpi-val highlight">{{ formatRupiah(stats?.totalOmzet || 0) }}</strong>
+        <span class="kpi-sub">{{ stats?.totalItemsSold || 0 }} items dipesan customer</span>
       </div>
 
       <div class="kpi-card">
         <span class="kpi-label">Request Produk Masuk</span>
-        <strong class="kpi-val">1 Menunggu Quote</strong>
-        <span class="kpi-sub">Pokemon Center Pikachu Limited</span>
+        <strong class="kpi-val">{{ stats?.pendingRequestsCount || 0 }} Menunggu Quote</strong>
+        <span class="kpi-sub">Permintaan kustom titip dari pelanggan</span>
       </div>
     </div>
 
@@ -45,7 +45,10 @@
         </div>
 
         <div class="order-quick-list">
-          <div v-for="ord in pendingOrders" :key="ord.id" class="order-quick-row">
+          <div v-if="!pendingOrders || pendingOrders.length === 0" style="padding: 24px; text-align: center; color: #7A6A55; font-size: 0.85rem;">
+            Tidak ada pesanan yang sedang menunggu verifikasi saat ini.
+          </div>
+          <div v-for="ord in pendingOrders" :key="ord.id" class="order-quick-row" v-else>
             <div>
               <strong class="ord-code">{{ ord.orderCode }}</strong>
               <span class="ord-cust">{{ ord.customerName }} &bull; {{ ord.customerPhone }}</span>
@@ -66,7 +69,10 @@
         </div>
 
         <div class="trip-quick-list">
-          <div v-for="tr in activeTrips" :key="tr.id" class="trip-quick-item">
+          <div v-if="activeTrips.length === 0" style="padding: 24px; text-align: center; color: #7A6A55; font-size: 0.85rem;">
+            Belum ada trip yang sedang Open PO.
+          </div>
+          <div v-for="tr in activeTrips" :key="tr.id" class="trip-quick-item" v-else>
             <div class="tq-top">
               <strong>{{ tr.flag }} {{ tr.title }}</strong>
               <span class="tq-badge">Open PO</span>
@@ -76,7 +82,7 @@
               <span>Kuota: <strong>{{ tr.quotaFilled }}/{{ tr.quotaTotal }}</strong></span>
             </div>
             <div class="tq-bar">
-              <div class="tq-fill" :style="{ width: `${(tr.quotaFilled / tr.quotaTotal) * 100}%` }"></div>
+              <div class="tq-fill" :style="{ width: `${Math.min(100, (tr.quotaFilled / tr.quotaTotal) * 100)}%` }"></div>
             </div>
           </div>
         </div>
@@ -87,18 +93,20 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { mockOrders, mockJastipTrips } from '../../data/mockJastipData'
 
-const pendingOrders = computed(() => {
-  return mockOrders.slice(0, 2)
+const { data: stats } = await useFetch<any>('/api/admin/stats')
+
+const activeTrips = computed(() => stats.value?.openTrips || [])
+
+const activeTripsSummary = computed(() => {
+  if (!activeTrips.value.length) return 'Tidak ada trip aktif'
+  return activeTrips.value.map((t: any) => `${t.flag} ${t.country}`).join(' & ')
 })
 
-const activeTrips = computed(() => {
-  return mockJastipTrips.filter(t => t.status === 'open')
-})
+const pendingOrders = computed(() => [])
 
 const formatRupiah = (val: number) => {
-  return 'Rp ' + val.toLocaleString('id-ID')
+  return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 </script>
 

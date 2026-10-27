@@ -134,33 +134,55 @@
       </div>
     </div>
   </div>
+  <div class="jastip-product-detail" v-else>
+    <div class="page-container" style="text-align: center; padding: 60px 20px;">
+      <h2>Produk Tidak Ditemukan</h2>
+      <p style="margin: 12px 0 24px; color: #7A6A55;">Produk jastip yang Anda cari tidak tersedia atau sudah dihapus.</p>
+      <NuxtLink :to="`/jastip/${tripSlug}`" class="btn-po-now" style="display: inline-block; width: auto; padding: 12px 24px;">Kembali ke Jadwal Trip</NuxtLink>
+    </div>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { mockUnifiedProducts } from '../../../data/mockJastipData'
+import { ref, computed, watch } from 'vue'
 import { useCustomerChat } from '../../../composables/useCustomerChat'
+import type { ApiProduct } from '../../../composables/useProducts'
 
 const route = useRoute()
 const tripSlug = route.params.tripSlug as string
 const slug = route.params.slug as string
-const { openChat } = useCustomerChat()
+const { openChat, openChatWithProduct } = useCustomerChat()
 
-const product = computed(() => {
-  return mockUnifiedProducts.find(p => p.slug === slug && p.productType === 'jastip') || mockUnifiedProducts[5]
-})
+const { data: product } = await useFetch<ApiProduct>(`/api/products/${slug}`)
 
 const qty = ref(1)
-const selectedVariant = ref(
-  product.value?.variants ? Object.values(product.value.variants)[0][0] : ''
-)
+const selectedVariant = ref('')
+
+watch(product, (p) => {
+  if (p?.variants && typeof p.variants === 'object' && Object.keys(p.variants).length > 0) {
+    const firstGroup = Object.values(p.variants)[0]
+    if (Array.isArray(firstGroup) && firstGroup.length > 0) {
+      selectedVariant.value = firstGroup[0]
+    }
+  }
+}, { immediate: true })
 
 const formatRupiah = (val: number) => {
-  return 'Rp ' + val.toLocaleString('id-ID')
+  return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 
 const handleChatAdmin = () => {
-  openChat()
+  if (product.value) {
+    openChatWithProduct({
+      id: String(product.value.id),
+      name: product.value.name,
+      price: product.value.price,
+      image: product.value.image,
+      category: product.value.category
+    } as any)
+  } else {
+    openChat()
+  }
 }
 </script>
 

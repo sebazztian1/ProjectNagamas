@@ -11,7 +11,7 @@
       </div>
 
       <!-- Trip Hero Banner -->
-      <div class="trip-hero" :style="{ backgroundImage: `linear-gradient(rgba(43, 33, 22, 0.7), rgba(43, 33, 22, 0.85)), url(${trip.coverImageUrl})` }">
+      <div class="trip-hero">
         <div class="hero-top">
           <span class="country-pill">{{ trip.flag }} {{ trip.country }} &bull; {{ trip.cityOrArea }}</span>
           <span v-if="trip.status === 'open'" class="open-pill">Open PO Sedang Buka</span>
@@ -108,24 +108,23 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { mockJastipTrips, mockUnifiedProducts } from '../../../data/mockJastipData'
+import type { ApiTrip } from '../../../composables/useTrips'
 
 const route = useRoute()
 const tripSlug = route.params.tripSlug as string
 
-const trip = computed(() => {
-  return mockJastipTrips.find(t => t.slug === tripSlug) || mockJastipTrips[0]
-})
+const { data: trip } = await useFetch<ApiTrip>(`/api/trips/${tripSlug}`)
 
 const tripProducts = computed(() => {
-  return mockUnifiedProducts.filter(p => p.productType === 'jastip' && (p.tripSlug === tripSlug || p.tripId === trip.value.id))
+  return trip.value?.products || []
 })
 
 const formatRupiah = (val: number) => {
-  return 'Rp ' + val.toLocaleString('id-ID')
+  return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 
-const formatDate = (dateStr: string) => {
+const formatDate = (dateStr?: string | null) => {
+  if (!dateStr) return '-'
   const d = new Date(dateStr)
   return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
 }
@@ -162,11 +161,11 @@ const formatDate = (dateStr: string) => {
 
 .trip-hero {
   border-radius: 16px;
-  background-size: cover;
-  background-position: center;
+  background: linear-gradient(135deg, #2B2116 0%, #443422 100%);
   padding: 36px 30px;
   color: #ffffff;
   margin-bottom: 40px;
+  box-shadow: 0 4px 20px rgba(43, 33, 22, 0.12);
 }
 
 .hero-top {

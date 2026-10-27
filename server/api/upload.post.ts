@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   // Look for target folder param (default to 'requests')
   let targetFolder = 'requests'
-  const folderPart = parts.find(p => p.name === 'folder')
+  const folderPart = parts.find(p => p.name === 'folder' || p.name === 'category')
   if (folderPart && folderPart.data) {
     const specified = folderPart.data.toString().trim()
     if (ALLOWED_FOLDERS.includes(specified)) {
@@ -55,6 +55,7 @@ export default defineEventHandler(async (event) => {
   return {
     success: true,
     url: publicUrl,
+    fileUrl: publicUrl,
     filename: newFilename,
     folder: targetFolder,
     size: filePart.data.length

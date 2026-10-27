@@ -222,10 +222,15 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
-import { mockJastipTrips, mockUnifiedProducts } from '../data/mockJastipData'
+import type { ApiProduct } from '../composables/useProducts'
+import type { ApiTrip } from '../composables/useTrips'
+
+const { data: openTrips } = await useFetch<ApiTrip[]>('/api/trips', {
+  query: { status: 'open' }
+})
 
 const activeTrip = computed(() => {
-  return mockJastipTrips.find(t => t.status === 'open') || mockJastipTrips[0]
+  return openTrips.value?.[0] || null
 })
 
 // Carousel Data & State
@@ -342,8 +347,12 @@ onBeforeUnmount(() => {
 const categories = ['Semua', 'Tas', 'Baju', 'Sepatu', 'Aksesoris', 'Lainnya']
 const selectedCategory = ref('Semua')
 
+const { data: dbReadyProducts } = await useFetch<ApiProduct[]>('/api/products', {
+  query: { type: 'ready' }
+})
+
 const readyProducts = computed(() => {
-  return mockUnifiedProducts.filter(p => p.productType === 'ready')
+  return dbReadyProducts.value || []
 })
 
 const filteredProducts = computed(() => {

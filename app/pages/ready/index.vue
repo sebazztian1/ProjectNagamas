@@ -103,36 +103,24 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { mockUnifiedProducts } from '../../data/mockJastipData'
+import type { ApiProduct } from '../../composables/useProducts'
 
 const searchQuery = ref('')
 const selectedCat = ref('Semua')
 const sortBy = ref('default')
 const categories = ['Semua', 'Tas', 'Baju', 'Sepatu', 'Aksesoris', 'Lainnya']
 
-const readyProducts = computed(() => {
-  return mockUnifiedProducts.filter(p => p.productType === 'ready')
+const { data: productsData, status } = await useFetch<ApiProduct[]>('/api/products', {
+  query: computed(() => ({
+    type: 'ready',
+    category: selectedCat.value !== 'Semua' ? selectedCat.value : undefined,
+    search: searchQuery.value.trim() || undefined,
+    sort: sortBy.value !== 'default' ? sortBy.value : undefined
+  }))
 })
 
 const filteredProducts = computed(() => {
-  let list = [...readyProducts.value]
-
-  if (selectedCat.value !== 'Semua') {
-    list = list.filter(p => p.category === selectedCat.value)
-  }
-
-  if (searchQuery.value.trim()) {
-    const q = searchQuery.value.toLowerCase()
-    list = list.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
-  }
-
-  if (sortBy.value === 'price-asc') {
-    list.sort((a, b) => a.price - b.price)
-  } else if (sortBy.value === 'price-desc') {
-    list.sort((a, b) => b.price - a.price)
-  }
-
-  return list
+  return productsData.value || []
 })
 
 const formatRupiah = (val: number) => {

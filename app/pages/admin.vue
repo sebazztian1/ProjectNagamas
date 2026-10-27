@@ -40,7 +40,7 @@
             <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
           </svg>
           <span>Jadwal Jastip (Trip)</span>
-          <span class="badge-count">3 Trip</span>
+          <span class="badge-count" v-if="stats?.openTripsCount">{{ stats.openTripsCount }} Trip</span>
         </NuxtLink>
 
         <!-- 4. Pesanan & Verifikasi -->
@@ -51,7 +51,7 @@
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
           </svg>
           <span>Pesanan & Verifikasi</span>
-          <span class="badge-count warning">2 Baru</span>
+          <span class="badge-count warning" v-if="stats?.pendingOrdersCount">{{ stats.pendingOrdersCount }} Baru</span>
         </NuxtLink>
 
         <!-- 5. Live Chat Admin -->
@@ -71,6 +71,7 @@
             <line x1="9" y1="15" x2="15" y2="15"></line>
           </svg>
           <span>Request Produk & Quote</span>
+          <span class="badge-count" v-if="stats?.pendingRequestsCount">{{ stats.pendingRequestsCount }}</span>
         </NuxtLink>
 
         <div class="nav-section-title">PENGATURAN & AUDIT</div>
@@ -167,6 +168,8 @@ useHead({
 
 const { currentUser, logout } = useAuth()
 const { showToast } = useToast()
+
+const { data: stats } = await useFetch<any>('/api/admin/stats')
 
 const handleAdminLogout = async () => {
   await logout()

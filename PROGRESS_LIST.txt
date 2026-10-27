@@ -377,48 +377,48 @@ FASE 3: AUTENTIKASI & OTORISASI (AUTH & ROLES)
 --------------------------------------------------------------------------------
 FASE 4: KATALOG READY STOCK & MANAJEMEN PRODUK
 --------------------------------------------------------------------------------
-[ ] 4.1 Katalog Ready Stock (/ready) untuk Customer & Guest
-    [ ] Daftar produk ready (foto, nama, harga Rp, status stok)
-    [ ] Filter kategori, pencarian, urutan harga/terbaru
-    [ ] Detail produk ready (deskripsi, variasi, stok: Ready / Kosong)
-    [ ] Tombol aksi: "Chat Admin" (mengirim kartu produk ke chat umum) dan "Beli Sekarang" (guest diarahkan login)
+[X] 4.1 Katalog Ready Stock (/ready) untuk Customer & Guest
+    [X] Daftar produk ready (foto, nama, harga Rp, status stok)
+    [X] Filter kategori, pencarian, urutan harga/terbaru
+    [X] Detail produk ready (deskripsi, variasi, stok: Ready / Kosong)
+    [X] Tombol aksi: "Chat Admin" (mengirim kartu produk ke chat umum) dan "Beli Sekarang" (guest diarahkan login)
 
-[ ] 4.2 Manajemen Produk oleh Admin (ready & jastip)
-    [ ] Form tambah produk (nama, deskripsi, kategori, tipe ready/jastip, harga, variasi, foto, multi-foto)
-    [ ] Untuk tipe ready: stok awal & update cepat stok (Tersedia/Habis)
-    [ ] Untuk tipe jastip: pilih trip, harga asal, mata uang, toko sumber, kuota, maks qty per order, harga jual terhitung otomatis
-    [ ] Form edit produk & ganti foto
-    [ ] Update cepat harga
-    [ ] Soft delete produk (data order lama tetap aman)
-    [ ] Duplikat produk dari trip sebelumnya ke trip baru
-    [ ] Fitur "pindahkan sisa barang trip ke ready stock"
+[X] 4.2 Manajemen Produk oleh Admin (ready & jastip)
+    [X] Form tambah produk (nama, deskripsi, kategori, tipe ready/jastip, harga, variasi, foto, multi-foto)
+    [X] Untuk tipe ready: stok awal & update cepat stok (Tersedia/Habis)
+    [X] Untuk tipe jastip: pilih trip, harga asal, mata uang, toko sumber, kuota, maks qty per order, harga jual terhitung otomatis
+    [X] Form edit produk & ganti foto
+    [X] Update cepat harga
+    [X] Soft delete produk (data order lama tetap aman)
+    [X] Duplikat produk dari trip sebelumnya ke trip baru
+    [X] Fitur "pindahkan sisa barang trip ke ready stock"
 
 --------------------------------------------------------------------------------
 FASE 5: JADWAL JASTIP (TRIP) & KATALOG JASTIP
 --------------------------------------------------------------------------------
-[ ] 5.1 Manajemen Trip oleh Admin (/admin/trip)
-    [ ] CRUD trip: judul, negara, kota/area, deskripsi, syarat khusus, cover, mata uang, kurs, tipe & nilai fee
-    [ ] Atur tanggal: buka PO, tutup PO, berangkat, estimasi tiba
-    [ ] Atur kuota total trip (opsional)
-    [ ] Alur status trip: draft -> open -> closed -> purchasing -> arrived -> completed (+ cancelled)
-    [ ] Tombol cepat "Tutup PO sekarang"
-    [ ] Auto-close saat close_date lewat atau kuota penuh (scheduled job / pengecekan saat request)
-    [ ] Tambah/kelola produk di dalam trip
+[X] 5.1 Manajemen Trip oleh Admin (/admin/trip)
+    [X] CRUD trip: judul, negara, kota/area, deskripsi, syarat khusus, cover, mata uang, kurs, tipe & nilai fee
+    [X] Atur tanggal: buka PO, tutup PO, berangkat, estimasi tiba
+    [X] Atur kuota total trip (opsional)
+    [X] Alur status trip: draft -> open -> closed -> purchasing -> arrived -> completed (+ cancelled)
+    [X] Tombol cepat "Tutup PO sekarang"
+    [X] Auto-close saat close_date lewat atau kuota penuh (scheduled job / pengecekan saat request)
+    [X] Tambah/kelola produk di dalam trip
 
-[ ] 5.2 Operasional Trip oleh Admin
-    [ ] Daftar belanja per trip (rekap qty per produk/toko, export CSV)
-    [ ] Daftar order per trip beserta status pembayaran
-    [ ] Update status massal order per trip (contoh: semua jadi "Barang Tiba") + kirim notifikasi ke customer
-    [ ] Upload foto struk/bukti pembelian per order/produk
-    [ ] Pengumuman / broadcast chat per trip (opsional)
+[X] 5.2 Operasional Trip oleh Admin
+    [X] Daftar belanja per trip (rekap qty per produk/toko, export CSV)
+    [X] Daftar order per trip beserta status pembayaran
+    [X] Update status massal order per trip (contoh: semua jadi "Barang Tiba") + kirim notifikasi ke customer
+    [X] Upload foto struk/bukti pembelian per order/produk
+    [X] Pengumuman / broadcast chat per trip (opsional)
 
-[ ] 5.3 Halaman Jastip untuk Customer & Guest
-    [ ] /jastip: daftar trip (kartu: negara/bendera, tanggal tutup PO, estimasi tiba, badge Open/Segera Tutup/Closed, hitung mundur)
-    [ ] Arsip trip yang sudah closed/selesai (tanpa tombol beli)
-    [ ] /jastip/[trip-slug]: detail trip + katalog produk jastip + syarat trip
-    [ ] Detail produk jastip (harga, variasi, estimasi tiba, sisa kuota)
-    [ ] Tombol "Titip Sekarang" (nonaktif jika trip tidak open / kuota penuh)
-    [ ] Badge di card produk: "Ready" vs "Jastip - Tiba +- tanggal"
+[X] 5.3 Halaman Jastip untuk Customer & Guest
+    [X] /jastip: daftar trip (kartu: negara/bendera, tanggal tutup PO, estimasi tiba, badge Open/Segera Tutup/Closed, hitung mundur)
+    [X] Arsip trip yang sudah closed/selesai (tanpa tombol beli)
+    [X] /jastip/[trip-slug]: detail trip + katalog produk jastip + syarat trip
+    [X] Detail produk jastip (harga, variasi, estimasi tiba, sisa kuota)
+    [X] Tombol "Titip Sekarang" (nonaktif jika trip tidak open / kuota penuh)
+    [X] Badge di card produk: "Ready" vs "Jastip - Tiba +- tanggal"
 
 --------------------------------------------------------------------------------
 FASE 6: WISHLIST CUSTOMER
