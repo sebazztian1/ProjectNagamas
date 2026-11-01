@@ -1,175 +1,232 @@
-import { ref, computed } from 'vue'
-import type { Product } from '../types/product'
-import type { ChatMessage, CustomerChat } from '../types/admin'
-import { mockCustomerChats } from '../data/mockAdminData'
+import Ably from 'ably'
+import { useAuth } from './useAuth'
+
+export interface ChatProductSnapshot {
+  id: number
+  name: string
+  slug: string
+  price: number
+  imageUrl?: string | null
+  productType?: 'ready' | 'jastip'
+  stockStatus?: string
+  tripSlug?: string | null
+  tripTitle?: string | null
+}
+
+export interface LiveChatMessage {
+  id: number | string
+  roomId?: number
+  senderId?: number
+  senderRole: 'customer' | 'admin' | 'staff'
+  sender: 'user' | 'admin'
+  messageType: 'text' | 'image' | 'product'
+  content: string | null
+  text: string
+  imageUrl?: string | null
+  productId?: number | null
+  product?: ChatProductSnapshot | null
+  isRead?: boolean
+  createdAt?: string
+  timestamp: string
+}
+
+let realtimeInstance: Ably.Realtime | null = null
+let activeChannel: Ably.RealtimeChannel | null = null
+let subscribedRoomId: number | null = null
+
+function formatTime(dateInput?: string | Date): string {
+  const d = dateInput ? new Date(dateInput) : new Date()
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+}
+
+function mapApiMessage(m: any): LiveChatMessage {
+  const role = m.senderRole || (m.sender === 'user' ? 'customer' : 'admin')
+  return {
+    id: m.id,
+    roomId: m.roomId,
+    senderId: m.senderId,
+    senderRole: role,
+    sender: role === 'customer' ? 'user' : 'admin',
+    messageType: m.messageType || 'text',
+    content: m.content ?? m.text ?? '',
+    text: m.content ?? m.text ?? '',
+    imageUrl: m.imageUrl || null,
+    productId: m.productId || null,
+    product: m.product || null,
+    isRead: m.isRead ?? false,
+    createdAt: m.createdAt,
+    timestamp: m.timestamp || formatTime(m.createdAt)
+  }
+}
 
 export const useCustomerChat = () => {
-  // Widget Open/Closed State
+  const { currentUser } = useAuth()
+  const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff')
+
   const isChatOpen = useState<boolean>('customer_chat_open', () => false)
-  
-  // Unread badge for customer (initial 1 for the welcome message)
-  const customerUnreadCount = useState<number>('customer_unread_count', () => 1)
-
-  // Currently attached product for product-specific inquiries
-  const attachedProduct = useState<Product | null>('customer_attached_product', () => null)
-
-  // Typing state for simulated admin reply
+  const customerUnreadCount = useState<number>('customer_unread_count', () => 0)
+  const customerRoomId = useState<number | null>('customer_room_id', () => null)
+  const attachedProduct = useState<any | null>('customer_attached_product', () => null)
   const isAdminTyping = useState<boolean>('admin_is_typing', () => false)
+  const customerMessages = useState<LiveChatMessage[]>('customer_messages', () => [])
+  const isLoaded = useState<boolean>('customer_chat_loaded', () => false)
 
-  // Active customer messages stream (preloaded with realistic dummy conversation)
-  const customerMessages = useState<ChatMessage[]>('customer_messages', () => [
-    {
-      id: 'msg-init-1',
-      sender: 'admin',
-      text: 'Halo kak! Selamat datang di dbb_luxe. Ada yang bisa kami bantu seputar produk, ukuran, atau pesanan Anda hari ini? 😊',
-      timestamp: '10:15'
-    },
-    {
-      id: 'msg-init-2',
-      sender: 'user',
-      text: 'Halo min, mau tanya apakah kemeja Oversized French Linen Shirt bahannya adem dan tidak menerawang?',
-      timestamp: '10:16'
-    },
-    {
-      id: 'msg-init-3',
-      sender: 'admin',
-      text: 'Kemeja French Linen Shirt kami dibuat dari 100% Pure Organic Linen premium kak. Seratnya breathable, sangat sejuk, gramasi tebal pas sehingga tidak menerawang saat dipakai harian :)',
-      timestamp: '10:17'
-    }
-  ])
+  const connectAblyForCustomer = async (roomId: number) => {
+    if (import.meta.server) return
+    if (subscribedRoomId === roomId && activeChannel) return
 
-  // Toggle chat widget open/close
-  const toggleChat = () => {
-    isChatOpen.value = !isChatOpen.value
-    if (isChatOpen.value) {
-      customerUnreadCount.value = 0
+    try {
+      if (!realtimeInstance) {
+        realtimeInstance = new Ably.Realtime({
+          authUrl: '/api/chat/token'
+        })
+      }
+      if (activeChannel) {
+        activeChannel.unsubscribe()
+      }
+      activeChannel = realtimeInstance.channels.get(`chat:room-${roomId}`)
+      subscribedRoomId = roomId
+
+      await activeChannel.subscribe('new-message', (message) => {
+        const incoming = mapApiMessage(message.data)
+        const exists = customerMessages.value.some(m => String(m.id) === String(incoming.id))
+        if (!exists) {
+          customerMessages.value.push(incoming)
+        }
+        if (incoming.sender === 'admin' && !isChatOpen.value) {
+          customerUnreadCount.value += 1
+        } else if (incoming.sender === 'admin' && isChatOpen.value) {
+          $fetch('/api/chat/read', { method: 'POST', body: {} }).catch(() => {})
+        }
+      })
+    } catch (err) {
+      // Ably belum dikonfigurasi atau gagal konek; tetap berjalan dengan database API
     }
   }
 
-  const openChat = () => {
+  const loadCustomerRoom = async () => {
+    if (!currentUser.value || isAdmin.value) return
+    try {
+      const res = await $fetch<{ room: any; messages: any[] }>('/api/chat/room')
+      if (res?.room) {
+        customerRoomId.value = res.room.id
+        customerUnreadCount.value = res.room.unreadCustomerCount || 0
+        customerMessages.value = (res.messages || []).map(mapApiMessage)
+        isLoaded.value = true
+        await connectAblyForCustomer(res.room.id)
+      }
+    } catch (err) {
+      // Abaikan jika guest/belum login
+    }
+  }
+
+  const toggleChat = async () => {
+    if (isAdmin.value) return
+    isChatOpen.value = !isChatOpen.value
+    if (isChatOpen.value) {
+      customerUnreadCount.value = 0
+      await loadCustomerRoom()
+    }
+  }
+
+  const openChat = async () => {
+    if (isAdmin.value) return
     isChatOpen.value = true
     customerUnreadCount.value = 0
+    await loadCustomerRoom()
   }
 
   const closeChat = () => {
     isChatOpen.value = false
   }
 
-  // Open chat with a specific product attached
-  const openChatWithProduct = (product: Product) => {
-    attachedProduct.value = product
+  const attachProductToChat = (product: any) => {
+    if (isAdmin.value) return
+    attachedProduct.value = {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      price: product.price,
+      image: product.image || product.imageUrl,
+      productType: product.productType || 'ready',
+      tripTitle: product.trip?.title || product.tripTitle || null,
+      stockCount: product.stockQuantity ?? product.stockCount ?? (product.inStock ? 10 : 0)
+    }
+  }
+
+  const openChatWithProduct = async (product: any) => {
+    if (isAdmin.value) return
+    attachProductToChat(product)
     isChatOpen.value = true
     customerUnreadCount.value = 0
+    await loadCustomerRoom()
   }
 
   const removeAttachedProduct = () => {
     attachedProduct.value = null
   }
 
-  // Smart dummy response generator based on customer query
-  const getAutomatedReply = (query: string, product?: Product | null): string => {
-    const q = query.toLowerCase()
+  const sendCustomerMessage = async (
+    text: string,
+    onNewAdminMessage?: (reply: string) => void,
+    options?: { imageUrl?: string; productId?: number; messageType?: 'text' | 'image' | 'product' }
+  ) => {
+    const trimmed = text.trim()
+    const prodToAttach = attachedProduct.value
+    if (!trimmed && !options?.imageUrl && !prodToAttach && !options?.productId) return
 
-    if (product) {
-      if (q.includes('stok') || q.includes('ready') || q.includes('ada')) {
-        return `Untuk produk *${product.name}*, stok di gudang kami saat ini ${product.stockCount > 0 ? `tersedia ${product.stockCount} unit siap kirim kak :)` : 'sedang kosong dan dalam proses restock kak.'}`
-      }
-      if (q.includes('harga') || q.includes('diskon') || q.includes('promo')) {
-        return `Harga resmi untuk *${product.name}* adalah Rp ${new Intl.NumberFormat('id-ID').format(product.price)}. Kualitas bahan original bergaransi kak!`
-      }
-    }
-
-    if (q.includes('stok') || q.includes('ready') || q.includes('ada') || q.includes('habis')) {
-      return 'Semua produk yang bertanda "In Stock" di katalog kami selalu siap dikirim hari ini ya kak! Stok terhubung langsung dengan sistem inventaris gudang kami.'
-    }
-
-    if (q.includes('kirim') || q.includes('ongkir') || q.includes('resi') || q.includes('ekspedisi') || q.includes('sampai')) {
-      return 'Pengiriman dilakukan setiap hari Senin-Sabtu via JNE, J&T, dan SiCepat. Pesanan yang masuk sebelum pukul 16:00 WIB dikirim di hari yang sama ya kak!'
-    }
-
-    if (q.includes('bayar') || q.includes('cod') || q.includes('transfer') || q.includes('qris') || q.includes('rekening')) {
-      return 'Kami mendukung metode pembayaran Transfer Bank (BCA, Mandiri), QRIS instan seluruh e-wallet (GoPay, OVO, ShopeePay), dan COD (Bayar di Tempat).'
-    }
-
-    if (q.includes('retur') || q.includes('tukar') || q.includes('ukuran') || q.includes('size') || q.includes('garansi')) {
-      return 'Tersedia garansi penukaran size dalam 7 hari kerja setelah barang diterima ya kak, asalkan tag label masih terpasang dan produk belum dicuci :)'
-    }
-
-    return 'Terima kasih atas pertanyaannya kak! Pesan kakak sudah tercatat oleh tim Customer Support dbb_luxe. Kami siap membantu setiap kebutuhan belanja kakak 😊'
-  }
-
-  // Customer sends message to Admin
-  const sendCustomerMessage = (text: string, onNewAdminMessage?: (reply: string) => void) => {
-    if (!text.trim()) return
-
-    const now = new Date()
-    const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-
-    const newMsg: ChatMessage = {
-      id: `msg-${Date.now()}`,
-      sender: 'user',
-      text: text.trim(),
-      timestamp: timeStr
-    }
-
-    customerMessages.value.push(newMsg)
-
-    // Also sync with the global mockCustomerChats for the admin view
-    const mainCustomerChat = mockCustomerChats[0] // Aulia Putri Lestari or Active Chat
-    if (mainCustomerChat) {
-      mainCustomerChat.messages.push(newMsg)
-      mainCustomerChat.lastMessage = text.trim()
-      mainCustomerChat.lastMessageTime = 'Baru saja'
-      mainCustomerChat.unreadCount += 1
-      mainCustomerChat.status = 'unread'
-    }
-
-    const currentProduct = attachedProduct.value
-    // Clear product context after sending
-    attachedProduct.value = null
-
-    // Simulate Admin typing indicator & automated reply
-    isAdminTyping.value = true
-
-    setTimeout(() => {
-      isAdminTyping.value = false
-      const replyText = getAutomatedReply(text, currentProduct)
-      const replyTime = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-
-      const adminMsg: ChatMessage = {
-        id: `msg-admin-${Date.now()}`,
-        sender: 'admin',
-        text: replyText,
-        timestamp: replyTime
+    try {
+      // Jika ada produk terlampir, kirim kartu produk terlebih dahulu atau bersamaan
+      if (prodToAttach && prodToAttach.id) {
+        const prodMsg = await $fetch<any>('/api/chat/send', {
+          method: 'POST',
+          body: {
+            messageType: 'product',
+            productId: Number(prodToAttach.id),
+            content: trimmed || null
+          }
+        })
+        attachedProduct.value = null
+        const mapped = mapApiMessage(prodMsg)
+        if (!customerMessages.value.some(m => String(m.id) === String(mapped.id))) {
+          customerMessages.value.push(mapped)
+        }
+        return
       }
 
-      customerMessages.value.push(adminMsg)
+      const sent = await $fetch<any>('/api/chat/send', {
+        method: 'POST',
+        body: {
+          messageType: options?.messageType || (options?.imageUrl ? 'image' : 'text'),
+          content: trimmed,
+          imageUrl: options?.imageUrl || null,
+          productId: options?.productId || null
+        }
+      })
 
-      if (mainCustomerChat) {
-        mainCustomerChat.messages.push(adminMsg)
-        mainCustomerChat.lastMessage = replyText
-        mainCustomerChat.lastMessageTime = 'Baru saja'
+      const mapped = mapApiMessage(sent)
+      if (!customerMessages.value.some(m => String(m.id) === String(mapped.id))) {
+        customerMessages.value.push(mapped)
       }
-
-      if (!isChatOpen.value) {
-        customerUnreadCount.value += 1
-      }
-
-      if (onNewAdminMessage) {
-        onNewAdminMessage(replyText)
-      }
-    }, 1200)
+    } catch (err) {
+      // Fallback jika user belum login
+    }
   }
 
   return {
     isChatOpen,
     customerUnreadCount,
+    customerRoomId,
     attachedProduct,
     isAdminTyping,
     customerMessages,
+    isLoaded,
+    loadCustomerRoom,
     toggleChat,
     openChat,
     closeChat,
+    attachProductToChat,
     openChatWithProduct,
     removeAttachedProduct,
     sendCustomerMessage

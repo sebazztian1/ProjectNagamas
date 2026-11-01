@@ -34,6 +34,14 @@
           <span>Kelola Produk (Ready & Jastip)</span>
         </NuxtLink>
 
+        <!-- 2b. Kategori Produk -->
+        <NuxtLink to="/admin/kategori" class="nav-item" active-class="active">
+          <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h7" />
+          </svg>
+          <span>Kategori Produk</span>
+        </NuxtLink>
+
         <!-- 3. Jadwal Jastip (Trip) -->
         <NuxtLink to="/admin/trip" class="nav-item" active-class="active">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

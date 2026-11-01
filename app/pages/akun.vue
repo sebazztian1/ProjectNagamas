@@ -12,6 +12,33 @@
         <p class="page-subtitle">Kelola informasi data diri, nomor WhatsApp untuk notifikasi jastip, dan kata sandi akun Anda.</p>
       </div>
 
+      <!-- Admin / Staff Access Banner -->
+      <div v-if="currentUser?.role === 'admin' || currentUser?.role === 'staff'" class="admin-access-box">
+        <div class="admin-access-header">
+          <div>
+            <div class="admin-badge">Hak Akses {{ userRoleLabel }}</div>
+            <h2 class="admin-access-title">Panel Admin dbb_luxe</h2>
+            <p class="admin-access-subtitle">Kelola katalog produk, jadwal trip jastip, pesanan masuk, verifikasi pembayaran, kategori, dan live chat.</p>
+          </div>
+          <NuxtLink to="/admin" class="btn-to-admin">
+            Masuk ke Panel Admin
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="5" y1="12" x2="19" y2="12" /><polyline points="12 5 19 12 12 19" />
+            </svg>
+          </NuxtLink>
+        </div>
+
+        <div class="admin-shortcuts">
+          <NuxtLink to="/admin/produk" class="shortcut-pill">Kelola Produk</NuxtLink>
+          <NuxtLink to="/admin/kategori" class="shortcut-pill">Kategori</NuxtLink>
+          <NuxtLink to="/admin/trip" class="shortcut-pill">Jadwal Jastip</NuxtLink>
+          <NuxtLink to="/admin/order" class="shortcut-pill">Pesanan &amp; Verifikasi</NuxtLink>
+          <NuxtLink to="/admin/chat" class="shortcut-pill">Live Chat</NuxtLink>
+          <NuxtLink to="/admin/request" class="shortcut-pill">Request Masuk</NuxtLink>
+          <NuxtLink to="/admin/pengaturan" class="shortcut-pill">Pengaturan Toko</NuxtLink>
+        </div>
+      </div>
+
       <div class="account-layout">
         <!-- Profile Card -->
         <div class="card-box">
@@ -218,6 +245,94 @@ const handleChangePassword = async () => {
 .page-subtitle {
   font-size: 0.92rem;
   color: var(--color-text-muted, #7A6A55);
+}
+
+.admin-access-box {
+  background: #FCF9F2;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 28px;
+}
+
+.admin-access-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #EAE0CE;
+}
+
+.admin-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8C6D3F;
+  background: #F1E5D1;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.admin-access-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--color-text, #2B2116);
+  margin-bottom: 4px;
+}
+
+.admin-access-subtitle {
+  font-size: 0.88rem;
+  color: var(--color-text-muted, #7A6A55);
+  margin: 0;
+}
+
+.btn-to-admin {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+
+.btn-to-admin:hover {
+  background: var(--color-primary-hover, #6F5530);
+}
+
+.admin-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.shortcut-pill {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text, #2B2116);
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  padding: 6px 12px;
+  border-radius: 20px;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.shortcut-pill:hover {
+  background: #F1E5D1;
+  border-color: #8C6D3F;
+  color: #8C6D3F;
 }
 
 .account-layout {

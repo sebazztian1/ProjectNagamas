@@ -9,10 +9,7 @@
 
       <div class="page-header">
         <div class="header-row">
-          <div>
-            <h1 class="page-title">Pusat Notifikasi</h1>
-            <p class="page-subtitle">Informasi terbaru mengenai status pesanan jastip Anda, update stok, dan penawaran request produk.</p>
-          </div>
+          <h1 class="page-title">Notifikasi</h1>
           <button class="btn-mark-all" @click="markAllAsRead">
             Tandai Semua Dibaca
           </button>
@@ -28,12 +25,6 @@
             :class="{ unread: !notif.isRead }"
             @click="readNotif(notif)"
           >
-            <div class="notif-icon-col">
-              <span v-if="notif.type === 'order'" class="icon-bubble order">📦</span>
-              <span v-else-if="notif.type === 'request'" class="icon-bubble request">💬</span>
-              <span v-else class="icon-bubble system">🔔</span>
-            </div>
-
             <div class="notif-body">
               <div class="notif-title-row">
                 <h4 class="notif-title">{{ notif.title }}</h4>

@@ -1,66 +1,86 @@
 <template>
   <div class="home-page">
-    <!-- Active Jastip Trip Banner (Top Hero) - Clean Luxury Card Without Background Image -->
-    <section v-if="activeTrip" class="hero-trip-section">
-      <div class="trip-banner">
-        <div class="banner-badge-row">
-          <span class="pulse-dot"></span>
-          <span class="trip-status-badge">Jadwal Jastip Sedang Buka (Open PO)</span>
-          <span class="trip-country-tag">{{ activeTrip.flag }} {{ activeTrip.country }}</span>
-        </div>
-
-        <h1 class="trip-title">{{ activeTrip.title }}</h1>
-        <p class="trip-dest">{{ activeTrip.cityOrArea }}</p>
-
-        <div class="trip-meta-row">
-          <div class="meta-item">
-            <span class="meta-lbl">Batas Pesanan (Close PO):</span>
-            <span class="meta-val">{{ formatDate(activeTrip.closeDate) }}</span>
-          </div>
-          <div class="meta-divider">&bull;</div>
-          <div class="meta-item">
-            <span class="meta-lbl">Estimasi Barang Tiba:</span>
-            <span class="meta-val">{{ formatDate(activeTrip.estimatedArrivalDate) }}</span>
-          </div>
-        </div>
-
-        <!-- Countdown Timer -->
-        <div class="countdown-card">
-          <div class="cd-left">
-            <span class="cd-label">Sisa Waktu Pemesanan:</span>
-            <div class="cd-timers">
-              <div class="cd-box"><span class="num">12</span><span class="unit">Hari</span></div>
-              <span class="colon">:</span>
-              <div class="cd-box"><span class="num">04</span><span class="unit">Jam</span></div>
-              <span class="colon">:</span>
-              <div class="cd-box"><span class="num">18</span><span class="unit">Menit</span></div>
-            </div>
-          </div>
-          <NuxtLink :to="`/jastip/${activeTrip.slug}`" class="banner-cta-btn">
-            Buka Jadwal &amp; Titip Barang
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M5 12h14"></path>
-              <path d="m12 5 7 7-7 7"></path>
-            </svg>
-          </NuxtLink>
-        </div>
-      </div>
-    </section>
-
-    <!-- Carousel Section (Underneath Banner) -->
+    <!-- Hero Carousel Section (Includes Open Jastip Batch, New Arrivals, How to Order, Request Product) -->
     <section class="hero-carousel-section">
-      <div 
-        class="carousel-container" 
-        @mouseenter="pauseAutoplay" 
+      <div
+        class="carousel-container"
+        @mouseenter="pauseAutoplay"
         @mouseleave="startAutoplay"
+        @focusin="pauseAutoplay"
+        @focusout="handleCarouselFocusOut"
+        @touchstart.passive="pauseAutoplay"
+        @touchend.passive="startAutoplay"
       >
         <div class="carousel-track-wrapper">
-          <div 
-            class="carousel-track" 
+          <div
+            class="carousel-track"
             :style="{ transform: `translateX(-${currentSlide * 100}%)` }"
           >
-            <div 
-              v-for="slide in carouselSlides" 
+            <!-- Slide 1: Open Jastip Batch (Terdekat Waktu) - Announcement Container Inside Carousel -->
+            <div v-if="activeTrip" class="carousel-slide">
+              <div class="trip-banner carousel-trip-banner">
+                <div class="trip-banner-grid">
+                  <div class="trip-banner-main">
+                    <div class="banner-badge-row">
+                      <span class="pulse-dot"></span>
+                      <span class="trip-status-badge">Jadwal Jastip Sedang Buka (Open PO)</span>
+                      <span class="trip-country-tag">{{ activeTrip.flag }} {{ activeTrip.country }}</span>
+                    </div>
+
+                    <h1 class="trip-title">{{ activeTrip.title }}</h1>
+                    <p class="trip-dest">{{ activeTrip.cityOrArea || activeTrip.description }}</p>
+
+                    <div class="trip-meta-row">
+                      <div class="meta-item">
+                        <span class="meta-lbl">Batas Pesanan (Close PO):</span>
+                        <span class="meta-val">{{ formatDate(activeTrip.closeDate) }}</span>
+                      </div>
+                      <template v-if="activeTrip.estimatedArrivalDate">
+                        <div class="meta-divider">&bull;</div>
+                        <div class="meta-item">
+                          <span class="meta-lbl">Estimasi Barang Tiba:</span>
+                          <span class="meta-val">{{ formatDate(activeTrip.estimatedArrivalDate) }}</span>
+                        </div>
+                      </template>
+                    </div>
+
+                    <!-- Countdown Timer + Specific CTA -->
+                    <div class="countdown-card">
+                      <div class="cd-left">
+                        <span class="cd-label">Sisa Waktu Pemesanan:</span>
+                        <div class="cd-timers">
+                          <div class="cd-box"><span class="num">{{ tripCountdown.days }}</span><span class="unit">Hari</span></div>
+                          <span class="colon">:</span>
+                          <div class="cd-box"><span class="num">{{ tripCountdown.hours }}</span><span class="unit">Jam</span></div>
+                          <span class="colon">:</span>
+                          <div class="cd-box"><span class="num">{{ tripCountdown.minutes }}</span><span class="unit">Menit</span></div>
+                        </div>
+                      </div>
+                      <NuxtLink :to="`/jastip/${activeTrip.slug}`" class="banner-cta-btn">
+                        Lihat Jastip {{ activeTrip.country }}
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M5 12h14"></path>
+                          <path d="m12 5 7 7-7 7"></path>
+                        </svg>
+                      </NuxtLink>
+                    </div>
+                  </div>
+
+                  <div class="trip-banner-media">
+                    <img
+                      :src="activeTrip.coverImageUrl || 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80'"
+                      :alt="activeTrip.title"
+                      loading="eager"
+                      fetchpriority="high"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slides 2, 3, 4: New Arrivals, How to Order Guide, Request a Product -->
+            <div
+              v-for="(slide, sIdx) in secondarySlides"
               :key="slide.id"
               class="carousel-slide"
             >
@@ -89,7 +109,13 @@
                 </div>
 
                 <div class="slide-media">
-                  <img :src="slide.image" :alt="slide.title" loading="lazy" />
+                  <img
+                    :src="slide.image"
+                    :alt="slide.title"
+                    :loading="!activeTrip && sIdx === 0 ? 'eager' : 'lazy'"
+                    :fetchpriority="!activeTrip && sIdx === 0 ? 'high' : 'auto'"
+                    decoding="async"
+                  />
                   <div class="slide-media-gradient"></div>
                 </div>
               </div>
@@ -106,8 +132,8 @@
           </button>
 
           <div class="carousel-dots">
-            <button 
-              v-for="(_, idx) in carouselSlides" 
+            <button
+              v-for="(_, idx) in totalSlidesCount"
               :key="idx"
               class="dot-indicator"
               :class="{ active: currentSlide === idx }"
@@ -125,95 +151,90 @@
       </div>
     </section>
 
-    <!-- Main Content: Ready Stock Catalog -->
+    <!-- Main Content: Product Catalog by Category Rows (Alphabetical) -->
     <main class="main-catalog-container">
-      <div class="section-header">
-        <div class="title-wrap">
-          <div class="ready-pill">
-            <span class="gold-indicator"></span>
-            READY STOCK &bull; SIAP KIRIM KE SELURUH INDONESIA
-          </div>
-          <h2 class="section-title">Katalog Ready Stock</h2>
-          <p class="section-desc">
-            Produk yang tersedia di bawah ini siap diproses dan dikirimkan langsung ke alamat Anda.
-          </p>
-        </div>
-
-        <!-- Shortcut to All Jastip Trips -->
-        <NuxtLink to="/jastip" class="view-jastip-link">
-          <span>Ingin titip barang luar negeri? <strong>Lihat Jadwal Jastip &rarr;</strong></span>
-        </NuxtLink>
-      </div>
-
-      <!-- Categories & Controls -->
-      <div class="controls-bar">
-        <div class="category-tabs">
-          <button 
-            v-for="cat in categories" 
-            :key="cat"
-            class="cat-tab"
-            :class="{ active: selectedCategory === cat }"
-            @click="selectedCategory = cat"
-          >
-            {{ cat }}
-          </button>
-        </div>
-
-        <div class="filter-count">
-          Menampilkan <strong>{{ filteredProducts.length }}</strong> barang ready
-        </div>
-      </div>
-
-      <!-- Ready Stock Products Grid -->
-      <div v-if="filteredProducts.length > 0" class="products-grid">
-        <div 
-          v-for="product in filteredProducts" 
-          :key="product.id"
-          class="product-card"
+      <div v-if="categoryRows.length > 0" class="category-rows-wrapper">
+        <section
+          v-for="catRow in categoryRows"
+          :key="catRow.name"
+          class="category-row-section"
         >
-          <NuxtLink :to="`/ready/${product.slug}`" class="card-thumb-link">
-            <div class="card-thumb">
-              <img :src="product.image" :alt="product.name" loading="lazy" />
-            </div>
-          </NuxtLink>
-
-          <div class="card-info">
-            <span class="card-cat">{{ product.category }}</span>
-            <NuxtLink :to="`/ready/${product.slug}`" class="card-name-link">
-              <h3 class="card-title">{{ product.name }}</h3>
+          <div class="category-row-header">
+            <h2 class="category-row-title">{{ catRow.name }}</h2>
+            <NuxtLink
+              :to="`/ready?category=${encodeURIComponent(catRow.name)}`"
+              class="category-more-link"
+            >
+              <span>Lihat produk lainnya</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+              </svg>
             </NuxtLink>
+          </div>
 
-            <div class="card-price-row">
-              <div class="price-val">{{ formatRupiah(product.price) }}</div>
-            </div>
+          <div class="category-row-box">
+            <div class="products-grid">
+              <div
+                v-for="product in catRow.products"
+                :key="product.id"
+                class="product-card"
+              >
+                <NuxtLink :to="getProductLink(product)" class="card-thumb-link">
+                  <div class="card-thumb">
+                    <img :src="product.image" :alt="product.name" loading="lazy" />
+                    <span v-if="product.productType === 'jastip'" class="badge-jastip">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
+                      </svg>
+                      Jastip
+                    </span>
+                  </div>
+                </NuxtLink>
 
-            <div class="card-actions">
-              <NuxtLink :to="`/ready/${product.slug}`" class="btn-detail">
-                Detail
-              </NuxtLink>
-              <NuxtLink :to="`/checkout?productId=${product.id}&qty=1`" class="btn-buy">
-                Beli Langsung
-              </NuxtLink>
+                <div class="card-info">
+                  <div class="card-meta-top">
+                    <span class="card-cat">{{ product.category }}</span>
+                    <span v-if="product.productType === 'jastip'" class="card-type-tag">Jastip</span>
+                  </div>
+
+                  <NuxtLink :to="getProductLink(product)" class="card-name-link">
+                    <h3 class="card-title">{{ product.name }}</h3>
+                  </NuxtLink>
+
+                  <p v-if="product.productType === 'jastip' && product.trip?.title" class="card-trip-desc">
+                    {{ product.trip.title }}
+                  </p>
+
+                  <div class="card-price-row">
+                    <div class="price-val">{{ formatRupiah(product.price) }}</div>
+                  </div>
+
+                  <div class="card-actions">
+                    <NuxtLink :to="`/checkout?productId=${product.id}&qty=1`" class="btn-buy">
+                      {{ product.productType === 'jastip' ? 'Titip' : 'Beli' }}
+                    </NuxtLink>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
       </div>
 
       <!-- Empty State -->
       <div v-else class="empty-state">
-        <p>Belum ada produk ready pada kategori ini.</p>
-        <button class="btn-reset" @click="selectedCategory = 'Semua'">Lihat Semua Produk</button>
+        <p>Belum ada produk yang tersedia di katalog.</p>
       </div>
 
       <!-- Bottom Banner: Request Jastip -->
       <section class="request-cta-banner">
         <div class="request-content">
-          <span class="request-tag">Punya Barang Impian?</span>
-          <h3 class="request-heading">Barang yang Anda cari belum ada di katalog?</h3>
-          <p class="request-sub">Kirimkan foto atau link produk luar negeri yang Anda inginkan. Admin kami akan mengecek langsung di toko fisik luar negeri dan memberikan penawaran harga terbaik.</p>
+          <h3 class="request-heading">Barang yang dicari belum ada di katalog?</h3>
+          <p class="request-sub">Kirimkan foto atau link produk luar negeri yang Anda inginkan untuk dicek langsung oleh admin.</p>
         </div>
         <NuxtLink to="/request" class="request-btn">
-          Ajukan Request Titip Barang &rarr;
+          Request Barang &rarr;
         </NuxtLink>
       </section>
     </main>
@@ -229,11 +250,51 @@ const { data: openTrips } = await useFetch<ApiTrip[]>('/api/trips', {
   query: { status: 'open' }
 })
 
-const activeTrip = computed(() => {
-  return openTrips.value?.[0] || null
+const { data: dbCategories } = await useFetch<any[]>('/api/categories')
+const { data: dbAllProducts } = await useFetch<ApiProduct[]>('/api/products')
+
+const allProducts = computed(() => {
+  return dbAllProducts.value || []
 })
 
-// Carousel Data & State
+// 1. Open Jastip Batch (Terdekat Waktu)
+const activeTrip = computed(() => {
+  const list = [...(openTrips.value || [])]
+  if (list.length === 0) return null
+  list.sort((a, b) => new Date(a.closeDate).getTime() - new Date(b.closeDate).getTime())
+  return list[0] || null
+})
+
+const nowTimestamp = ref(Date.now())
+let countdownInterval: ReturnType<typeof setInterval> | null = null
+
+const tripCountdown = computed(() => {
+  if (!activeTrip.value?.closeDate) {
+    return { days: '00', hours: '00', minutes: '00' }
+  }
+  const diff = Math.max(0, new Date(activeTrip.value.closeDate).getTime() - nowTimestamp.value)
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  const hours = Math.floor((diff / (1000 * 60 * 60)) % 24)
+  const minutes = Math.floor((diff / (1000 * 60)) % 60)
+  return {
+    days: String(days).padStart(2, '0'),
+    hours: String(hours).padStart(2, '0'),
+    minutes: String(minutes).padStart(2, '0')
+  }
+})
+
+// 2. New Arrivals (Otomatis dari Ready Stok Terbaru)
+const latestReadyProducts = computed(() => {
+  const readyList = allProducts.value.filter(p => p.productType === 'ready' && p.inStock !== false)
+  readyList.sort((a, b) => {
+    const tA = a.createdAt ? new Date(a.createdAt).getTime() : 0
+    const tB = b.createdAt ? new Date(b.createdAt).getTime() : 0
+    if (tB !== tA) return tB - tA
+    return Number(b.id) - Number(a.id)
+  })
+  return readyList.slice(0, 3)
+})
+
 interface CarouselSlide {
   id: string
   title: string
@@ -248,85 +309,112 @@ interface CarouselSlide {
   dates?: string
 }
 
-const currentSlide = ref(0)
-let autoplayTimer: ReturnType<typeof setInterval> | null = null
+const secondarySlides = computed<CarouselSlide[]>(() => {
+  const newestReady = latestReadyProducts.value[0]
+  const readyNames = latestReadyProducts.value.map(p => p.name).join(', ')
 
-const carouselSlides = ref<CarouselSlide[]>([
-  {
-    id: 'slide-1',
-    title: 'Japan Autumn Special Trip 2026',
-    subtitle: 'Titip snack Tokyo Station, kosmetik drugstore Ginza, anime eksklusif, dan outerwear Uniqlo Japan.',
-    tag: 'Sedang Buka (Open PO)',
-    country: 'Jepang',
-    flag: '🇯🇵',
-    image: 'https://images.unsplash.com/photo-1503899036084-c55cdd92da26?auto=format&fit=crop&w=1200&q=80',
-    link: '/jastip/japan-autumn-trip',
-    buttonText: 'Lihat Katalog Trip Jepang',
-    badgeText: 'Close PO 20 Okt 2026',
-    dates: 'Estimasi Tiba: 2 Nov 2026'
-  },
-  {
-    id: 'slide-2',
-    title: 'Korea K-Beauty & Fashion Trip',
-    subtitle: 'Skincare viral Olive Young (Torriden, Anua, Medicube) dan fashion brand lokal Seongsu Seoul.',
-    tag: 'Sedang Buka (Open PO)',
-    country: 'Korea Selatan',
-    flag: '🇰🇷',
-    image: 'https://images.unsplash.com/photo-1517154421773-0529f29ea451?auto=format&fit=crop&w=1200&q=80',
-    link: '/jastip/korea-k-beauty-trip',
-    buttonText: 'Lihat Katalog Trip Korea',
-    badgeText: 'Close PO 28 Okt 2026',
-    dates: 'Estimasi Tiba: 12 Nov 2026'
-  },
-  {
-    id: 'slide-3',
-    title: 'Bangkok Mega Fashion & Big C Snack',
-    subtitle: 'Baju santai linen Platinum Fashion Mall, cemilan rumput laut Tao Kae Noi, dan Cha Tra Mue tea.',
-    tag: 'Open PO Batch 4',
-    country: 'Thailand',
-    flag: '🇹🇭',
-    image: 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=1200&q=80',
-    link: '/jastip/bangkok-snack-fashion',
-    buttonText: 'Lihat Katalog Trip Bangkok',
-    badgeText: 'Close PO 15 Nov 2026',
-    dates: 'Estimasi Tiba: 25 Nov 2026'
-  },
-  {
-    id: 'slide-4',
-    title: 'Punya Barang Impian dari Toko Lain?',
-    subtitle: 'Kirim foto atau link produk luar negeri yang Anda inginkan. Admin kami akan cek langsung di toko fisik.',
-    tag: 'Konsultasi Gratis',
+  const newArrivalsSlide: CarouselSlide = newestReady
+    ? {
+        id: 'slide-new-arrivals',
+        title: `New Arrivals: ${newestReady.name}`,
+        subtitle:
+          latestReadyProducts.value.length > 1
+            ? `Koleksi ready stock terbaru siap kirim hari ini: ${readyNames}.`
+            : newestReady.description || 'Koleksi ready stock terbaru siap langsung dikirim ke alamat Anda tanpa menunggu jadwal trip.',
+        tag: 'New Arrivals • Ready Stock',
+        country: newestReady.category || 'Siap Kirim',
+        flag: '🛍️',
+        image: newestReady.image,
+        link: `/ready/${newestReady.slug}`,
+        buttonText: 'Lihat Ready Stock Terbaru',
+        badgeText: formatRupiah(newestReady.price),
+        dates: `Tersedia ${latestReadyProducts.value.length}+ Produk Baru`
+      }
+    : {
+        id: 'slide-new-arrivals',
+        title: 'Koleksi Ready Stock Terbaru Siap Kirim',
+        subtitle: 'Produk pilihan autentik yang sudah tersedia di gudang kami dan siap dikirim langsung tanpa menunggu jadwal trip.',
+        tag: 'New Arrivals • Ready Stock',
+        country: 'Siap Kirim',
+        flag: '🛍️',
+        image: 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=1200&q=80',
+        link: '/ready',
+        buttonText: 'Lihat Katalog Ready Stock',
+        badgeText: 'Pengiriman Cepat',
+        dates: '100% Original'
+      }
+
+  const howToOrderSlide: CarouselSlide = {
+    id: 'slide-how-to-order',
+    title: 'Panduan Mudah Cara Order Jastip & Ready Stock',
+    subtitle: 'Pelajari langkah pemesanan transparan mulai dari pilih produk, verifikasi ketersediaan oleh admin (ACC), hingga pembayaran aman.',
+    tag: 'How to Order Guide',
+    country: 'Panduan Belanja',
+    flag: '📖',
+    image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=1200&q=80',
+    link: '/cara-order',
+    buttonText: 'Baca Panduan Cara Order',
+    badgeText: '1. Pilih Produk & Checkout',
+    dates: '2. Verifikasi Admin → 3. Bayar & Kirim'
+  }
+
+  const requestProductSlide: CarouselSlide = {
+    id: 'slide-request-product',
+    title: 'Punya Barang Impian yang Belum Ada di Katalog?',
+    subtitle: 'Kirimkan foto atau link produk luar negeri yang Anda cari. Tim kami akan mengecek ketersediaan dan harga langsung di toko fisik.',
+    tag: 'Request a Product',
     country: 'Request Kustom',
     flag: '✨',
     image: 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&w=1200&q=80',
     link: '/request',
-    buttonText: 'Ajukan Request Titip',
+    buttonText: 'Ajukan Request Produk',
     badgeText: 'Pengecekan Fisik Langsung',
     dates: 'Penawaran Harga Transparan'
   }
-])
+
+  return [newArrivalsSlide, howToOrderSlide, requestProductSlide]
+})
+
+const totalSlidesCount = computed(() => {
+  return (activeTrip.value ? 1 : 0) + secondarySlides.value.length
+})
+
+const currentSlide = ref(0)
+let autoplayTimer: ReturnType<typeof setInterval> | null = null
 
 const nextSlide = () => {
-  currentSlide.value = (currentSlide.value + 1) % carouselSlides.value.length
+  if (totalSlidesCount.value <= 0) return
+  currentSlide.value = (currentSlide.value + 1) % totalSlidesCount.value
 }
 
 const prevSlide = () => {
-  currentSlide.value = (currentSlide.value - 1 + carouselSlides.value.length) % carouselSlides.value.length
+  if (totalSlidesCount.value <= 0) return
+  currentSlide.value = (currentSlide.value - 1 + totalSlidesCount.value) % totalSlidesCount.value
 }
 
 const goToSlide = (index: number) => {
   currentSlide.value = index
 }
 
+// Slow autoplay (7 seconds, within 6-8s requirement)
 const startAutoplay = () => {
   stopAutoplay()
   autoplayTimer = setInterval(() => {
     nextSlide()
-  }, 5000)
+  }, 7000)
 }
 
 const pauseAutoplay = () => {
   stopAutoplay()
+}
+
+const handleCarouselFocusOut = (e: FocusEvent) => {
+  const currentTarget = e.currentTarget as HTMLElement | null
+  const relatedTarget = e.relatedTarget as Node | null
+  if (currentTarget && relatedTarget && currentTarget.contains(relatedTarget)) {
+    return
+  }
+  startAutoplay()
 }
 
 const stopAutoplay = () => {
@@ -338,29 +426,52 @@ const stopAutoplay = () => {
 
 onMounted(() => {
   startAutoplay()
+  countdownInterval = setInterval(() => {
+    nowTimestamp.value = Date.now()
+  }, 30000)
 })
 
 onBeforeUnmount(() => {
   stopAutoplay()
-})
-
-const categories = ['Semua', 'Tas', 'Baju', 'Sepatu', 'Aksesoris', 'Lainnya']
-const selectedCategory = ref('Semua')
-
-const { data: dbReadyProducts } = await useFetch<ApiProduct[]>('/api/products', {
-  query: { type: 'ready' }
-})
-
-const readyProducts = computed(() => {
-  return dbReadyProducts.value || []
-})
-
-const filteredProducts = computed(() => {
-  if (selectedCategory.value === 'Semua') {
-    return readyProducts.value
+  if (countdownInterval) {
+    clearInterval(countdownInterval)
+    countdownInterval = null
   }
-  return readyProducts.value.filter(p => p.category === selectedCategory.value)
 })
+
+const categoryRows = computed(() => {
+  const catSet = new Set<string>()
+  if (dbCategories.value && dbCategories.value.length > 0) {
+    dbCategories.value.forEach(c => {
+      if (c.name) catSet.add(c.name)
+    })
+  }
+  allProducts.value.forEach(p => {
+    if (p.category) catSet.add(p.category)
+  })
+
+  const sortedCategories = Array.from(catSet).sort((a, b) => {
+    const isALainnya = a.trim().toLowerCase() === 'lainnya'
+    const isBLainnya = b.trim().toLowerCase() === 'lainnya'
+    if (isALainnya && !isBLainnya) return 1
+    if (!isALainnya && isBLainnya) return -1
+    return a.localeCompare(b, 'id')
+  })
+
+  return sortedCategories
+    .map(name => ({
+      name,
+      products: allProducts.value.filter(p => p.category === name)
+    }))
+    .filter(row => row.products.length > 0)
+})
+
+const getProductLink = (product: ApiProduct) => {
+  if (product.productType === 'jastip' && product.trip?.slug) {
+    return `/jastip/${product.trip.slug}/${product.slug}`
+  }
+  return `/ready/${product.slug}`
+}
 
 const formatRupiah = (val: number) => {
   return 'Rp ' + val.toLocaleString('id-ID')
@@ -377,8 +488,8 @@ const formatDate = (dateStr: string) => {
   padding-bottom: 80px;
 }
 
-/* Hero Section */
-.hero-trip-section {
+/* Hero Carousel Section */
+.hero-carousel-section {
   max-width: 1240px;
   margin: 24px auto 0;
   padding: 0 24px;
@@ -386,22 +497,59 @@ const formatDate = (dateStr: string) => {
 
 .trip-banner {
   background: linear-gradient(135deg, #1C140C 0%, #2A1F16 50%, #1A130C 100%);
-  border-radius: var(--radius-lg);
-  padding: 44px 44px 38px;
   color: #FFFBF2;
   display: flex;
   flex-direction: column;
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(216, 185, 120, 0.35);
   position: relative;
   overflow: hidden;
+  width: 100%;
+  height: 390px;
+  flex: 1;
 }
 
-/* Hero Carousel Section */
-.hero-carousel-section {
-  max-width: 1240px;
-  margin: 32px auto 0;
-  padding: 0 24px;
+.carousel-trip-banner {
+  border-radius: 0;
+  border: none;
+  padding: 0;
+}
+
+.trip-banner-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  height: 100%;
+  width: 100%;
+  flex: 1;
+}
+
+.trip-banner-main {
+  padding: 32px 44px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+}
+
+.trip-banner-media {
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+}
+
+.trip-banner-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.trip-banner-media::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, #241A12 0%, rgba(36, 26, 18, 0.25) 45%, transparent 100%);
+  pointer-events: none;
 }
 
 .carousel-container {
@@ -418,6 +566,7 @@ const formatDate = (dateStr: string) => {
 
 .carousel-track {
   display: flex;
+  align-items: stretch;
   transition: transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
   will-change: transform;
 }
@@ -425,21 +574,27 @@ const formatDate = (dateStr: string) => {
 .carousel-slide {
   flex: 0 0 100%;
   width: 100%;
+  height: 390px;
+  display: flex;
+  flex-direction: column;
 }
 
 .slide-card {
   display: grid;
   grid-template-columns: 1.15fr 0.85fr;
-  min-height: 340px;
+  width: 100%;
+  height: 100%;
+  flex: 1;
   background: #FFFFFF;
 }
 
 .slide-content {
-  padding: 40px 44px;
+  padding: 32px 44px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
+  min-width: 0;
 }
 
 .slide-badge-row {
@@ -532,13 +687,17 @@ const formatDate = (dateStr: string) => {
 .slide-media {
   position: relative;
   overflow: hidden;
+  height: 100%;
   background: var(--brand-neutral);
 }
 
 .slide-media img {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
   transition: transform 0.6s ease;
 }
 
@@ -614,15 +773,23 @@ const formatDate = (dateStr: string) => {
 }
 
 @media (max-width: 900px) {
-  .slide-card {
-    grid-template-columns: 1fr;
+  .carousel-slide,
+  .trip-banner {
+    height: 490px;
   }
-  .slide-media {
-    height: 220px;
+  .slide-card,
+  .trip-banner-grid {
+    grid-template-columns: 1fr;
+    grid-template-rows: 200px 1fr;
+  }
+  .slide-media,
+  .trip-banner-media {
+    height: 200px;
     order: -1;
   }
-  .slide-content {
-    padding: 28px 24px;
+  .slide-content,
+  .trip-banner-main {
+    padding: 20px 24px;
   }
 }
 
@@ -630,7 +797,7 @@ const formatDate = (dateStr: string) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   flex-wrap: wrap;
 }
 
@@ -666,28 +833,28 @@ const formatDate = (dateStr: string) => {
 }
 
 .trip-title {
-  font-size: clamp(2.2rem, 3.4vw, 3rem) !important;
+  font-size: clamp(1.6rem, 2.5vw, 2.2rem) !important;
   font-weight: 700 !important;
   color: #FFFBF2 !important;
-  margin-bottom: 8px;
-  line-height: 1.15;
+  margin-bottom: 6px;
+  line-height: 1.2;
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 
 .trip-dest {
-  font-size: 1.05rem;
+  font-size: 0.96rem;
   color: var(--brand-secondary);
   font-weight: 500;
-  margin-bottom: 24px;
+  margin-bottom: 14px;
 }
 
 .trip-meta-row {
   display: flex;
   align-items: center;
-  gap: 16px;
-  font-size: 0.9rem;
+  gap: 14px;
+  font-size: 0.86rem;
   color: #EFE1C6;
-  margin-bottom: 28px;
+  margin-bottom: 18px;
   flex-wrap: wrap;
 }
 
@@ -707,11 +874,11 @@ const formatDate = (dateStr: string) => {
   backdrop-filter: blur(12px);
   border: 1px solid rgba(216, 185, 120, 0.35);
   border-radius: var(--radius-md);
-  padding: 18px 24px;
+  padding: 14px 18px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -790,115 +957,64 @@ const formatDate = (dateStr: string) => {
 /* Main Catalog Area */
 .main-catalog-container {
   max-width: 1440px;
-  margin: 56px auto 0;
+  margin: 48px auto 0;
   padding: 0 24px;
 }
 
-.section-header {
+.category-rows-wrapper {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  margin-bottom: 32px;
-  gap: 24px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 36px;
 }
 
-.ready-pill {
+.category-row-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.category-row-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 0 4px;
+}
+
+.category-row-title {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.category-more-link {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  background: var(--brand-primary);
-  color: var(--brand-accent);
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  margin-bottom: 10px;
-  letter-spacing: 0.06em;
-  border: 1px solid rgba(216, 185, 120, 0.4);
-}
-
-.gold-indicator {
-  width: 6px;
-  height: 6px;
-  background: var(--brand-secondary);
-  border-radius: 50%;
-}
-
-.section-title {
-  font-size: 2.1rem;
-  margin-bottom: 8px;
-}
-
-.section-desc {
-  font-size: 0.94rem;
-  color: var(--color-text-muted);
-  max-width: 640px;
-  line-height: 1.65;
-}
-
-.view-jastip-link {
   text-decoration: none;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
+  font-weight: 700;
   color: var(--brand-accent);
-  padding: 10px 18px;
-  border: 1px solid var(--brand-secondary);
+  padding: 6px 14px;
   border-radius: var(--radius-full);
+  border: 1px solid var(--brand-primary);
   background: #FFFFFF;
   transition: all 0.2s ease;
-  box-shadow: var(--shadow-subtle);
 }
 
-.view-jastip-link:hover {
+.category-more-link:hover {
   background: var(--brand-primary);
-  border-color: var(--brand-accent);
+  border-color: var(--brand-secondary);
+  transform: translateX(2px);
 }
 
-/* Controls Bar */
-.controls-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 32px;
-  gap: 20px;
-  flex-wrap: wrap;
-}
-
-.category-tabs {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.cat-tab {
+.category-row-box {
   background: #FFFFFF;
   border: 1px solid var(--brand-primary);
-  color: var(--color-text-muted);
-  padding: 9px 18px;
-  border-radius: var(--radius-full);
-  font-size: 0.86rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  border-radius: var(--radius-lg);
+  padding: 20px;
   box-shadow: var(--shadow-subtle);
-}
-
-.cat-tab:hover {
-  border-color: var(--brand-secondary);
-  color: var(--brand-accent);
-  background: var(--brand-neutral);
-}
-
-.cat-tab.active {
-  background: var(--brand-accent);
-  color: #FFFBF2;
-  border-color: var(--brand-accent);
-  box-shadow: 0 4px 14px -2px rgba(140, 109, 63, 0.35);
-}
-
-.filter-count {
-  font-size: 0.88rem;
-  color: var(--color-text-muted);
 }
 
 .products-grid {
@@ -947,50 +1063,53 @@ const formatDate = (dateStr: string) => {
   transform: scale(1.05);
 }
 
-.badge-stock-ready {
+.badge-jastip {
   position: absolute;
-  top: 12px;
-  left: 12px;
-  background: var(--color-ready-bg);
-  color: var(--color-ready);
-  font-size: 0.72rem;
+  top: 10px;
+  left: 10px;
+  background: var(--brand-accent);
+  color: #FFFBF2;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 4px 9px;
-  border-radius: var(--radius-sm);
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  border: 1px solid rgba(59, 110, 72, 0.2);
-}
-
-.badge-country {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(255, 251, 242, 0.94);
-  backdrop-filter: blur(4px);
-  color: var(--color-text);
-  font-size: 0.72rem;
-  font-weight: 600;
   padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--brand-primary);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 8px rgba(28, 20, 12, 0.22);
 }
 
 .card-info {
-  padding: 14px 14px 16px;
+  padding: 12px 14px 14px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
+.card-meta-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
 .card-cat {
-  font-size: 0.68rem;
+  font-size: 0.66rem;
   color: var(--brand-accent);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 4px;
+}
+
+.card-type-tag {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--brand-accent);
+  background: var(--color-jastip-bg, #F5EBD8);
+  border: 1px solid rgba(216, 185, 120, 0.5);
+  padding: 1px 6px;
+  border-radius: 4px;
 }
 
 .card-name-link {
@@ -999,11 +1118,11 @@ const formatDate = (dateStr: string) => {
 }
 
 .card-title {
-  font-size: 0.88rem;
+  font-size: 0.86rem;
   font-weight: 600;
   color: var(--color-text);
   line-height: 1.35;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1015,13 +1134,24 @@ const formatDate = (dateStr: string) => {
   color: var(--brand-accent);
 }
 
+.card-trip-desc {
+  font-size: 0.74rem;
+  color: var(--color-text-muted);
+  margin: 0 0 8px 0;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
 .card-price-row {
   margin-top: auto;
   margin-bottom: 10px;
 }
 
 .price-val {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 800;
   color: var(--brand-accent);
   letter-spacing: -0.01em;

@@ -341,15 +341,15 @@ FASE 2: SETUP LINGKUNGAN, DATABASE & STORAGE GAMBAR
     [X] Script migrasi seluruh 17 tabel V2 beserta foreign key & index di database jastip_dbbluxe
     [X] Seeder: akun Admin default, kategori, rekening contoh, sample produk ready, sample trip + produk jastip, store_settings default (npx prisma db seed)
 
-[X] 2.3 Setup Penyimpanan Gambar (Storage)
-    [X] Setup storage upload handler di server/api/upload.post.ts
-    [X] Folder penyimpanan terpisah:
-        [X] `products/` (publik)
-        [X] `trips/` (cover trip, publik)
-        [X] `chat/` (lampiran chat)
-        [X] `requests/` (gambar referensi request)
-        [X] `receipts/` (bukti transfer)
-        [X] `purchase-proofs/` (foto struk/bukti pembelian dari admin)
+[X] 2.3 Setup Penyimpanan Gambar (Cloudflare R2 Storage)
+    [X] Setup Cloudflare R2 client (`server/utils/r2.ts` dengan `@aws-sdk/client-s3` & `@aws-sdk/s3-request-presigner`) dan upload handler di `server/api/upload.post.ts`
+    [X] Folder & bucket penyimpanan terpisah di Cloudflare R2:
+        [X] `products/` (bucket `public-images`, publik)
+        [X] `trips/` (cover trip, bucket `public-images`, publik)
+        [X] `chat/` (lampiran chat, bucket `public-images`, publik)
+        [X] `requests/` (gambar referensi request, bucket `public-images`, publik)
+        [X] `receipts/` (bukti transfer, bucket `private-proofs`, private + Presigned URL)
+        [X] `purchase-proofs/` (foto struk/bukti pembelian dari admin, bucket `private-proofs`, private + Presigned URL)
     [X] Validasi tipe MIME (JPG/PNG/WebP) dan ukuran maksimal 5MB
 
 
@@ -436,107 +436,107 @@ FASE 6: WISHLIST CUSTOMER
 --------------------------------------------------------------------------------
 FASE 7: REQUEST PRODUK & PENAWARAN (QUOTE)
 --------------------------------------------------------------------------------
-[ ] 7.1 Request Produk Customer
-    [ ] Proteksi: wajib login
-    [ ] Form: nama produk, deskripsi, link referensi, upload gambar referensi, opsi trip tujuan (trip open) atau "belum tentu"
-    [ ] Riwayat request + status
-    [ ] Halaman penawaran: lihat harga & catatan dari admin, tombol Setuju / Tolak
-    [ ] Setelah setuju, otomatis dibuat order (masuk alur checkout & pembayaran)
+[X] 7.1 Request Produk Customer
+    [X] Proteksi: wajib login
+    [X] Form: nama produk, deskripsi, link referensi, upload gambar referensi, opsi trip tujuan (trip open) atau "belum tentu"
+    [X] Riwayat request + status
+    [X] Halaman penawaran: lihat harga & catatan dari admin, tombol Setuju / Tolak
+    [X] Setelah setuju, otomatis dibuat order (masuk alur checkout & pembayaran)
 
-[ ] 7.2 Pengelolaan Request oleh Admin
-    [ ] Daftar request masuk + filter status (Pending, Reviewed, Quoted, Accepted, Available, Rejected)
-    [ ] Detail: data customer, no HP, deskripsi, preview gambar & link referensi
-    [ ] Aksi: isi harga penawaran, catatan, masa berlaku penawaran, ubah status
-    [ ] Tombol pintas chat ke customer
-    [ ] Opsi menjadikan request sebagai produk di trip
+[X] 7.2 Pengelolaan Request oleh Admin
+    [X] Daftar request masuk + filter status (Pending, Reviewed, Quoted, Accepted, Available, Rejected)
+    [X] Detail: data customer, no HP, deskripsi, preview gambar & link referensi
+    [X] Aksi: isi harga penawaran, catatan, masa berlaku penawaran, ubah status
+    [X] Tombol pintas chat ke customer
+    [X] Opsi menjadikan request sebagai produk di trip
 
 --------------------------------------------------------------------------------
 FASE 8: LIVE CHAT REAL-TIME (UMUM) & NOTIFIKASI ADMIN
 --------------------------------------------------------------------------------
-[ ] 8.1 Arsitektur Real-time Chat & Broadcasting (MySQL + Realtime Broadcaster)
-    [ ] Catatan Arsitektur:
+[X] 8.1 Arsitektur Real-time Chat & Broadcasting (MySQL + Ably Realtime)
+    [X] Catatan Arsitektur:
         - Database utama: MySQL menyimpan permanen `chat_rooms` dan `chat_messages`
-        - Engine broadcasting: Pusher Channels / Supabase Broadcast / Socket.io
+        - Engine broadcasting: Ably Realtime (Pub/Sub Channels)
         - Alur kirim pesan:
           1. Klien kirim chat via API (`/api/chat/send`)
           2. Pesan divalidasi & disimpan ke MySQL (`is_read = false`)
-          3. Setelah insert berhasil, server trigger event ke channel `room-{id}`
-          4. Penerima yang subscribe menerima payload secara instan
-    [ ] Versi awal (MVP) boleh memakai polling sederhana; realtime broadcast menyusul
-    [ ] Setup Realtime Broadcaster
-    [ ] Satu room chat per customer (chat umum); produk dibagikan sebagai kartu produk di dalam chat
-    [ ] Proteksi: Guest tidak dapat membuka room chat
+          3. Setelah insert berhasil, server publish event via Ably ke channel `chat:room-{id}`
+          4. Penerima yang subscribe ke Ably channel `chat:room-{id}` menerima payload secara instan
+    [X] Versi awal (MVP) boleh memakai polling sederhana; realtime broadcast Ably menyusul
+    [X] Setup Ably Realtime (`ably` SDK & token auth endpoint `/api/chat/token`)
+    [X] Satu room chat per customer (chat umum); produk dibagikan sebagai kartu produk di dalam chat
+    [X] Proteksi: Guest tidak dapat membuka room chat
 
-[ ] 8.2 Chat Customer
-    [ ] Kirim kartu produk ke chat (nama, foto, harga, tipe ready/jastip) lewat tombol "Chat Admin" di halaman produk/wishlist
-    [ ] Kirim pesan teks real-time
-    [ ] Kirim gambar (preview sebelum kirim)
-    [ ] Bubble responsif, timestamp, status pengiriman
+[X] 8.2 Chat Customer
+    [X] Kirim kartu produk ke chat (nama, foto, harga, tipe ready/jastip) lewat tombol "Chat Admin" di halaman produk/wishlist
+    [X] Kirim pesan teks real-time
+    [X] Kirim gambar (preview sebelum kirim)
+    [X] Bubble responsif, timestamp, status pengiriman
 
-[ ] 8.3 Chat & Notifikasi Admin
-    [ ] Inbox percakapan per customer terurut pesan terbaru
-    [ ] Badge unread per customer/room + total di navbar/sidebar admin
-    [ ] Sound notification / browser toast saat ada pesan baru
-    [ ] Balas teks & gambar
-    [ ] Mark as read
+[X] 8.3 Chat & Notifikasi Admin
+    [X] Inbox percakapan per customer terurut pesan terbaru
+    [X] Badge unread per customer/room + total di navbar/sidebar admin
+    [X] Sound notification / browser toast saat ada pesan baru
+    [X] Balas teks & gambar
+    [X] Mark as read
 
 --------------------------------------------------------------------------------
 FASE 9: CHECKOUT, ORDER & PEMBAYARAN MANUAL (NON-MIDTRANS)
 --------------------------------------------------------------------------------
-[ ] 9.1 Checkout & Pembuatan Order (Tahap 1: Pengajuan)
-    [ ] Keranjang / pilih item (qty, variasi) dengan validasi stok (ready) atau status trip & kuota (jastip)
-    [ ] Keranjang campur dipecah otomatis menjadi order ready & order jastip per trip
-    [ ] Generate `order_code` unik (contoh: JST-20261002-001 / RDY-20261002-010)
-    [ ] Simpan `order_items` dengan snapshot nama produk & harga saat pemesanan
-    [ ] Generate kode unik 3 digit pada total transfer
-    [ ] Inisialisasi status order awal: `pending_approval` (Menunggu Persetujuan Admin)
-    [ ] Rekening dan instruksi transfer di-lock/ditahan hingga pesanan di-ACC admin
-    [ ] Pilihan skema pembayaran: DP 50% atau Pelunasan Penuh (khusus jastip)
-    [ ] Form alamat pengiriman (nama penerima, no HP penerima, alamat lengkap pengiriman) wajib diisi saat checkout dan dicatat per order
-    [ ] Toko beroperasi full online (tidak ada opsi ambil di toko / self-pickup)
+[X] 9.1 Checkout & Pembuatan Order (Tahap 1: Pengajuan)
+    [X] Keranjang / pilih item (qty, variasi) dengan validasi stok (ready) atau status trip & kuota (jastip)
+    [X] Keranjang campur dipecah otomatis menjadi order ready & order jastip per trip
+    [X] Generate `order_code` unik (contoh: JST-20261002-001 / RDY-20261002-010)
+    [X] Simpan `order_items` dengan snapshot nama produk & harga saat pemesanan
+    [X] Generate kode unik 3 digit pada total transfer
+    [X] Inisialisasi status order awal: `pending_approval` (Menunggu Persetujuan Admin)
+    [X] Rekening dan instruksi transfer di-lock/ditahan hingga pesanan di-ACC admin
+    [X] Pilihan skema pembayaran: DP 50% atau Pelunasan Penuh (khusus jastip)
+    [X] Form alamat pengiriman (nama penerima, no HP penerima, alamat lengkap pengiriman) wajib diisi saat checkout dan dicatat per order
+    [X] Toko beroperasi full online (tidak ada opsi ambil di toko / self-pickup)
 
-[ ] 9.2 Peninjauan & Persetujuan (ACC) oleh Admin (/admin/order)
-    [ ] Tab filter: "Perlu ACC" di dashboard admin
-    [ ] Admin memeriksa ketersediaan stok ready atau sisa kuota koper traveler luar negeri serta alamat pengiriman
-    [ ] Admin dapat mengisi perkiraan ongkir (opsional, disepakati di luar sistem); total tagihan = subtotal + ongkir + kode unik
-    [ ] Aksi: "✓ ACC / Setujui Pesanan"
+[X] 9.2 Peninjauan & Persetujuan (ACC) oleh Admin (/admin/order)
+    [X] Tab filter: "Perlu ACC" di dashboard admin
+    [X] Admin memeriksa ketersediaan stok ready atau sisa kuota koper traveler luar negeri serta alamat pengiriman
+    [X] Admin dapat mengisi perkiraan ongkir (opsional, disepakati di luar sistem); total tagihan = subtotal + ongkir + kode unik
+    [X] Aksi: "✓ ACC / Setujui Pesanan"
         - Status order berubah menjadi `pending_payment`
         - Batas waktu bayar (payment_deadline 24 jam) AKTIF dan mulai dihitung mundur
         - Kirim notifikasi in-app / WhatsApp ke customer bahwa pesanan siap dibayar
-    [ ] Aksi: "✕ Tolak Pesanan"
+    [X] Aksi: "✕ Tolak Pesanan"
         - Modal input alasan penolakan (kuota penuh, barang discontinued, stok habis)
         - Status order berubah menjadi `rejected`
         - Catat `rejection_reason` dan kirim notifikasi penolakan ke customer (customer tidak perlu bayar)
 
-[ ] 9.3 Instruksi Pembayaran (Terbuka Setelah Di-ACC)
-    [ ] Halaman instruksi: daftar rekening aktif BCA/Mandiri & QRIS resmi dbb_luxe
-    [ ] Ringkasan barang, total tagihan (+ kode unik 3 digit), countdown batas waktu bayar 24 jam
-    [ ] Informasi alamat pengiriman tujuan yang telah diisi customer
-    [ ] Auto-expire order jika melewati batas bayar 24 jam (`expired`) & kembalikan kuota/stok
+[X] 9.3 Instruksi Pembayaran (Terbuka Setelah Di-ACC)
+    [X] Halaman instruksi: daftar rekening aktif BCA/Mandiri & QRIS resmi dbb_luxe
+    [X] Ringkasan barang, total tagihan (+ kode unik 3 digit), countdown batas waktu bayar 24 jam
+    [X] Informasi alamat pengiriman tujuan yang telah diisi customer
+    [X] Auto-expire order jika melewati batas bayar 24 jam (`expired`) & kembalikan kuota/stok
 
-[ ] 9.4 Upload Bukti Transfer Customer
-    [ ] Form: nama pengirim, bank asal, nominal transfer, unggah foto/screenshot struk
-    [ ] Validasi nominal sesuai tagihan persis (termasuk kode unik)
-    [ ] Upload bukti mengubah status order menjadi `payment_uploaded` (Menunggu Verifikasi)
-    [ ] Riwayat pesanan & tracking timeline stepper (dari `order_status_logs`)
+[X] 9.4 Upload Bukti Transfer Customer
+    [X] Form: nama pengirim, bank asal, nominal transfer, unggah foto/screenshot struk
+    [X] Validasi nominal sesuai tagihan persis (termasuk kode unik)
+    [X] Upload bukti mengubah status order menjadi `payment_uploaded` (Menunggu Verifikasi)
+    [X] Riwayat pesanan & tracking timeline stepper (dari `order_status_logs`)
 
-[ ] 9.5 Verifikasi Pembayaran oleh Admin
-    [ ] Tab filter: "Cek Pembayaran" di dashboard admin
-    [ ] Modal preview bukti transfer (struk mutasi)
-    [ ] Cocokkan nominal + kode unik 3 digit dengan mutasi internet banking BCA/Mandiri
-    [ ] Aksi: "✓ Verifikasi & Tandai Lunas" -> status berubah menjadi `verified`
-    [ ] Aksi: "Tolak Bukti" -> status kembali ke `pending_payment`, customer diminta upload ulang bukti valid
-    [ ] Catat siapa & kapan memverifikasi (audit trail di `order_status_logs`)
+[X] 9.5 Verifikasi Pembayaran oleh Admin
+    [X] Tab filter: "Cek Pembayaran" di dashboard admin
+    [X] Modal preview bukti transfer (struk mutasi)
+    [X] Cocokkan nominal + kode unik 3 digit dengan mutasi internet banking BCA/Mandiri
+    [X] Aksi: "✓ Verifikasi & Tandai Lunas" -> status berubah menjadi `verified`
+    [X] Aksi: "Tolak Bukti" -> status kembali ke `pending_payment`, customer diminta upload ulang bukti valid
+    [X] Catat siapa & kapan memverifikasi (audit trail di `order_status_logs`)
 
-[ ] 9.6 Pembatalan & Refund Manual
-    [ ] Aturan batal: bebas sebelum di-ACC atau sebelum pembayaran diverifikasi; jastip tidak bisa dibatalkan setelah barang dibeli di luar negeri
-    [ ] Status & pencatatan refund manual jika barang tidak ditemukan di luar negeri (100% full refund)
+[X] 9.6 Pembatalan & Refund Manual
+    [X] Aturan batal: bebas sebelum di-ACC atau sebelum pembayaran diverifikasi; jastip tidak bisa dibatalkan setelah barang dibeli di luar negeri
+    [X] Status & pencatatan refund manual jika barang tidak ditemukan di luar negeri (100% full refund)
 
-[ ] 9.7 Pengiriman Barang (Di Luar Sistem)
-    [ ] Admin mengemas dan mengirimkan barang ke alamat tujuan customer melalui kurir (di luar sistem)
-    [ ] Admin dapat mencatat nomor resi / nama kurir pada catatan pesanan (`admin_note`)
-    [ ] Admin menandai order "Selesai" (`completed`) setelah paket dikirim/diterima customer
-    [ ] Sistem tidak terintegrasi langsung ke API ekspedisi pihak ketiga (sistem hanya bertindak sebagai pencatat alamat tujuan)
+[X] 9.7 Pengiriman Barang (Di Luar Sistem)
+    [X] Admin mengemas dan mengirimkan barang ke alamat tujuan customer melalui kurir (di luar sistem)
+    [X] Admin dapat mencatat nomor resi / nama kurir pada catatan pesanan (`admin_note`)
+    [X] Admin menandai order "Selesai" (`completed`) setelah paket dikirim/diterima customer
+    [X] Sistem tidak terintegrasi langsung ke API ekspedisi pihak ketiga (sistem hanya bertindak sebagai pencatat alamat tujuan)
 
 --------------------------------------------------------------------------------
 FASE 10: TRACKING & NOTIFIKASI CUSTOMER
@@ -573,7 +573,7 @@ FASE 12: PENGUJIAN (TESTING), KEAMANAN & OPTIMASI
     [ ] Sanitasi input (XSS & SQL Injection)
     [ ] Rate limiting: login, register, upload, pembuatan order & request
     [ ] Verifikasi otorisasi: customer hanya bisa akses order, chat, dan bukti transfer miliknya
-    [ ] Pastikan bucket `receipts/` private dan signed URL kedaluwarsa
+    [ ] Pastikan bucket `private-proofs` (`receipts/` & `purchase-proofs/`) di Cloudflare R2 bersifat private dan Presigned URL kedaluwarsa
 
 [ ] 12.2 Pengujian Fungsional
     [ ] Guest mencoba chat/request/wishlist/checkout (harus diarahkan login)
@@ -599,18 +599,18 @@ FASE 12: PENGUJIAN (TESTING), KEAMANAN & OPTIMASI
 --------------------------------------------------------------------------------
 FASE 13: DEPLOYMENT & HOSTING (WEB + DATABASE)
 --------------------------------------------------------------------------------
-[ ] 13.1 Hosting Database & Cloud Storage
-    [ ] Pilih & setup database produksi (Supabase, Railway, Neon, AWS RDS, atau VPS)
+[ ] 13.1 Hosting Database & Cloud Storage (Cloudflare R2)
+    [ ] Pilih & setup database produksi (Railway, PlanetScale, Aiven, AWS RDS, atau VPS)
     [ ] Jalankan migrasi skema V2 di produksi
-    [ ] Konfigurasi CORS & policy bucket (publik vs private)
+    [ ] Konfigurasi Cloudflare R2 bucket (`public-images` publik & `private-proofs` private) serta CORS policy
     [ ] Buat akun admin pertama & isi store_settings produksi
 
 [ ] 13.2 Hosting Aplikasi Web
     [ ] Environment variables (.env produksi):
         [ ] `DATABASE_URL`
-        [ ] `STORAGE_API_KEY` / `STORAGE_BUCKET_URL`
-        [ ] `JWT_SECRET` / session keys
-        [ ] `REALTIME_*` (key Pusher/Supabase/Socket.io)
+        [ ] `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BUCKET`, `R2_PRIVATE_BUCKET`, `R2_PUBLIC_URL` (Cloudflare R2 Storage)
+        [ ] `JWT_SECRET` / `SESSION_SECRET`
+        [ ] `ABLY_API_KEY` (Ably Realtime untuk Live Chat)
         [ ] `BASE_URL`
     [ ] Build test lokal (`npm run build`)
     [ ] Deploy (Vercel, Netlify, Railway, Render, atau VPS)
@@ -651,7 +651,7 @@ Tahap 7 : Fase 12 & 13 (testing, optimasi, deployment)
 - Sistem tidak menghitung ongkir otomatis, tidak terhubung ke API ekspedisi, dan tidak
   melacak nomor resi secara otomatis. Alamat tujuan dicatat pada saat checkout sebagai
   data panduan admin untuk mengirimkan pesanan (Fase 9.1 & 9.7).
-- Bukti transfer bersifat sensitif: simpan di bucket private.
+- Bukti transfer bersifat sensitif: simpan di bucket private Cloudflare R2 (`private-proofs`).
 - Simpan file ini sebagai acuan berkala. Ubah `[ ]` menjadi `[X]` setiap kali
   tugas selesai diimplementasikan.
 - UX Keranjang Campur (Mixed Cart)
@@ -659,6 +659,6 @@ Tahap 7 : Fase 12 & 13 (testing, optimasi, deployment)
     *Tips: Saat koding nanti, Anda bisa memilih cara yang paling simpel di UI: jika customer sedang memilih barang jastip dari Trip Jepang, lalu ingin menambah barang dari Ready Stock, beri konfirmasi pop-up modal: "Pesanan Ready Stock dan Jastip akan dibuat menjadi tagihan terpisah ya".
 - Auto-Expire Batas Waktu Bayar 24 Jam
     *Jika nanti di-deploy ke platform serverless (seperti Vercel) yang tidak punya server background 24 jam terus-menerus, Anda tidak wajib membuat cron job rumit di awal. Cukup buat pengecekan otomatis saat data dipanggil (lazy expiration): jika payment_deadline < NOW() dan status masih pending_payment, otomatis ubah statusnya menjadi expired.
-- Penyimpanan Gambar Bukti Transfer:
-    *Keputusan menjadikan bucket receipts/ sebagai Private sangat tepat untuk privasi rekening customer. Gunakan fitur Signed URL (URL dengan masa kedaluwarsa, misal aktif 10 menit) saat admin membuka modal verifikasi bukti transfer.
+- Penyimpanan Gambar Bukti Transfer (Cloudflare R2):
+    *Keputusan menjadikan bucket `private-proofs` (`receipts/` & `purchase-proofs/`) di Cloudflare R2 sebagai Private sangat tepat untuk privasi rekening customer. Gunakan fitur Presigned URL (`@aws-sdk/s3-request-presigner`, URL dengan masa kedaluwarsa) saat admin membuka modal verifikasi bukti transfer.
 ================================================================================

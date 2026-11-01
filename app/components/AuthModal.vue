@@ -31,23 +31,14 @@
       <div class="auth-body">
         <!-- LOGIN FORM -->
         <form v-if="currentTab === 'login'" @submit.prevent="handleLogin" class="auth-form">
-          <div class="form-header">
-            <h3>Selamat Datang Kembali</h3>
-            <p>Masuk ke akun Anda untuk pengalaman belanja yang lebih personal.</p>
-          </div>
-
           <div class="form-group">
             <label for="login-identifier">Username atau No. WhatsApp</label>
             <div class="input-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
               <input 
                 id="login-identifier" 
                 v-model="loginForm.identifier"
                 type="text" 
-                placeholder="Contoh: sitirahma atau 081234567890" 
+                placeholder="Username atau 0812..." 
                 required 
               />
             </div>
@@ -59,10 +50,6 @@
               <a href="#" @click.prevent="forgotPassword" class="forgot-link">Lupa sandi?</a>
             </div>
             <div class="input-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
               <input 
                 id="login-pass" 
                 v-model="loginForm.password"
@@ -83,40 +70,31 @@
           <div class="remember-row">
             <label class="checkbox-label">
               <input type="checkbox" v-model="loginForm.rememberMe" />
-              <span>Ingat saya di perangkat ini</span>
+              <span>Ingat saya</span>
             </label>
           </div>
 
           <button type="submit" class="submit-btn" :disabled="isLoading">
             <span v-if="isLoading">Memproses...</span>
-            <span v-else>Masuk Sekarang</span>
+            <span v-else>Masuk</span>
           </button>
 
           <div class="switch-prompt">
             Belum punya akun? 
-            <button type="button" class="switch-link" @click="currentTab = 'register'">Daftar gratis</button>
+            <button type="button" class="switch-link" @click="currentTab = 'register'">Daftar</button>
           </div>
         </form>
 
         <!-- REGISTER FORM -->
         <form v-else @submit.prevent="handleRegister" class="auth-form">
-          <div class="form-header">
-            <h3>Buat Akun Baru</h3>
-            <p>Daftarkan akun cukup dengan username dan nomor WhatsApp Anda.</p>
-          </div>
-
           <div class="form-group">
             <label for="modal-reg-username">Username</label>
             <div class="input-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
               <input 
                 id="modal-reg-username" 
                 v-model="registerForm.username"
                 type="text" 
-                placeholder="Contoh: sitirahma" 
+                placeholder="Huruf, angka, atau underscore" 
                 minlength="3"
                 required 
               />
@@ -126,14 +104,11 @@
           <div class="form-group">
             <label for="modal-reg-phone">Nomor WhatsApp</label>
             <div class="input-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-              </svg>
               <input 
                 id="modal-reg-phone" 
                 v-model="registerForm.phone"
                 type="tel" 
-                placeholder="Contoh: 081234567890" 
+                placeholder="081234567890" 
                 required 
               />
             </div>
@@ -142,10 +117,6 @@
           <div class="form-group">
             <label for="modal-reg-pass">Kata Sandi</label>
             <div class="input-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
               <input 
                 id="modal-reg-pass" 
                 v-model="registerForm.password"
@@ -160,15 +131,11 @@
           <div class="form-group">
             <label for="modal-reg-confirm-pass">Konfirmasi Kata Sandi</label>
             <div class="input-wrap">
-              <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-              </svg>
               <input 
                 id="modal-reg-confirm-pass" 
                 v-model="registerForm.confirmPassword"
                 :type="showPassword ? 'text' : 'password'" 
-                placeholder="Ulangi kata sandi Anda" 
+                placeholder="Ulangi kata sandi" 
                 minlength="6"
                 required 
               />
@@ -178,18 +145,18 @@
           <div class="remember-row">
             <label class="checkbox-label">
               <input type="checkbox" v-model="registerForm.agreeTerms" required />
-              <span>Saya menyetujui Syarat & Ketentuan Layanan</span>
+              <span>Saya menyetujui Syarat & Ketentuan</span>
             </label>
           </div>
 
           <button type="submit" class="submit-btn" :disabled="isLoading">
             <span v-if="isLoading">Mendaftarkan...</span>
-            <span v-else>Daftar Sekarang</span>
+            <span v-else>Daftar</span>
           </button>
 
           <div class="switch-prompt">
             Sudah memiliki akun? 
-            <button type="button" class="switch-link" @click="currentTab = 'login'">Masuk di sini</button>
+            <button type="button" class="switch-link" @click="currentTab = 'login'">Masuk</button>
           </div>
         </form>
       </div>
@@ -466,7 +433,7 @@ const forgotPassword = () => {
 
 .input-wrap input {
   width: 100%;
-  padding: 11px 14px 11px 38px;
+  padding: 11px 14px;
   border-radius: 8px;
   border: 1px solid var(--brand-primary, #EFE1C6);
   background: #ffffff;

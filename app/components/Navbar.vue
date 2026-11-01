@@ -36,33 +36,32 @@
           </svg>
         </button>
 
-        <NuxtLink to="/wishlist" class="icon-btn" title="Wishlist">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-          <span v-if="wishlistCount > 0" class="dot-badge">{{ wishlistCount }}</span>
-        </NuxtLink>
+        <template v-if="!isAdmin">
+          <NuxtLink to="/wishlist" class="icon-btn" title="Wishlist">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+            </svg>
+            <span v-if="wishlistCount > 0" class="dot-badge">{{ wishlistCount }}</span>
+          </NuxtLink>
 
-        <NuxtLink to="/notifikasi" class="icon-btn hide-sm" title="Notifikasi">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
-          </svg>
-          <span class="dot-badge">1</span>
-        </NuxtLink>
+          <NuxtLink to="/notifikasi" class="icon-btn hide-sm" title="Notifikasi">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
+            </svg>
+            <span class="dot-badge">1</span>
+          </NuxtLink>
 
-        <NuxtLink to="/orders" class="icon-btn" title="Pesanan Saya">
-          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
-          </svg>
-        </NuxtLink>
+          <NuxtLink to="/orders" class="icon-btn" title="Pesanan Saya">
+            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
+            </svg>
+          </NuxtLink>
+        </template>
 
         <span class="nav-divider hide-sm"></span>
 
         <!-- Logged in -->
         <div v-if="currentUser" class="user-menu">
-          <NuxtLink v-if="currentUser.role === 'admin' || currentUser.role === 'staff'" to="/admin" class="btn-text hide-sm" style="font-weight: 700; color: var(--color-primary);">
-            Panel Admin
-          </NuxtLink>
           <NuxtLink to="/akun" class="user-pill" :title="'@' + currentUser.username + ' (' + currentUser.phone_number + ')'">
             <span class="user-avatar">{{ currentUser.username ? currentUser.username.charAt(0).toUpperCase() : 'U' }}</span>
             <span class="user-name hide-sm">@{{ currentUser.username }}</span>
@@ -110,8 +109,8 @@
         <NuxtLink to="/ready">Ready Stock</NuxtLink>
         <NuxtLink to="/jastip">Jadwal Jastip</NuxtLink>
         <NuxtLink to="/request">Request Titip</NuxtLink>
-        <NuxtLink to="/notifikasi">Notifikasi</NuxtLink>
-        <NuxtLink to="/chat">Live Chat</NuxtLink>
+        <NuxtLink v-if="!isAdmin" to="/notifikasi">Notifikasi</NuxtLink>
+        <NuxtLink v-if="!isAdmin" to="/chat">Live Chat</NuxtLink>
         <NuxtLink v-if="!currentUser" to="/login">Masuk</NuxtLink>
       </nav>
     </transition>
@@ -119,7 +118,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import { useWishlist } from '../composables/useWishlist'
@@ -133,6 +132,7 @@ defineEmits<{
 }>()
 
 const { currentUser, logout } = useAuth()
+const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff')
 const { showToast } = useToast()
 const { wishlistCount } = useWishlist()
 const route = useRoute()

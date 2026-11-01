@@ -39,7 +39,7 @@ const faqs = [
   },
   {
     q: 'Bagaimana sistem pembayaran transfer manual di dbb_luxe?',
-    a: 'Setelah checkout diajukan, pesanan Anda akan ditinjau dan di-ACC oleh admin terlebih dahulu untuk memastikan ketersediaan kuota bagasi / stok barang. Setelah disetujui, Anda akan menerima tagihan dengan Kode Unik 3 Digit (contoh: Rp 215.147) dan batas waktu transfer 24 jam ke rekening resmi BCA/Mandiri atau QRIS dbb_luxe.'
+    a: 'Setelah checkout diajukan, pesanan Anda akan ditinjau dan di-ACC oleh admin terlebih dahulu untuk memastikan ketersediaan kuota bagasi / stok barang. Setelah disetujui, Anda akan menerima tagihan beserta batas waktu transfer 24 jam ke rekening resmi BCA/Mandiri atau QRIS dbb_luxe.'
   },
   {
     q: 'Apakah saya bisa membayar dengan DP (Down Payment)?',

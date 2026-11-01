@@ -1,5 +1,5 @@
 <template>
-  <div class="app-root">
+  <div class="app-root" :class="{ 'chat-docked': isChatOpen && showChatWidget }">
     <!-- Navbar Component (Rendered for Customer & Public Pages) -->
     <Navbar v-if="!isAdminRoute" />
 
@@ -32,11 +32,13 @@ import ToastNotification from './components/ToastNotification.vue'
 import { useToast } from './composables/useToast'
 import { useAuth } from './composables/useAuth'
 import { useWishlist } from './composables/useWishlist'
+import { useCustomerChat } from './composables/useCustomerChat'
 
 const route = useRoute()
 const { toasts, removeToast } = useToast()
 const { currentUser } = useAuth()
 const { fetchWishlist, syncGuestWishlist } = useWishlist()
+const { isChatOpen } = useCustomerChat()
 
 onMounted(async () => {
   await fetchWishlist()
@@ -61,8 +63,12 @@ const isAuthRoute = computed(() => {
   return route.path === '/login' || route.path === '/register'
 })
 
+const isAdminUser = computed(() => {
+  return currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff'
+})
+
 const showChatWidget = computed(() => {
-  return !isAdminRoute.value && !isAuthRoute.value && route.path !== '/chat'
+  return !isAdminRoute.value && !isAuthRoute.value && route.path !== '/chat' && !isAdminUser.value
 })
 </script>
 
@@ -228,6 +234,13 @@ a:focus-visible {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  transition: padding-right 350ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (min-width: 1024px) {
+  .app-root.chat-docked {
+    padding-right: 380px;
+  }
 }
 
 .content-wrapper {

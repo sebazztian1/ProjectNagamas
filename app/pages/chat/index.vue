@@ -4,80 +4,156 @@
       <div class="breadcrumb">
         <NuxtLink to="/">Beranda</NuxtLink>
         <span>/</span>
-        <span class="active">Pesan & Live Chat</span>
+        <span class="active">Live Chat</span>
       </div>
 
       <div class="chat-box-card">
-        <!-- Sidebar Room List -->
-        <div class="chat-sidebar">
-          <div class="sidebar-header">
-            <h3>Pesan Masuk (Inbox)</h3>
-            <span class="cs-badge">Admin Online</span>
-          </div>
-
-          <div class="room-list">
-            <div 
-              v-for="room in chatRooms" 
-              :key="room.id"
-              class="room-item"
-              :class="{ active: activeRoom.id === room.id }"
-              @click="activeRoom = room"
-            >
-              <div class="room-avatar">{{ room.productName.charAt(0) }}</div>
-              <div class="room-info">
-                <div class="room-title-row">
-                  <span class="room-title">{{ room.productName }}</span>
-                  <span class="room-time">{{ room.lastTime }}</span>
-                </div>
-                <p class="room-last-msg">{{ room.lastMessage }}</p>
+        <!-- Main Chat Area (Satu Ruang Chat Umum per Customer) -->
+        <div class="chat-conversation">
+          <!-- Header -->
+          <div class="chat-conv-header">
+            <div class="header-left">
+              <div class="admin-avatar">D</div>
+              <div>
+                <strong class="header-title">Admin Support dbb_luxe</strong>
+                <span class="admin-status">&bull; Online</span>
               </div>
             </div>
           </div>
-        </div>
 
-        <!-- Main Chat Area -->
-        <div class="chat-conversation">
-          <!-- Active Header with Product Preview -->
-          <div class="chat-conv-header">
-            <div class="product-preview-chip">
-              <span class="badge-topic">Topik Produk:</span>
-              <strong>{{ activeRoom.productName }}</strong>
+          <!-- Attached Product Preview Banner -->
+          <div v-if="attachedProduct" class="attached-banner">
+            <img :src="attachedProduct.image" :alt="attachedProduct.name" class="attached-img" />
+            <div class="attached-info">
+              <span class="attached-label">Menanyakan Produk:</span>
+              <strong class="attached-name">{{ attachedProduct.name }}</strong>
+              <span class="attached-price">{{ formatRupiah(attachedProduct.price) }}</span>
             </div>
-            <span class="admin-status">&bull; Admin dbb_luxe Sedang Aktif</span>
+            <button type="button" class="btn-remove-attached" @click="removeAttachedProduct">&times;</button>
           </div>
 
           <!-- Message History -->
-          <div class="messages-flow">
-            <div 
-              v-for="(msg, i) in activeRoom.messages" 
-              :key="i"
+          <div ref="messagesContainer" class="messages-flow">
+            <div v-if="customerMessages.length === 0" class="empty-chat">
+              <p>Belum ada percakapan. Silakan kirim pesan atau tanyakan produk kepada Admin dbb_luxe.</p>
+            </div>
+
+            <div
+              v-for="msg in customerMessages"
+              :key="msg.id"
               class="message-bubble-row"
-              :class="{ 'is-me': msg.sender === 'me' }"
+              :class="{ 'is-me': msg.sender === 'user' }"
             >
               <div class="bubble">
-                <p>{{ msg.text }}</p>
-                <span class="msg-time">{{ msg.time }}</span>
+                <!-- Shared Product Card inside Chat -->
+                <NuxtLink
+                  v-if="msg.product"
+                  :to="msg.product.productType === 'jastip' && msg.product.tripSlug ? `/jastip/${msg.product.tripSlug}/${msg.product.slug}` : `/ready/${msg.product.slug}`"
+                  class="msg-product-card"
+                >
+                  <img
+                    v-if="msg.product.imageUrl"
+                    :src="msg.product.imageUrl"
+                    :alt="msg.product.name"
+                    class="msg-prod-img"
+                  />
+                  <div class="msg-prod-meta">
+                    <span class="msg-prod-type">{{ msg.product.productType === 'jastip' ? 'Jastip' : 'Ready Stock' }}</span>
+                    <strong class="msg-prod-title">{{ msg.product.name }}</strong>
+                    <span class="msg-prod-price">{{ formatRupiah(msg.product.price) }}</span>
+                  </div>
+                </NuxtLink>
+
+                <!-- Shared Image Attachment -->
+                <a v-if="msg.imageUrl" :href="msg.imageUrl" target="_blank" rel="noopener" class="msg-img-wrap">
+                  <img :src="msg.imageUrl" alt="Lampiran chat" class="msg-img" />
+                </a>
+
+                <p v-if="msg.text">{{ msg.text }}</p>
+                <span class="msg-time">{{ msg.timestamp }}</span>
               </div>
+            </div>
+          </div>
+
+          <!-- Product Picker Drawer -->
+          <div v-if="isProductPickerOpen" class="chat-product-picker">
+            <div class="picker-top">
+              <strong>Pilih Produk Tersedia ({{ filteredPickerProducts.length }})</strong>
+              <button type="button" class="btn-close-picker" @click="isProductPickerOpen = false">&times;</button>
+            </div>
+            <div class="picker-filters">
+              <button type="button" :class="{ active: pickerTypeFilter === 'all' }" @click="pickerTypeFilter = 'all'">Semua</button>
+              <button type="button" :class="{ active: pickerTypeFilter === 'ready' }" @click="pickerTypeFilter = 'ready'">Ready Stock</button>
+              <button type="button" :class="{ active: pickerTypeFilter === 'jastip' }" @click="pickerTypeFilter = 'jastip'">Jastip</button>
+              <input v-model="pickerSearch" type="text" placeholder="Cari produk..." class="picker-search" />
+            </div>
+            <div class="picker-items">
+              <div v-if="isLoadingProducts" class="picker-empty">Memuat daftar produk...</div>
+              <div v-else-if="filteredPickerProducts.length === 0" class="picker-empty">Tidak ada produk tersedia.</div>
+              <button
+                v-else
+                v-for="prod in filteredPickerProducts"
+                :key="prod.id"
+                type="button"
+                class="picker-item-row"
+                @click="handleSelectProduct(prod)"
+              >
+                <img :src="prod.image" :alt="prod.name" class="picker-thumb" />
+                <div class="picker-meta">
+                  <span class="picker-type" :class="prod.productType === 'jastip' ? 'is-jastip' : 'is-ready'">
+                    {{ prod.productType === 'jastip' ? 'Jastip' : 'Ready Stock' }}
+                  </span>
+                  <strong>{{ prod.name }}</strong>
+                  <span>{{ formatRupiah(prod.price) }}</span>
+                </div>
+                <span class="picker-choose">Pilih &rarr;</span>
+              </button>
             </div>
           </div>
 
           <!-- Input Bar -->
-          <form @submit.prevent="sendMessage" class="chat-input-bar">
-            <button type="button" class="btn-attach" title="Kirim gambar">
+          <form @submit.prevent="handleSend" class="chat-input-bar">
+            <input
+              ref="fileInput"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              style="display: none"
+              @change="handleFileSelect"
+            />
+            <button
+              type="button"
+              class="btn-attach"
+              title="Kirim gambar"
+              :disabled="isUploading"
+              @click="fileInput?.click()"
+            >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
                 <circle cx="9" cy="9" r="2"></circle>
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
               </svg>
             </button>
-            <input 
-              v-model="inputMessage" 
-              type="text" 
-              placeholder="Tulis pesan atau pertanyaan ke admin..." 
-              required 
+            <button
+              type="button"
+              class="btn-attach btn-pick-prod"
+              :class="{ active: isProductPickerOpen }"
+              title="Pilih Produk Ready / Jastip"
+              @click="toggleProductPicker"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                <path d="M3 6h18"></path>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+              <span>Produk</span>
+            </button>
+            <input
+              v-model="inputMessage"
+              type="text"
+              placeholder="Tulis pesan atau pertanyaan ke admin..."
             />
-            <button type="submit" class="btn-send">
-              Kirim
+            <button type="submit" class="btn-send" :disabled="isSending || (!inputMessage.trim() && !attachedProduct)">
+              {{ isSending ? '...' : 'Kirim' }}
             </button>
           </form>
         </div>
@@ -87,59 +163,140 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { useAuth } from '../../composables/useAuth'
+import { useCustomerChat } from '../../composables/useCustomerChat'
+import { useToast } from '../../composables/useToast'
 
 definePageMeta({
   middleware: 'auth'
 })
 
+const { currentUser } = useAuth()
+const {
+  customerMessages,
+  attachedProduct,
+  loadCustomerRoom,
+  attachProductToChat,
+  removeAttachedProduct,
+  sendCustomerMessage
+} = useCustomerChat()
+
+const { showToast } = useToast()
+
 const inputMessage = ref('')
+const isSending = ref(false)
+const isUploading = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const messagesContainer = ref<HTMLElement | null>(null)
 
-const chatRooms = ref([
-  {
-    id: 'room-1',
-    productName: 'SK-II Facial Treatment Essence',
-    lastTime: '10:30',
-    lastMessage: 'Halo kak, stok ready kami ada 12 pcs ya kak!',
-    messages: [
-      { sender: 'me', text: 'Halo admin, apakah produk SK-II ini asli beli di Jepang?', time: '10:28' },
-      { sender: 'admin', text: 'Halo kak, betul 100% original dari Don Quijote Shinjuku Tokyo ya kak. Di struk ada serial number dan barcode resminya.', time: '10:30' }
-    ]
-  },
-  {
-    id: 'room-2',
-    productName: 'Tokyo Banana Box of 8',
-    lastTime: 'Kemarin',
-    lastMessage: 'Expired date sampai akhir bulan depan kak.',
-    messages: [
-      { sender: 'me', text: 'Kak, Tokyo Banana exp datenya sampai kapan?', time: 'Kemarin' },
-      { sender: 'admin', text: 'Expired date sampai akhir bulan depan kak, kami baru ambil fresh dari Tokyo Station.', time: 'Kemarin' }
-    ]
-  }
-])
+const isProductPickerOpen = ref(false)
+const isLoadingProducts = ref(false)
+const availableProducts = ref<any[]>([])
+const pickerTypeFilter = ref<'all' | 'ready' | 'jastip'>('all')
+const pickerSearch = ref('')
 
-const activeRoom = ref(chatRooms.value[0])
-
-const sendMessage = () => {
-  if (!inputMessage.value.trim()) return
-
-  activeRoom.value.messages.push({
-    sender: 'me',
-    text: inputMessage.value,
-    time: 'Baru saja'
+const filteredPickerProducts = computed(() => {
+  const q = pickerSearch.value.trim().toLowerCase()
+  return availableProducts.value.filter((p) => {
+    if (pickerTypeFilter.value !== 'all' && p.productType !== pickerTypeFilter.value) {
+      return false
+    }
+    if (q) {
+      return (
+        p.name?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.trip?.title?.toLowerCase().includes(q)
+      )
+    }
+    return true
   })
+})
 
-  const userText = inputMessage.value
-  inputMessage.value = ''
+const toggleProductPicker = async () => {
+  isProductPickerOpen.value = !isProductPickerOpen.value
+  if (isProductPickerOpen.value && availableProducts.value.length === 0 && !isLoadingProducts.value) {
+    isLoadingProducts.value = true
+    try {
+      const res = await $fetch<any[]>('/api/products', { query: { inStockOnly: 'true' } })
+      availableProducts.value = (res || []).filter((p) => p.inStock !== false)
+    } finally {
+      isLoadingProducts.value = false
+    }
+  }
+}
 
-  // Mock auto response from admin
-  setTimeout(() => {
-    activeRoom.value.messages.push({
-      sender: 'admin',
-      text: 'Terima kasih pertanyaannya kak! Tim admin kami sedang mengecek detail pesanan Anda.',
-      time: 'Baru saja'
+const handleSelectProduct = (prod: any) => {
+  attachProductToChat(prod)
+  isProductPickerOpen.value = false
+}
+
+const formatRupiah = (val: number) => 'Rp ' + Number(val || 0).toLocaleString('id-ID')
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (messagesContainer.value) {
+      messagesContainer.value.scrollTop = messagesContainer.value.scrollHeight
+    }
+  })
+}
+
+watch(customerMessages, () => {
+  scrollToBottom()
+}, { deep: true })
+
+onMounted(async () => {
+  if (currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff') {
+    await navigateTo('/admin/chat')
+    return
+  }
+  await loadCustomerRoom()
+  scrollToBottom()
+})
+
+const handleSend = async () => {
+  if (!inputMessage.value.trim() && !attachedProduct.value) return
+  isSending.value = true
+  try {
+    const text = inputMessage.value
+    inputMessage.value = ''
+    await sendCustomerMessage(text)
+    scrollToBottom()
+  } finally {
+    isSending.value = false
+  }
+}
+
+const handleFileSelect = async (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  isUploading.value = true
+  try {
+    const fd = new FormData()
+    fd.append('folder', 'chat')
+    fd.append('file', file)
+
+    const uploaded = await $fetch<{ url: string }>('/api/upload', {
+      method: 'POST',
+      body: fd
     })
-  }, 1200)
+
+    if (uploaded?.url) {
+      await sendCustomerMessage(inputMessage.value.trim(), undefined, {
+        messageType: 'image',
+        imageUrl: uploaded.url
+      })
+      inputMessage.value = ''
+      scrollToBottom()
+    }
+  } catch (err: any) {
+    showToast('Gagal Upload', err?.data?.message || 'Gagal mengunggah gambar', 'warning')
+  } finally {
+    isUploading.value = false
+    if (fileInput.value) fileInput.value.value = ''
+  }
 }
 </script>
 
@@ -149,7 +306,7 @@ const sendMessage = () => {
 }
 
 .page-container {
-  max-width: 1040px;
+  max-width: 900px;
   margin: 0 auto;
 }
 
@@ -177,116 +334,17 @@ const sendMessage = () => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 14px;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: 320px 1fr;
-  height: 600px;
-}
-
-/* Sidebar */
-.chat-sidebar {
-  border-right: 1px solid var(--color-secondary, #EFE1C6);
   display: flex;
   flex-direction: column;
-  background: #ffffff;
+  height: 620px;
+  box-shadow: var(--shadow-sm);
 }
 
-.sidebar-header {
-  padding: 18px;
-  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.sidebar-header h3 {
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--color-text, #2B2116);
-}
-
-.cs-badge {
-  font-size: 0.7rem;
-  font-weight: 700;
-  background: #DCFCE7;
-  color: #166534;
-  padding: 3px 8px;
-  border-radius: 20px;
-}
-
-.room-list {
-  overflow-y: auto;
-  flex: 1;
-}
-
-.room-item {
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
-  display: flex;
-  gap: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.room-item:hover {
-  background: var(--color-canvas, #FFFBF2);
-}
-
-.room-item.active {
-  background: var(--color-secondary, #EFE1C6);
-}
-
-.room-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: var(--color-primary, #8C6D3F);
-  color: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 800;
-  font-size: 0.85rem;
-  flex-shrink: 0;
-}
-
-.room-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.room-title-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 3px;
-}
-
-.room-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--color-text, #2B2116);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.room-time {
-  font-size: 0.7rem;
-  color: var(--color-text-muted, #7A6A55);
-}
-
-.room-last-msg {
-  font-size: 0.78rem;
-  color: var(--color-text-muted, #7A6A55);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* Conversation Area */
 .chat-conversation {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  height: 100%;
   background: var(--color-canvas, #FFFBF2);
 }
 
@@ -299,27 +357,80 @@ const sendMessage = () => {
   align-items: center;
 }
 
-.product-preview-chip {
+.header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--color-text, #2B2116);
+  gap: 12px;
 }
 
-.badge-topic {
-  font-size: 0.72rem;
-  background: var(--color-secondary, #EFE1C6);
-  color: var(--color-primary, #8C6D3F);
-  padding: 2px 6px;
-  border-radius: 4px;
-  font-weight: 700;
+.admin-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+}
+
+.header-title {
+  display: block;
+  font-size: 0.92rem;
+  color: var(--color-text, #2B2116);
 }
 
 .admin-status {
   font-size: 0.75rem;
   color: #10B981;
   font-weight: 700;
+}
+
+.attached-banner {
+  background: #FFFDF8;
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
+  padding: 10px 18px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.attached-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.attached-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.attached-label {
+  font-size: 0.68rem;
+  color: var(--color-text-muted, #7A6A55);
+}
+
+.attached-name {
+  font-size: 0.84rem;
+  color: var(--color-text, #2B2116);
+}
+
+.attached-price {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+}
+
+.btn-remove-attached {
+  background: none;
+  border: none;
+  font-size: 1.3rem;
+  color: var(--color-text-muted, #7A6A55);
+  cursor: pointer;
 }
 
 .messages-flow {
@@ -329,6 +440,14 @@ const sendMessage = () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.empty-chat {
+  margin: auto;
+  text-align: center;
+  color: var(--color-text-muted, #7A6A55);
+  font-size: 0.88rem;
+  max-width: 360px;
 }
 
 .message-bubble-row {
@@ -341,7 +460,7 @@ const sendMessage = () => {
 }
 
 .bubble {
-  max-width: 65%;
+  max-width: 68%;
   padding: 10px 14px;
   border-radius: 12px;
   background: #ffffff;
@@ -355,6 +474,66 @@ const sendMessage = () => {
   background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border-color: var(--color-primary, #8C6D3F);
+}
+
+.msg-product-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 251, 242, 0.95);
+  color: #2B2116;
+  text-decoration: none;
+  margin-bottom: 8px;
+  border: 1px solid #EFE1C6;
+}
+
+.msg-prod-img {
+  width: 46px;
+  height: 46px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.msg-prod-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.msg-prod-type {
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: #8C6D3F;
+  text-transform: uppercase;
+}
+
+.msg-prod-title {
+  font-size: 0.8rem;
+  color: #2B2116;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-prod-price {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #8C6D3F;
+}
+
+.msg-img-wrap {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.msg-img {
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .msg-time {
@@ -380,9 +559,170 @@ const sendMessage = () => {
   border-radius: 8px;
   color: var(--color-text-muted, #7A6A55);
   cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
-.chat-input-bar input {
+.btn-pick-prod.active {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.chat-product-picker {
+  background: #ffffff;
+  border-top: 1px solid var(--color-secondary, #EFE1C6);
+  display: flex;
+  flex-direction: column;
+  max-height: 280px;
+}
+
+.picker-top {
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.btn-close-picker {
+  background: none;
+  border: none;
+  font-size: 1.2rem;
+  cursor: pointer;
+  color: var(--color-text-muted, #7A6A55);
+}
+
+.picker-filters {
+  padding: 8px 18px;
+  background: #FFFDF8;
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.picker-filters button {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  background: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-text-muted, #7A6A55);
+  cursor: pointer;
+}
+
+.picker-filters button.active {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.picker-search {
+  flex: 1;
+  min-width: 140px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  font-size: 0.78rem;
+  outline: none;
+}
+
+.picker-items {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.picker-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--color-text-muted, #7A6A55);
+}
+
+.picker-item-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.picker-item-row:hover {
+  background: #FFFDF8;
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.picker-thumb {
+  width: 42px;
+  height: 42px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.picker-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+}
+
+.picker-type {
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 1px 6px;
+  border-radius: 999px;
+  align-self: flex-start;
+  margin-bottom: 2px;
+}
+
+.picker-type.is-jastip {
+  background: #2a1d14;
+  color: #e3c58f;
+}
+
+.picker-type.is-ready {
+  background: #EFE1C6;
+  color: #2B2116;
+}
+
+.picker-meta strong {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--color-text, #2B2116);
+}
+
+.picker-meta span {
+  color: var(--color-primary, #8C6D3F);
+  font-weight: 700;
+}
+
+.picker-choose {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+  flex-shrink: 0;
+}
+
+.chat-input-bar input[type="text"] {
   flex: 1;
   padding: 10px 14px;
   border-radius: 8px;
@@ -392,7 +732,7 @@ const sendMessage = () => {
   outline: none;
 }
 
-.chat-input-bar input:focus {
+.chat-input-bar input[type="text"]:focus {
   border-color: var(--color-primary, #8C6D3F);
 }
 
@@ -407,16 +747,12 @@ const sendMessage = () => {
   cursor: pointer;
 }
 
-.btn-send:hover {
+.btn-send:hover:not(:disabled) {
   background: var(--color-primary-hover, #6F5530);
 }
 
-@media (max-width: 768px) {
-  .chat-box-card {
-    grid-template-columns: 1fr;
-  }
-  .chat-sidebar {
-    display: none;
-  }
+.btn-send:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

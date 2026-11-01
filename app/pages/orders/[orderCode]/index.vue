@@ -12,63 +12,79 @@
       <!-- Header with Status -->
       <div class="order-hero-card">
         <div class="hero-left">
-          <span class="type-tag">{{ order.orderType === 'ready' ? 'Ready Stock' : 'Jastip Pre-Order' }}</span>
+          <span class="type-tag">
+            {{ order.orderType === 'ready' ? 'Ready Stock' : `Jastip Pre-Order${order.tripTitle ? ' • ' + order.tripTitle : ''}` }}
+          </span>
           <h1 class="order-heading">Pesanan #{{ order.orderCode }}</h1>
-          <p class="order-created">Dibuat pada {{ order.createdAt }} WIB</p>
+          <p class="order-created">Diajukan pada {{ order.createdAt }} WIB</p>
         </div>
 
         <div class="hero-right">
           <span class="status-banner" :class="order.orderStatus">
             {{ formatStatus(order.orderStatus) }}
           </span>
-          <NuxtLink 
-            v-if="order.orderStatus === 'pending_payment'" 
-            :to="`/orders/${order.orderCode}/bayar`" 
-            class="btn-hero-pay"
-          >
-            💳 Bayar & Upload Bukti &rarr;
-          </NuxtLink>
-          <span 
-            v-else-if="order.orderStatus === 'pending_approval'" 
-            class="btn-hero-pay locked"
-          >
-            🔒 Menunggu ACC Admin
-          </span>
-          <span 
-            v-else-if="order.orderStatus === 'payment_uploaded'" 
-            class="btn-hero-pay waiting-check"
-          >
-            ⏳ Menunggu Cek Admin
-          </span>
+          <div class="hero-btn-row">
+            <button
+              v-if="order.orderStatus === 'pending_approval' || order.orderStatus === 'pending_payment'"
+              type="button"
+              class="btn-cancel-hero"
+              @click="handleCancelOrder"
+            >
+              Batalkan Pesanan
+            </button>
+            <NuxtLink
+              v-if="order.orderStatus === 'pending_payment'"
+              :to="`/orders/${order.orderCode}/bayar`"
+              class="btn-hero-pay"
+            >
+              Bayar &amp; Upload Bukti &rarr;
+            </NuxtLink>
+            <span
+              v-else-if="order.orderStatus === 'pending_approval'"
+              class="btn-hero-pay locked"
+            >
+              🔒 Menunggu ACC Admin
+            </span>
+            <span
+              v-else-if="order.orderStatus === 'payment_uploaded'"
+              class="btn-hero-pay waiting-check"
+            >
+              ⏳ Menunggu Verifikasi
+            </span>
+          </div>
         </div>
       </div>
 
-      <!-- Informative Status Alert -->
+      <!-- Informative Status Alerts -->
       <div v-if="order.orderStatus === 'pending_approval'" class="status-alert-banner alert-approval">
-        <div class="alert-icon">⏳</div>
         <div class="alert-text">
-          <h4>Pesanan Anda Sedang Ditinjau oleh Admin dbb_luxe</h4>
-          <p>Admin kami sedang mengecek ketersediaan stok ready atau sisa kuota koper traveler luar negeri. Instruksi pembayaran transfer manual dan tombol bayar akan terbuka otomatis setelah pesanan disetujui (di-ACC).</p>
+          <h4>Pesanan Sedang Ditinjau Admin (Tahap Pengajuan)</h4>
+          <p>
+            Admin dbb_luxe sedang memeriksa ketersediaan stok ready atau sisa kuota bagasi trip serta menghitung perkiraan ongkir. Rekening dan instruksi transfer akan terbuka otomatis setelah di-ACC.
+          </p>
         </div>
       </div>
 
       <div v-else-if="order.orderStatus === 'pending_payment'" class="status-alert-banner alert-approved">
-        <div class="alert-icon">✅</div>
         <div class="alert-text">
-          <h4>Pesanan Telah Disetujui Admin!</h4>
-          <p>Ketersediaan barang dan kuota bagasi telah dikonfirmasi oleh Admin dbb_luxe. Silakan selesaikan pembayaran sebelum batas waktu berakhir.</p>
+          <h4>Pesanan Disetujui (ACC) — Batas Waktu Pembayaran 24 Jam Aktif</h4>
+          <p>
+            Silakan transfer sesuai nominal tagihan.
+            <strong v-if="deadlineCountdown">Sisa waktu bayar: {{ deadlineCountdown }}</strong>
+          </p>
         </div>
         <NuxtLink :to="`/orders/${order.orderCode}/bayar`" class="btn-alert-pay">
-          Bayar Sekarang &rarr;
+          Lihat Rekening &amp; Upload Bukti &rarr;
         </NuxtLink>
       </div>
 
-      <div v-else-if="order.orderStatus === 'rejected'" class="status-alert-banner alert-rejected">
-        <div class="alert-icon">❌</div>
+      <div v-else-if="order.orderStatus === 'rejected' || order.orderStatus === 'cancelled' || order.orderStatus === 'expired'" class="status-alert-banner alert-rejected">
         <div class="alert-text">
-          <h4>Pesanan Tidak Dapat Diproses (Ditolak)</h4>
-          <p><strong>Alasan:</strong> {{ order.rejectionReason || 'Stok fisik habis atau kuota bagasi trip penuh.' }}</p>
-          <span class="sub-alert-note">Anda tidak perlu melakukan pembayaran. Silakan hubungi admin via Live Chat untuk rekomendasi lainnya.</span>
+          <h4>{{ formatStatus(order.orderStatus) }}</h4>
+          <p>
+            <strong>Catatan / Alasan:</strong>
+            {{ order.rejectionReason || order.adminNote || 'Pesanan tidak dilanjutkan.' }}
+          </p>
         </div>
       </div>
 
@@ -76,7 +92,7 @@
         <!-- Left: Tracking Timeline & Receipt Photos -->
         <div class="tracking-col">
           <div class="box-card">
-            <h3 class="box-head">Lacak Progres Pesanan</h3>
+            <h3 class="box-head">Lacak Progres Pesanan (Audit Trail)</h3>
 
             <div class="timeline-stepper">
               <div v-for="(log, idx) in order.logs" :key="log.id" class="timeline-step">
@@ -92,9 +108,11 @@
 
                   <!-- Physical Store Receipt Photo Proof from Admin -->
                   <div v-if="log.proofImageUrl" class="receipt-proof-preview">
-                    <span class="proof-label">📷 Foto Bukti Pembelian di Toko Resmi Luar Negeri:</span>
+                    <span class="proof-label">📷 Foto Bukti Pembelian / Pengiriman dari Admin:</span>
                     <div class="proof-img-wrap">
-                      <img :src="log.proofImageUrl" alt="Bukti Struk Belanja" />
+                      <a :href="log.proofImageUrl" target="_blank" rel="noopener">
+                        <img :src="log.proofImageUrl" alt="Bukti Struk Belanja" />
+                      </a>
                     </div>
                   </div>
                 </div>
@@ -106,13 +124,13 @@
         <!-- Right: Items & Payment Breakdown -->
         <div class="summary-col">
           <div class="box-card">
-            <h3 class="box-head">Rincian Barang</h3>
+            <h3 class="box-head">Rincian Barang &amp; Tagihan</h3>
 
             <div class="order-items-list">
               <div v-for="it in order.items" :key="it.id" class="order-item-row">
                 <div class="it-info">
                   <strong>{{ it.productName }}</strong>
-                  <span>{{ it.quantity }} pcs &bull; {{ it.variant || 'Standard' }}</span>
+                  <span>{{ it.quantity }} pcs &bull; {{ it.variant || 'Standard' }} &bull; @{{ formatRupiah(it.priceAtOrder) }}</span>
                 </div>
                 <div class="it-price">{{ formatRupiah(it.subtotal) }}</div>
               </div>
@@ -120,16 +138,28 @@
 
             <div class="financial-breakdown">
               <div class="f-row">
-                <span>Subtotal:</span>
+                <span>Subtotal Barang:</span>
                 <span>{{ formatRupiah(order.subtotal) }}</span>
               </div>
-              <div v-if="order.uniqueCode > 0" class="f-row">
-                <span>Kode Unik Transfer:</span>
-                <span>+{{ order.uniqueCode }}</span>
+              <div v-if="order.shippingCost > 0" class="f-row">
+                <span>Ongkos Kirim:</span>
+                <span>{{ formatRupiah(order.shippingCost) }}</span>
               </div>
               <div class="f-row total">
                 <span>Total Tagihan:</span>
                 <span class="total-bold">{{ formatRupiah(order.totalAmount) }}</span>
+              </div>
+              <div v-if="order.paymentType === 'dp'" class="f-row">
+                <span>Skema Pembayaran:</span>
+                <strong>DP 50% ({{ formatRupiah(order.dpAmount) }})</strong>
+              </div>
+              <div v-if="order.paidAmount > 0" class="f-row">
+                <span>Sudah Dibayar (Terverifikasi):</span>
+                <strong style="color: #166534">{{ formatRupiah(order.paidAmount) }}</strong>
+              </div>
+              <div v-if="order.remainingAmount > 0 && order.paidAmount > 0" class="f-row">
+                <span>Sisa Pelunasan:</span>
+                <strong style="color: #B91C1C">{{ formatRupiah(order.remainingAmount) }}</strong>
               </div>
               <div class="f-row">
                 <span>Status Pembayaran:</span>
@@ -137,12 +167,16 @@
               </div>
             </div>
 
-            <!-- Fulfillment Info -->
+            <!-- Fulfillment / Shipping Address Info -->
             <div class="pickup-info-box">
-              <h4>Alamat Pengiriman Pesanan:</h4>
+              <h4>Alamat Pengiriman Tujuan:</h4>
               <p>
-                <strong>Tujuan Pengiriman:</strong><br />
+                <strong>{{ order.recipientName }} ({{ order.recipientPhone }})</strong><br />
                 {{ order.shippingAddress || 'Alamat dalam konfirmasi admin' }}
+              </p>
+              <p v-if="order.adminNote" class="admin-note-box">
+                <strong>Catatan Admin / Resi Kurir:</strong><br />
+                {{ order.adminNote }}
               </p>
             </div>
           </div>
@@ -153,29 +187,66 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { mockOrders } from '../../../data/mockJastipData'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { useToast } from '../../../composables/useToast'
 
 definePageMeta({
   middleware: 'auth'
 })
 
 const route = useRoute()
+const { showToast } = useToast()
 const orderCode = route.params.orderCode as string
 
-const order = computed(() => {
-  return mockOrders.find(o => o.orderCode === orderCode) || mockOrders[0]
+const { data: order, refresh } = await useFetch<any>(`/api/orders/${orderCode}`)
+
+const nowTs = ref(Date.now())
+let timer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  timer = setInterval(() => {
+    nowTs.value = Date.now()
+  }, 15000)
 })
 
+onBeforeUnmount(() => {
+  if (timer) clearInterval(timer)
+})
+
+const deadlineCountdown = computed(() => {
+  if (!order.value?.paymentDeadline) return ''
+  const diff = Math.max(0, new Date(order.value.paymentDeadline).getTime() - nowTs.value)
+  if (diff <= 0) return 'Waktu habis'
+  const hours = Math.floor(diff / (1000 * 60 * 60))
+  const mins = Math.floor((diff / (1000 * 60)) % 60)
+  return `${hours} jam ${mins} menit`
+})
+
+const handleCancelOrder = async () => {
+  if (!order.value) return
+  if (!confirm(`Yakin ingin membatalkan pesanan #${order.value.orderCode}?`)) return
+  try {
+    await $fetch(`/api/orders/${order.value.orderCode}/cancel`, {
+      method: 'PATCH',
+      body: { reason: 'Dibatalkan oleh customer melalui halaman detail pesanan.' }
+    })
+    showToast('Pesanan Dibatalkan', `Pesanan #${order.value.orderCode} telah dibatalkan.`, 'info')
+    await refresh()
+  } catch (err: any) {
+    showToast('Gagal Membatalkan', err?.data?.message || 'Tidak dapat membatalkan pesanan.', 'warning')
+  }
+}
+
 const formatStatus = (st: string) => {
-  const map: { [key: string]: string } = {
+  const map: Record<string, string> = {
     pending_approval: 'Menunggu ACC Admin',
     pending_payment: 'Disetujui (Menunggu Bayar)',
     payment_uploaded: 'Bukti Diupload',
     verified: 'Pembayaran Terverifikasi',
     purchasing: 'Sedang Dibelikan di Toko Asal',
     arrived: 'Barang Tiba di Indonesia',
-    ready_pickup: 'Siap Dikirim / Diserahkan',
+    ready_handover: 'Sedang Dikirim ke Alamat Tujuan',
+    ready_pickup: 'Sedang Dikirim ke Alamat Tujuan',
     completed: 'Pesanan Selesai',
     rejected: 'Pesanan Ditolak',
     cancelled: 'Dibatalkan',
@@ -187,13 +258,13 @@ const formatStatus = (st: string) => {
 const getPaymentStatusLabel = (st: string) => {
   if (st === 'pending_approval') return 'Menunggu ACC Admin (Belum Ditagih)'
   if (st === 'pending_payment') return 'Menunggu Pembayaran Transfer'
-  if (st === 'payment_uploaded') return 'Bukti Terkirim (Verifikasi Admin)'
-  if (st === 'rejected') return 'Pesanan Dibatalkan / Ditolak'
-  return 'Terverifikasi Lunas'
+  if (st === 'payment_uploaded') return 'Bukti Terkirim (Menunggu Verifikasi Admin)'
+  if (st === 'rejected' || st === 'cancelled' || st === 'expired') return 'Tidak Berlaku / Dibatalkan'
+  return 'Terverifikasi'
 }
 
 const formatRupiah = (val: number) => {
-  return 'Rp ' + val.toLocaleString('id-ID')
+  return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 </script>
 
@@ -234,7 +305,7 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 28px;
+  margin-bottom: 24px;
   flex-wrap: wrap;
   gap: 16px;
 }
@@ -264,7 +335,40 @@ const formatRupiah = (val: number) => {
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 8px;
+  gap: 10px;
+}
+
+.hero-btn-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-cancel-hero {
+  background: #FEE2E2;
+  color: #B91C1C;
+  border: 1px solid #FCA5A5;
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-hero-pay {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.btn-hero-pay.locked,
+.btn-hero-pay.waiting-check {
+  background: #F3F4F6;
+  color: #4B5563;
 }
 
 .status-banner {
@@ -274,12 +378,15 @@ const formatRupiah = (val: number) => {
   font-weight: 700;
 }
 
-.status-banner.purchasing {
+.status-banner.purchasing,
+.status-banner.arrived {
   background: #F3E6CC;
   color: #6F5530;
 }
 
-.status-banner.ready_pickup {
+.status-banner.verified,
+.status-banner.ready_handover,
+.status-banner.completed {
   background: #DCFCE7;
   color: #166534;
 }
@@ -300,120 +407,66 @@ const formatRupiah = (val: number) => {
   color: #1D4ED8;
 }
 
-.status-banner.rejected {
+.status-banner.rejected,
+.status-banner.cancelled,
+.status-banner.expired {
   background: #FEE2E2;
   color: #B91C1C;
 }
 
-.btn-hero-pay {
-  background: var(--brand-accent, #8C6D3F);
-  color: #FFFBF2;
-  text-decoration: none;
-  padding: 9px 18px;
-  border-radius: var(--radius-full, 999px);
-  font-size: 0.84rem;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border: 1px solid var(--brand-secondary, #D8B978);
-  transition: all 0.2s;
-}
-
-.btn-hero-pay:hover {
-  background: var(--color-primary-hover, #73572E);
-  transform: translateY(-1px);
-}
-
-.btn-hero-pay.locked {
-  background: var(--brand-primary, #EFE1C6);
-  color: var(--color-text-muted, #7A6A55);
-  cursor: not-allowed;
-  border-color: var(--brand-primary, #EFE1C6);
-}
-
-.btn-hero-pay.waiting-check {
-  background: var(--brand-neutral, #FFFBF2);
-  color: var(--brand-accent, #8C6D3F);
-  border: 1px solid var(--brand-secondary, #D8B978);
-}
-
-/* Informative Status Alert */
 .status-alert-banner {
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
   display: flex;
+  justify-content: space-between;
   align-items: center;
   gap: 16px;
-  padding: 18px 24px;
-  border-radius: var(--radius-md, 14px);
-  margin-bottom: 28px;
-  border: 1px solid transparent;
+  flex-wrap: wrap;
 }
 
 .alert-approval {
-  background: var(--brand-primary, #EFE1C6);
-  border-color: var(--brand-secondary, #D8B978);
-  color: var(--brand-accent, #8C6D3F);
+  background: #FEFCE8;
+  border: 1px solid #FDE047;
+  color: #713F12;
 }
 
 .alert-approved {
-  background: #EAEFE7;
-  border-color: #BFD3BF;
-  color: #2F5938;
+  background: #ECFDF5;
+  border: 1px solid #6EE7B7;
+  color: #065F46;
 }
 
 .alert-rejected {
-  background: #FBECE8;
-  border-color: #E8BFB7;
-  color: #933324;
-}
-
-.alert-icon {
-  font-size: 1.8rem;
-  line-height: 1;
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  color: #991B1B;
 }
 
 .alert-text h4 {
   margin: 0 0 4px;
-  font-size: 0.98rem;
-  font-weight: 700;
+  font-size: 0.95rem;
 }
 
 .alert-text p {
   margin: 0;
-  font-size: 0.86rem;
-  line-height: 1.5;
-}
-
-.sub-alert-note {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.78rem;
-  opacity: 0.85;
+  font-size: 0.84rem;
 }
 
 .btn-alert-pay {
-  margin-left: auto;
-  background: var(--brand-accent, #8C6D3F);
-  color: #FFFBF2;
+  background: #059669;
+  color: #ffffff;
   text-decoration: none;
-  padding: 10px 20px;
-  border-radius: var(--radius-full, 999px);
-  font-size: 0.84rem;
-  font-weight: 600;
-  white-space: nowrap;
-  border: 1px solid var(--brand-secondary, #D8B978);
-  transition: all 0.2s;
-}
-
-.btn-alert-pay:hover {
-  background: var(--color-primary-hover, #73572E);
-  transform: translateY(-1px);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
 .order-grid-layout {
   display: grid;
-  grid-template-columns: 1.3fr 1fr;
-  gap: 28px;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 24px;
 }
 
 .box-card {
@@ -427,12 +480,9 @@ const formatRupiah = (val: number) => {
   font-size: 1.05rem;
   font-weight: 800;
   color: var(--color-text, #2B2116);
-  margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
+  margin: 0 0 18px;
 }
 
-/* Timeline */
 .timeline-stepper {
   display: flex;
   flex-direction: column;
@@ -440,7 +490,7 @@ const formatRupiah = (val: number) => {
 
 .timeline-step {
   display: flex;
-  gap: 16px;
+  gap: 14px;
 }
 
 .step-indicator {
@@ -450,99 +500,79 @@ const formatRupiah = (val: number) => {
 }
 
 .step-dot {
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  background: var(--color-secondary, #EFE1C6);
-  border: 2px solid #ffffff;
-  box-shadow: 0 0 0 2px var(--color-secondary, #EFE1C6);
-}
-
-.step-dot.active {
   background: var(--color-primary, #8C6D3F);
-  box-shadow: 0 0 0 2px var(--color-primary, #8C6D3F);
+  margin-top: 4px;
 }
 
 .step-line {
   width: 2px;
   flex: 1;
   background: var(--color-secondary, #EFE1C6);
-  margin: 4px 0;
-  min-height: 40px;
+  min-height: 28px;
 }
 
 .step-content {
-  padding-bottom: 24px;
+  padding-bottom: 20px;
   flex: 1;
 }
 
 .step-time {
   font-size: 0.72rem;
   color: var(--color-text-muted, #7A6A55);
-  margin-bottom: 2px;
 }
 
 .step-title {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.9rem;
   color: var(--color-text, #2B2116);
-  margin-bottom: 4px;
+  margin: 2px 0 4px;
 }
 
 .step-note {
   font-size: 0.82rem;
   color: var(--color-text-muted, #7A6A55);
+  margin: 0;
   line-height: 1.45;
-  margin-bottom: 8px;
 }
 
 .receipt-proof-preview {
-  margin-top: 8px;
-  background: var(--color-canvas, #FFFBF2);
-  border: 1px solid var(--color-secondary, #EFE1C6);
-  border-radius: 8px;
-  padding: 10px;
+  margin-top: 10px;
 }
 
 .proof-label {
   display: block;
   font-size: 0.75rem;
   font-weight: 700;
-  color: var(--color-primary, #8C6D3F);
   margin-bottom: 6px;
 }
 
-.proof-img-wrap {
-  max-width: 260px;
-  border-radius: 6px;
-  overflow: hidden;
+.proof-img-wrap img {
+  max-width: 220px;
+  border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
 }
 
-.proof-img-wrap img {
-  width: 100%;
-  display: block;
-}
-
-/* Items List */
 .order-items-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--color-secondary, #EFE1C6);
+  margin-bottom: 14px;
 }
 
 .order-item-row {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
+  gap: 12px;
 }
 
-.it-info strong {
-  display: block;
-  font-size: 0.88rem;
-  color: var(--color-text, #2B2116);
+.it-info {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.84rem;
 }
 
 .it-info span {
@@ -551,64 +581,62 @@ const formatRupiah = (val: number) => {
 }
 
 .it-price {
-  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--color-text, #2B2116);
+  font-size: 0.86rem;
 }
 
 .financial-breakdown {
-  border-top: 1px solid var(--color-secondary, #EFE1C6);
-  padding-top: 14px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .f-row {
   display: flex;
   justify-content: space-between;
-  font-size: 0.85rem;
+  font-size: 0.84rem;
   color: var(--color-text-muted, #7A6A55);
 }
 
 .f-row.total {
-  border-top: 1px dashed var(--color-secondary, #EFE1C6);
   padding-top: 8px;
-  font-size: 1rem;
+  border-top: 1px dashed var(--color-secondary, #EFE1C6);
+  font-size: 0.96rem;
   font-weight: 800;
   color: var(--color-text, #2B2116);
 }
 
 .total-bold {
   color: var(--color-primary, #8C6D3F);
-  font-size: 1.2rem;
-}
-
-.paid-status {
-  color: #166534;
 }
 
 .pickup-info-box {
-  background: var(--color-canvas, #FFFBF2);
+  background: #FFFDF8;
   border: 1px solid var(--color-secondary, #EFE1C6);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 10px;
+  padding: 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
 }
 
 .pickup-info-box h4 {
-  font-size: 0.8rem;
-  color: var(--color-primary, #8C6D3F);
-  margin-bottom: 4px;
+  margin: 0 0 6px;
+  font-size: 0.88rem;
 }
 
 .pickup-info-box p {
-  font-size: 0.82rem;
-  color: var(--color-text, #2B2116);
-  line-height: 1.4;
+  margin: 0;
 }
 
-@media (max-width: 800px) {
+.admin-note-box {
+  margin-top: 10px !important;
+  padding-top: 10px;
+  border-top: 1px dashed var(--color-secondary, #EFE1C6);
+  color: #1E40AF;
+}
+
+@media (max-width: 860px) {
   .order-grid-layout {
     grid-template-columns: 1fr;
   }

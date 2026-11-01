@@ -9,20 +9,10 @@
       </div>
 
       <div class="header-main">
-        <div class="header-text">
-          <div class="header-pill">
-            <span class="airplane-icon">✈️</span>
-            JASA TITIP BELI LUAR NEGERI
-          </div>
-          <h1 class="page-title">Jadwal & Trip Jastip (Open PO)</h1>
-          <p class="page-desc">
-            Pilih destinasi trip keberangkatan admin untuk memesan barang langsung dari toko resmi luar negeri. Pesanan akan dibelikan secara langsung dan dibawa pulang ke Indonesia.
-          </p>
-        </div>
+        <h1 class="page-title">Jadwal Jastip</h1>
 
         <NuxtLink to="/request" class="request-banner-link">
-          <span class="req-title">Ingin titip barang dari trip di atas?</span>
-          <span class="req-sub">Ajukan Request Titip Kustom &rarr;</span>
+          <span class="req-sub">+ Request Barang Kustom &rarr;</span>
         </NuxtLink>
       </div>
 
@@ -33,7 +23,7 @@
           :class="{ active: activeStatusTab === 'open' }"
           @click="activeStatusTab = 'open'"
         >
-          Open PO (Sedang Buka)
+          Open PO
           <span class="tab-badge">{{ openTripsCount }}</span>
         </button>
         <button 
@@ -41,7 +31,7 @@
           :class="{ active: activeStatusTab === 'closed' }"
           @click="activeStatusTab = 'closed'"
         >
-          Arsip Trip (Sudah Tutup)
+          Arsip Trip
           <span class="tab-badge">{{ closedTripsCount }}</span>
         </button>
       </div>
@@ -68,15 +58,13 @@
           </div>
 
           <div class="card-content">
-            <p class="trip-desc">{{ trip.description }}</p>
-
             <div class="trip-schedule-grid">
               <div class="sched-box">
-                <span class="sched-label">Tutup PO (Cut-off):</span>
+                <span class="sched-label">Tutup PO</span>
                 <strong class="sched-val">{{ formatDate(trip.closeDate) }}</strong>
               </div>
               <div class="sched-box">
-                <span class="sched-label">Estimasi Tiba di Indo:</span>
+                <span class="sched-label">Estimasi Tiba</span>
                 <strong class="sched-val highlight">{{ formatDate(trip.estimatedArrivalDate) }}</strong>
               </div>
             </div>
@@ -84,8 +72,8 @@
             <!-- Quota Bar -->
             <div class="quota-wrap">
               <div class="quota-labels">
-                <span>Kuota Slot Titip</span>
-                <strong>{{ trip.quotaFilled }} / {{ trip.quotaTotal }} terisi</strong>
+                <span>Kuota Slot</span>
+                <strong>{{ trip.quotaFilled }} / {{ trip.quotaTotal }}</strong>
               </div>
               <div class="quota-bar">
                 <div 
@@ -97,8 +85,8 @@
 
             <div class="trip-card-footer">
               <NuxtLink :to="`/jastip/${trip.slug}`" class="btn-open-trip" :class="{ 'btn-view-closed': trip.status === 'closed' }">
-                <span v-if="trip.status === 'open'">Buka Katalog Trip Ini &rarr;</span>
-                <span v-else>Lihat Detail Arsip Trip</span>
+                <span v-if="trip.status === 'open'">Buka Katalog &rarr;</span>
+                <span v-else>Lihat Arsip</span>
               </NuxtLink>
             </div>
           </div>

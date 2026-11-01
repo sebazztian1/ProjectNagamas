@@ -1,9 +1,10 @@
 import { defineEventHandler, readMultipartFormData, createError } from 'h3'
-import { promises as fs } from 'fs'
+import { PutObjectCommand } from '@aws-sdk/client-s3'
 import path from 'path'
 import crypto from 'crypto'
 
 const ALLOWED_FOLDERS = ['products', 'trips', 'chat', 'requests', 'receipts', 'purchase-proofs']
+const PRIVATE_FOLDERS = ['receipts', 'purchase-proofs']
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB
 
@@ -44,13 +45,29 @@ export default defineEventHandler(async (event) => {
   const randomHash = crypto.randomBytes(8).toString('hex')
   const newFilename = `${targetFolder}-${Date.now()}-${randomHash}${extension}`
 
-  const destinationDir = path.resolve(process.cwd(), 'public', 'uploads', targetFolder)
-  await fs.mkdir(destinationDir, { recursive: true })
+  const isPrivate = PRIVATE_FOLDERS.includes(targetFolder)
+  const cfg = useRuntimeConfig()
+  const bucket = (isPrivate ? cfg.r2PrivateBucket : cfg.r2PublicBucket) as string
+  const objectKey = `${targetFolder}/${newFilename}`
 
-  const filePath = path.join(destinationDir, newFilename)
-  await fs.writeFile(filePath, filePart.data)
+  try {
+    await useR2().send(
+      new PutObjectCommand({
+        Bucket: bucket,
+        Key: objectKey,
+        Body: filePart.data,
+        ContentType: filePart.type || 'image/jpeg',
+      })
+    )
+  } catch (err: any) {
+    console.error('[upload] R2 error:', err?.message || err)
+    throw createError({ statusCode: 500, message: 'Gagal mengunggah ke Cloudflare R2' })
+  }
 
-  const publicUrl = `/uploads/${targetFolder}/${newFilename}`
+  const basePublicUrl = (cfg.r2PublicUrl as string || '').replace(/\/+$/, '')
+  const publicUrl = isPrivate
+    ? `private:${objectKey}`
+    : `${basePublicUrl}/${objectKey}`
 
   return {
     success: true,

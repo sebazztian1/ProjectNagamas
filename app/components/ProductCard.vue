@@ -47,6 +47,7 @@
 
         <!-- Chat dengan Admin Button -->
         <button 
+          v-if="!isAdmin"
           class="wa-btn"
           @click.stop="handleChatClick(product)"
           title="Chat Admin seputar produk ini"
@@ -62,7 +63,9 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import type { Product } from '../types/product'
+import { useAuth } from '../composables/useAuth'
 import { useCustomerChat } from '../composables/useCustomerChat'
 import { useWishlist } from '../composables/useWishlist'
 
@@ -75,6 +78,8 @@ defineEmits<{
   (e: 'quickView', product: Product): void
 }>()
 
+const { currentUser } = useAuth()
+const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff')
 const { openChatWithProduct } = useCustomerChat()
 const { isWishlisted, toggleWishlist } = useWishlist()
 

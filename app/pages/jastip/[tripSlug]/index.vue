@@ -44,13 +44,10 @@
 
       <!-- Section Title & Request Button -->
       <div class="catalog-section-bar">
-        <div>
-          <h2 class="sub-title">Katalog Titip Beli dari {{ trip.country }}</h2>
-          <p class="sub-desc">Pilih produk resmi luar negeri di bawah ini untuk dititipkan pada trip ini.</p>
-        </div>
+        <h2 class="sub-title">Katalog {{ trip.country }}</h2>
 
         <NuxtLink :to="`/request?tripId=${trip.id}`" class="btn-request-trip">
-          + Titip Barang Lain dari {{ trip.country }}
+          + Request Barang Lain
         </NuxtLink>
       </div>
 
@@ -61,10 +58,9 @@
           :key="product.id"
           class="jastip-prod-card"
         >
-          <div class="card-thumb">
-            <img :src="product.image" :alt="product.name" />
-            <span class="badge-source">{{ product.sourceStore || 'Store Resmi' }}</span>
-          </div>
+          <NuxtLink :to="`/jastip/${trip.slug}/${product.slug}`" class="card-thumb">
+            <img :src="product.image" :alt="product.name" loading="lazy" />
+          </NuxtLink>
 
           <div class="card-body">
             <span class="cat-pill">{{ product.category }}</span>
@@ -72,25 +68,17 @@
               <h3 class="prod-title">{{ product.name }}</h3>
             </NuxtLink>
 
-            <div class="currency-info">
-              <span>Harga Asli: <strong>{{ product.originalCurrency }} {{ product.originalPrice?.toLocaleString('id-ID') }}</strong></span>
-            </div>
-
             <div class="price-wrap">
-              <span class="price-lbl">Estimasi Harga Bersih (IDR):</span>
               <div class="price-val">{{ formatRupiah(product.price) }}</div>
             </div>
 
             <div class="btn-group">
-              <NuxtLink :to="`/jastip/${trip.slug}/${product.slug}`" class="btn-see-detail">
-                Lihat Rincian
-              </NuxtLink>
               <NuxtLink 
                 v-if="trip.status === 'open'" 
                 :to="`/checkout?productId=${product.id}&qty=1&tripId=${trip.id}`" 
                 class="btn-po"
               >
-                Titip Sekarang
+                Titip
               </NuxtLink>
               <span v-else class="btn-disabled">PO Tutup</span>
             </div>
@@ -280,8 +268,8 @@ const formatDate = (dateStr?: string | null) => {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 22px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
 }
 
 .jastip-prod-card {
@@ -291,18 +279,19 @@ const formatDate = (dateStr?: string | null) => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: box-shadow 0.2s, border-color 0.2s;
 }
 
 .jastip-prod-card:hover {
-  transform: translateY(-3px);
   box-shadow: 0 10px 20px -5px rgba(140, 109, 63, 0.12);
 }
 
 .card-thumb {
+  display: block;
   position: relative;
   aspect-ratio: 1 / 1;
   background: #F7EEDC;
+  overflow: hidden;
 }
 
 .card-thumb img {
@@ -311,31 +300,19 @@ const formatDate = (dateStr?: string | null) => {
   object-fit: cover;
 }
 
-.badge-source {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: rgba(43, 33, 22, 0.8);
-  color: #ffffff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  padding: 3px 8px;
-  border-radius: 6px;
-}
-
 .card-body {
-  padding: 16px;
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .cat-pill {
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   color: var(--color-text-muted, #7A6A55);
   font-weight: 600;
   text-transform: uppercase;
-  margin-bottom: 4px;
+  margin-bottom: 3px;
 }
 
 .title-link {
@@ -344,10 +321,11 @@ const formatDate = (dateStr?: string | null) => {
 }
 
 .prod-title {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 600;
   color: var(--color-text, #2B2116);
-  line-height: 1.4;
+  line-height: 1.35;
+  min-height: 2.7em;
   margin-bottom: 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -355,32 +333,20 @@ const formatDate = (dateStr?: string | null) => {
   overflow: hidden;
 }
 
-.currency-info {
-  font-size: 0.76rem;
-  color: var(--color-text-muted, #7A6A55);
-  margin-bottom: 12px;
-}
-
 .price-wrap {
   margin-top: auto;
-  margin-bottom: 14px;
-}
-
-.price-lbl {
-  font-size: 0.72rem;
-  color: var(--color-text-muted, #7A6A55);
+  margin-bottom: 8px;
 }
 
 .price-val {
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--color-primary, #8C6D3F);
 }
 
 .btn-group {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  display: flex;
+  flex-direction: column;
 }
 
 .btn-see-detail {

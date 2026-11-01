@@ -1,6 +1,6 @@
 import crypto from 'crypto'
 import type { H3Event } from 'h3'
-import { getCookie, setCookie, deleteCookie } from 'h3'
+import { getCookie, setCookie, deleteCookie, getRequestHeader } from 'h3'
 
 const COOKIE_NAME = 'dbb_session'
 const SECRET = process.env.NUXT_SESSION_PASSWORD || 'dbb_luxe_secret_session_key_32chars_long!'
@@ -63,7 +63,15 @@ export function setSessionCookie(event: H3Event, data: Omit<SessionData, 'exp'>)
 }
 
 export function getSessionFromEvent(event: H3Event): SessionData | null {
-  const token = getCookie(event, COOKIE_NAME)
+  const authHeader = getRequestHeader(event, 'authorization')
+  let token: string | undefined
+
+  if (authHeader && authHeader.toLowerCase().startsWith('bearer ')) {
+    token = authHeader.substring(7).trim()
+  } else {
+    token = getCookie(event, COOKIE_NAME)
+  }
+
   if (!token) return null
   return verifySessionToken(token)
 }

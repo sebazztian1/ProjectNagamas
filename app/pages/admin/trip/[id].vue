@@ -31,22 +31,18 @@
     <!-- Sub Navigation Tabs (Daftar Belanja vs Produk vs Order) -->
     <div class="trip-subtabs">
       <button class="subtab-btn" :class="{ active: currentTab === 'shopping' }" @click="currentTab = 'shopping'">
-        🛒 Daftar Belanja Admin (Shopping List)
+        Daftar Belanja
       </button>
       <button class="subtab-btn" :class="{ active: currentTab === 'products' }" @click="currentTab = 'products'">
-        📦 Katalog Produk Trip Ini
+        Produk Trip
       </button>
       <button class="subtab-btn" :class="{ active: currentTab === 'orders' }" @click="currentTab = 'orders'">
-        📑 Daftar Pesanan Masuk
+        Pesanan Masuk
       </button>
     </div>
 
     <!-- TAB 1: SHOPPING LIST (REKAP BELANJA DI TOKO LUAR NEGERI) -->
     <div v-if="currentTab === 'shopping'" class="shopping-list-section">
-      <div class="list-head-alert">
-        <span>Rekap total barang yang wajib dibeli admin di toko fisik luar negeri berdasarkan pesanan yang sudah terverifikasi:</span>
-      </div>
-
       <div class="table-card">
         <table class="data-table">
           <thead>

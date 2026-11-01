@@ -9,16 +9,7 @@
           <span class="active">Ready Stock</span>
         </div>
         <div class="header-main">
-          <div>
-            <div class="ready-badge">
-              <span class="dot"></span>
-              Stok Tersedia di Warehouse Jakarta
-            </div>
-            <h1 class="page-title">Katalog Barang Ready Stock</h1>
-            <p class="page-desc">
-              Barang-barang impor dan sisa kuota trip sebelumnya yang sudah siap dikemas dan langsung dikirim ke alamat Anda.
-            </p>
-          </div>
+          <h1 class="page-title">Ready Stock</h1>
         </div>
       </div>
 
@@ -36,25 +27,24 @@
           />
         </div>
 
-        <div class="category-pills">
-          <button 
-            v-for="cat in categories" 
-            :key="cat"
-            class="pill" 
-            :class="{ active: selectedCat === cat }"
-            @click="selectedCat = cat"
-          >
-            {{ cat }}
-          </button>
-        </div>
+        <div class="filter-dropdowns">
+          <div class="sort-box">
+            <label>Kategori:</label>
+            <select v-model="selectedCat">
+              <option v-for="cat in categories" :key="cat" :value="cat">
+                {{ cat }}
+              </option>
+            </select>
+          </div>
 
-        <div class="sort-box">
-          <label>Urutkan:</label>
-          <select v-model="sortBy">
-            <option value="default">Terbaru</option>
-            <option value="price-asc">Harga: Terendah</option>
-            <option value="price-desc">Harga: Tertinggi</option>
-          </select>
+          <div class="sort-box">
+            <label>Urutkan:</label>
+            <select v-model="sortBy">
+              <option value="default">Terbaru</option>
+              <option value="price-asc">Harga: Terendah</option>
+              <option value="price-desc">Harga: Tertinggi</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -65,9 +55,9 @@
           :key="product.id"
           class="ready-card"
         >
-          <div class="card-image">
-            <img :src="product.image" :alt="product.name" />
-          </div>
+          <NuxtLink :to="`/ready/${product.slug}`" class="card-image">
+            <img :src="product.image" :alt="product.name" loading="lazy" />
+          </NuxtLink>
 
           <div class="card-body">
             <span class="cat-label">{{ product.category }}</span>
@@ -75,20 +65,11 @@
               <h3 class="prod-title">{{ product.name }}</h3>
             </NuxtLink>
 
-            <p class="prod-desc">{{ product.description }}</p>
+            <div class="price-val">{{ formatRupiah(product.price) }}</div>
 
-            <div class="price-row">
-              <div class="price-val">{{ formatRupiah(product.price) }}</div>
-            </div>
-
-            <div class="card-btn-group">
-              <NuxtLink :to="`/ready/${product.slug}`" class="btn-detail">
-                Lihat Detail
-              </NuxtLink>
-              <NuxtLink :to="`/checkout?productId=${product.id}&qty=1`" class="btn-checkout">
-                Beli Sekarang
-              </NuxtLink>
-            </div>
+            <NuxtLink :to="`/checkout?productId=${product.id}&qty=1`" class="btn-checkout">
+              Beli
+            </NuxtLink>
           </div>
         </div>
       </div>
@@ -102,13 +83,41 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import type { ApiProduct } from '../../composables/useProducts'
 
+const route = useRoute()
 const searchQuery = ref('')
-const selectedCat = ref('Semua')
+const selectedCat = ref((route.query.category as string) || 'Semua')
 const sortBy = ref('default')
-const categories = ['Semua', 'Tas', 'Baju', 'Sepatu', 'Aksesoris', 'Lainnya']
+
+watch(() => route.query.category, (newCat) => {
+  if (typeof newCat === 'string' && newCat.trim()) {
+    selectedCat.value = newCat
+  } else {
+    selectedCat.value = 'Semua'
+  }
+})
+
+const { data: dbCategories } = await useFetch<any[]>('/api/categories')
+const categories = computed(() => {
+  const names: string[] = []
+  if (dbCategories.value && dbCategories.value.length > 0) {
+    dbCategories.value.forEach(c => {
+      if (c.name && !names.includes(c.name)) names.push(c.name)
+    })
+  } else {
+    names.push('Tas', 'Baju', 'Sepatu', 'Aksesoris', 'Lainnya')
+  }
+  names.sort((a, b) => {
+    const isALainnya = a.trim().toLowerCase() === 'lainnya'
+    const isBLainnya = b.trim().toLowerCase() === 'lainnya'
+    if (isALainnya && !isBLainnya) return 1
+    if (!isALainnya && isBLainnya) return -1
+    return a.localeCompare(b, 'id')
+  })
+  return ['Semua', ...names]
+})
 
 const { data: productsData, status } = await useFetch<ApiProduct[]>('/api/products', {
   query: computed(() => ({
@@ -168,42 +177,13 @@ const resetFilter = () => {
   font-weight: 700;
 }
 
-.ready-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: var(--brand-primary);
-  color: var(--brand-accent);
-  font-size: 0.74rem;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: var(--radius-full);
-  margin-bottom: 12px;
-  border: 1px solid rgba(216, 185, 120, 0.4);
-  letter-spacing: 0.05em;
-}
-
-.ready-badge .dot {
-  width: 6px;
-  height: 6px;
-  background: var(--brand-secondary);
-  border-radius: 50%;
-}
-
 .page-title {
-  font-size: 2.2rem;
-  margin-bottom: 8px;
-}
-
-.page-desc {
-  font-size: 0.95rem;
-  color: var(--color-text-muted);
-  max-width: 720px;
-  line-height: 1.65;
+  font-size: 1.9rem;
+  margin: 0;
 }
 
 .filter-bar {
-  margin: 36px 0 32px;
+  margin: 20px 0 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -237,34 +217,11 @@ const resetFilter = () => {
   width: 100%;
 }
 
-.category-pills {
+.filter-dropdowns {
   display: flex;
-  gap: 8px;
+  align-items: center;
+  gap: 16px;
   flex-wrap: wrap;
-}
-
-.pill {
-  background: var(--brand-neutral);
-  border: 1px solid var(--brand-primary);
-  color: var(--color-text-muted);
-  padding: 7px 16px;
-  border-radius: var(--radius-full);
-  font-size: 0.84rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.pill:hover {
-  border-color: var(--brand-secondary);
-  color: var(--brand-accent);
-}
-
-.pill.active {
-  background: var(--brand-accent);
-  color: #FFFBF2;
-  border-color: var(--brand-accent);
-  box-shadow: 0 4px 12px -2px rgba(140, 109, 63, 0.35);
 }
 
 .sort-box {
@@ -287,8 +244,8 @@ const resetFilter = () => {
 
 .products-grid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: 14px;
 }
 
 .ready-card {
@@ -298,20 +255,19 @@ const resetFilter = () => {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 .ready-card:hover {
-  transform: translateY(-4px);
   box-shadow: var(--shadow-md);
   border-color: var(--brand-secondary);
 }
 
 .card-image {
-  position: relative;
+  display: block;
   aspect-ratio: 1 / 1;
   background: var(--brand-neutral);
+  overflow: hidden;
 }
 
 .card-image img {
@@ -322,50 +278,23 @@ const resetFilter = () => {
 }
 
 .ready-card:hover .card-image img {
-  transform: scale(1.05);
-}
-
-.badge-stock {
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  background: var(--color-ready-bg);
-  color: var(--color-ready);
-  font-size: 0.72rem;
-  font-weight: 700;
-  padding: 4px 9px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(59, 110, 72, 0.2);
-}
-
-.badge-origin {
-  position: absolute;
-  top: 12px;
-  right: 12px;
-  background: rgba(255, 251, 242, 0.94);
-  backdrop-filter: blur(4px);
-  font-size: 0.72rem;
-  font-weight: 600;
-  padding: 4px 8px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--brand-primary);
-  color: var(--color-text);
+  transform: scale(1.04);
 }
 
 .card-body {
-  padding: 14px 14px 16px;
+  padding: 10px 12px 12px;
   display: flex;
   flex-direction: column;
   flex: 1;
 }
 
 .cat-label {
-  font-size: 0.68rem;
-  color: var(--brand-accent);
-  font-weight: 700;
+  font-size: 0.62rem;
+  color: var(--color-text-muted);
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 4px;
+  letter-spacing: 0.06em;
+  margin-bottom: 3px;
 }
 
 .prod-title-link {
@@ -374,11 +303,12 @@ const resetFilter = () => {
 }
 
 .prod-title {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text);
-  margin-bottom: 6px;
+  margin: 0 0 8px;
   line-height: 1.35;
+  min-height: 2.7em;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -390,91 +320,31 @@ const resetFilter = () => {
   color: var(--brand-accent);
 }
 
-.prod-desc {
-  font-size: 0.76rem;
-  color: var(--color-text-muted);
-  line-height: 1.4;
-  margin-bottom: 10px;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.price-row {
-  margin-top: auto;
-  margin-bottom: 10px;
-}
-
 .price-val {
-  font-size: 1.05rem;
-  font-weight: 800;
+  margin-top: auto;
+  margin-bottom: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--brand-accent);
   letter-spacing: -0.01em;
-}
-
-.card-btn-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.btn-detail {
-  text-decoration: none;
-  text-align: center;
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--brand-accent);
-  background: var(--brand-neutral);
-  border: 1px solid var(--brand-primary);
-  padding: 6px 10px;
-  border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
-}
-
-.btn-detail:hover {
-  background: var(--brand-primary);
-  border-color: var(--brand-secondary);
 }
 
 .btn-checkout {
   text-decoration: none;
   text-align: center;
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.76rem;
+  font-weight: 600;
   color: #FFFBF2;
   background: var(--brand-accent);
   padding: 6px 10px;
   border-radius: var(--radius-sm);
-  transition: all 0.2s ease;
   border: 1px solid var(--brand-accent);
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .btn-checkout:hover {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
-  transform: translateY(-1px);
-}
-
-@media (max-width: 1400px) {
-  .products-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: 14px;
-  }
-}
-
-@media (max-width: 1100px) {
-  .products-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 14px;
-  }
-}
-
-@media (max-width: 860px) {
-  .products-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
 }
 
 @media (max-width: 600px) {

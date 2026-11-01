@@ -1,11 +1,8 @@
 <template>
   <div class="admin-trips-page">
     <div class="page-head">
-      <div>
-        <h1 class="page-title">Kelola Jadwal Jastip (Trip)</h1>
-        <p class="page-subtitle">Atur tanggal buka & tutup PO, kuota koper belanja, estimasi tiba di Indonesia, dan status keberangkatan trip.</p>
-      </div>
-      <button class="btn-create-trip" @click="openCreateModal">+ Buat Jadwal Trip Baru</button>
+      <h1 class="page-title">Trip Jastip</h1>
+      <button class="btn-create-trip" @click="openCreateModal">+ Buat Trip</button>
     </div>
 
     <!-- Status Filter Tabs -->

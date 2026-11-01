@@ -4,12 +4,11 @@
       <div class="breadcrumb">
         <NuxtLink to="/">Beranda</NuxtLink>
         <span>/</span>
-        <span class="active">Panduan Cara Order</span>
+        <span class="active">Cara Order</span>
       </div>
 
       <div class="page-header">
-        <h1 class="page-title">Panduan Langkah Demi Langkah Pemesanan</h1>
-        <p class="page-subtitle">Pahami alur mudah berbelanja barang ready stock maupun menitip barang pre-order di dbb_luxe.</p>
+        <h1 class="page-title">Cara Order</h1>
       </div>
 
       <!-- Step Cards -->
@@ -34,7 +33,7 @@
           <div class="step-num">3</div>
           <div class="step-body">
             <h3>Pesanan Disetujui: Transfer Manual &amp; Upload Bukti</h3>
-            <p>Setelah di-ACC oleh admin, batas waktu pembayaran 24 jam mulai berjalan. Kirimkan pembayaran sesuai nominal (+ 3 digit kode unik) ke rekening resmi BCA/Mandiri atau QRIS dbb_luxe, lalu unggah foto bukti transfer di menu <em>Pesanan Saya &rarr; Bayar</em>.</p>
+            <p>Setelah di-ACC oleh admin, batas waktu pembayaran 24 jam mulai berjalan. Kirimkan pembayaran sesuai nominal tagihan ke rekening resmi BCA/Mandiri atau QRIS dbb_luxe, lalu unggah foto bukti transfer di menu <em>Pesanan Saya &rarr; Bayar</em>.</p>
           </div>
         </div>
 

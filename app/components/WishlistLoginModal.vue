@@ -6,26 +6,20 @@
       </button>
 
       <div class="modal-body">
-        <div class="icon-wrap">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="#D32F2F" stroke="#D32F2F" stroke-width="1">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"></path>
-          </svg>
-        </div>
-
-        <h3 class="modal-title">Simpan Wishlist Permanen</h3>
+        <h3 class="modal-title">Simpan Wishlist</h3>
         <p class="modal-desc">
-          Barang incaran berhasil disimpan sementara di browser ini. Masuk ke akun <strong>dbb_luxe</strong> Anda agar daftar favorit tersimpan permanen dan dapat diakses dari perangkat mana pun.
+          Masuk ke akun Anda agar daftar favorit tersimpan permanen di semua perangkat.
         </p>
 
         <div class="modal-actions">
           <NuxtLink to="/login" class="btn-primary-auth" @click="showLoginPrompt = false">
-            Masuk ke Akun
+            Masuk
           </NuxtLink>
           <NuxtLink to="/register" class="btn-secondary-auth" @click="showLoginPrompt = false">
-            Daftar Akun Baru
+            Daftar Akun
           </NuxtLink>
           <button class="btn-guest-continue" @click="showLoginPrompt = false">
-            Lanjut Belanja Sebagai Tamu
+            Lanjut Sebagai Tamu
           </button>
         </div>
       </div>

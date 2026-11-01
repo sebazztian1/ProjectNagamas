@@ -6,58 +6,47 @@
         <div class="footer-col brand-col">
           <div class="footer-logo">
             <span class="logo-text">dbb_luxe</span>
-            <span class="logo-sub">Jastip & Ready Stock</span>
           </div>
           <p class="brand-desc">
-            Layanan titip beli (Jastip) resmi luar negeri terpercaya .
+            Layanan jastip luar negeri &amp; ready stock pilihan.
           </p>
-          <div class="trust-badge">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-            </svg>
-            <span>100% Produk Original</span>
-          </div>
         </div>
 
         <!-- Navigation Links -->
         <div class="footer-col">
-          <h4 class="col-title">Eksplorasi</h4>
+          <h4 class="col-title">Menu</h4>
           <ul class="footer-links">
             <li><NuxtLink to="/">Beranda</NuxtLink></li>
-            <li><NuxtLink to="/ready">Katalog Ready Stock</NuxtLink></li>
-            <li><NuxtLink to="/jastip">Jadwal Trip Jastip (Open PO)</NuxtLink></li>
-            <li><NuxtLink to="/request">Form Request Titip Barang</NuxtLink></li>
+            <li><NuxtLink to="/ready">Ready Stock</NuxtLink></li>
+            <li><NuxtLink to="/jastip">Jadwal Jastip</NuxtLink></li>
+            <li><NuxtLink to="/request">Request Barang</NuxtLink></li>
           </ul>
         </div>
 
         <!-- Customer Support / Info -->
         <div class="footer-col">
-          <h4 class="col-title">Bantuan & Syarat</h4>
+          <h4 class="col-title">Bantuan</h4>
           <ul class="footer-links">
-            <li><NuxtLink to="/cara-order">Panduan Cara Order</NuxtLink></li>
-            <li><NuxtLink to="/faq">Pertanyaan Umum (FAQ)</NuxtLink></li>
-            <li><NuxtLink to="/syarat-ketentuan">Syarat & Ketentuan Jastip</NuxtLink></li>
-            <li><NuxtLink to="/chat">Live Chat Customer Service</NuxtLink></li>
+            <li><NuxtLink to="/cara-order">Cara Order</NuxtLink></li>
+            <li><NuxtLink to="/faq">FAQ</NuxtLink></li>
+            <li><NuxtLink to="/syarat-ketentuan">Syarat &amp; Ketentuan</NuxtLink></li>
+            <li><NuxtLink to="/chat">Live Chat</NuxtLink></li>
           </ul>
         </div>
 
         <!-- Contact & Pickup Location -->
         <div class="footer-col">
-          <p class="store-address">
-            <strong>dbb_luxe</strong><br />
-          </p>
+          <h4 class="col-title">Kontak</h4>
           <div class="store-contact">
-            <span>WhatsApp Admin: <strong>0812-9876-5432</strong></span>
+            <span>WhatsApp: <strong>0812-9876-5432</strong></span>
           </div>
         </div>
       </div>
 
       <div class="footer-bottom">
-        <p>&copy; 2026 dbb_luxe. Seluruh Hak Cipta Dilindungi. Sistem Jastip & Order Manual.</p>
+        <p>&copy; 2026 dbb_luxe.</p>
         <div class="footer-bottom-links">
           <NuxtLink to="/syarat-ketentuan">Kebijakan Privasi</NuxtLink>
-          <span>&bull;</span>
-          <NuxtLink to="/admin">Portal Admin Toko</NuxtLink>
         </div>
       </div>
     </div>

@@ -14,9 +14,7 @@
 
       <!-- Header -->
       <div class="auth-header">
-        <div class="brand-badge">DBB_LUXE</div>
-        <h1 class="auth-title">Daftar Akun Baru</h1>
-        <p class="auth-subtitle">Daftarkan akun untuk mendapatkan update katalog terbaru dan promo spesial.</p>
+        <h1 class="auth-title">Daftar Akun</h1>
       </div>
 
       <!-- Form -->
@@ -24,15 +22,11 @@
         <div class="form-group">
           <label for="reg-username">Username</label>
           <div class="input-wrap">
-            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
             <input 
               id="reg-username" 
               v-model="form.username"
               type="text" 
-              placeholder="Contoh: sitirahma (huruf/angka/underscore)" 
+              placeholder="Huruf, angka, atau underscore" 
               minlength="3"
               required 
             />
@@ -40,16 +34,13 @@
         </div>
 
         <div class="form-group">
-          <label for="reg-phone">Nomor WhatsApp Aktif</label>
+          <label for="reg-phone">Nomor WhatsApp</label>
           <div class="input-wrap">
-            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-            </svg>
             <input 
               id="reg-phone" 
               v-model="form.phone"
               type="tel" 
-              placeholder="Contoh: 081234567890" 
+              placeholder="081234567890" 
               required 
             />
           </div>
@@ -58,10 +49,6 @@
         <div class="form-group">
           <label for="reg-password">Kata Sandi</label>
           <div class="input-wrap">
-            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
             <input 
               id="reg-password" 
               v-model="form.password"
@@ -83,15 +70,11 @@
         <div class="form-group">
           <label for="reg-confirm-password">Konfirmasi Kata Sandi</label>
           <div class="input-wrap">
-            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
             <input 
               id="reg-confirm-password" 
               v-model="form.confirmPassword"
               :type="showPassword ? 'text' : 'password'" 
-              placeholder="Ulangi kata sandi Anda" 
+              placeholder="Ulangi kata sandi" 
               minlength="6"
               required 
             />
@@ -101,13 +84,13 @@
         <div class="terms-row">
           <label class="checkbox-label">
             <input type="checkbox" v-model="form.agreeTerms" required />
-            <span>Saya menyetujui Syarat & Ketentuan Layanan</span>
+            <span>Saya menyetujui Syarat & Ketentuan</span>
           </label>
         </div>
 
         <button type="submit" class="submit-btn" :disabled="isLoading">
           <span v-if="isLoading">Mendaftarkan...</span>
-          <span v-else>Daftar Sekarang</span>
+          <span v-else>Daftar</span>
         </button>
 
         <div class="bottom-switch">
@@ -270,7 +253,7 @@ const handleRegister = async () => {
 
 .input-wrap input {
   width: 100%;
-  padding: 10px 14px 10px 38px;
+  padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
   background: #ffffff;

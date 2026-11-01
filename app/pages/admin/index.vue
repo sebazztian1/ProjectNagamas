@@ -1,37 +1,32 @@
 <template>
   <div class="admin-dashboard">
     <div class="dash-header">
-      <div>
-        <h1 class="dash-title">Ringkasan Operasional Toko</h1>
-        <p class="dash-subtitle">Pantau pesanan yang perlu diverifikasi, jadwal trip jastip berjalan, dan omzet per batch.</p>
-      </div>
-      <NuxtLink to="/admin/trip" class="btn-new-trip">+ Jadwalkan Trip Jastip Baru</NuxtLink>
+      <h1 class="dash-title">Dashboard</h1>
+      <NuxtLink to="/admin/trip" class="btn-new-trip">+ Trip Baru</NuxtLink>
     </div>
 
     <!-- Stat KPI Cards -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <span class="kpi-label">Menunggu Verifikasi Pembayaran</span>
-        <strong class="kpi-val warning">{{ stats?.pendingOrdersCount || 0 }} Order</strong>
-        <span class="kpi-sub">Pesanan baru yang perlu diverifikasi</span>
+        <span class="kpi-label">Menunggu Verifikasi</span>
+        <strong class="kpi-val warning">{{ stats?.pendingOrdersCount || 0 }}</strong>
       </div>
 
       <div class="kpi-card">
-        <span class="kpi-label">Trip Jastip Sedang Buka (Open PO)</span>
-        <strong class="kpi-val">{{ stats?.openTripsCount || 0 }} Trip Aktif</strong>
+        <span class="kpi-label">Trip Aktif</span>
+        <strong class="kpi-val">{{ stats?.openTripsCount || 0 }}</strong>
         <span class="kpi-sub">{{ activeTripsSummary }}</span>
       </div>
 
       <div class="kpi-card">
-        <span class="kpi-label">Total Omzet Pesanan</span>
+        <span class="kpi-label">Total Omzet</span>
         <strong class="kpi-val highlight">{{ formatRupiah(stats?.totalOmzet || 0) }}</strong>
-        <span class="kpi-sub">{{ stats?.totalItemsSold || 0 }} items dipesan customer</span>
+        <span class="kpi-sub">{{ stats?.totalItemsSold || 0 }} item</span>
       </div>
 
       <div class="kpi-card">
-        <span class="kpi-label">Request Produk Masuk</span>
-        <strong class="kpi-val">{{ stats?.pendingRequestsCount || 0 }} Menunggu Quote</strong>
-        <span class="kpi-sub">Permintaan kustom titip dari pelanggan</span>
+        <span class="kpi-label">Request Masuk</span>
+        <strong class="kpi-val">{{ stats?.pendingRequestsCount || 0 }}</strong>
       </div>
     </div>
 

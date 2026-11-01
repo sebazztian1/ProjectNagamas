@@ -5,7 +5,10 @@
         <h1 class="page-title">Manajemen Produk (Ready Stock & Jastip)</h1>
         <p class="page-subtitle">Kelola inventaris barang ready di toko serta katalog titip beli luar negeri per jadwal trip langsung dari database.</p>
       </div>
-      <button class="btn-add-product" @click="openCreateModal">+ Tambah Produk Baru</button>
+      <div class="head-actions">
+        <NuxtLink to="/admin/kategori" class="btn-manage-cat">Kelola Kategori</NuxtLink>
+        <button class="btn-add-product" @click="openCreateModal">+ Tambah Produk Baru</button>
+      </div>
     </div>
 
     <!-- Filter Tabs (Ready vs Jastip) & Search -->
@@ -48,7 +51,7 @@
               </div>
               <div class="prod-info-txt">
                 <strong>{{ p.name }}</strong>
-                <span>{{ p.categoryName }} &bull; slug: {{ p.slug }}</span>
+                <span>{{ p.categoryName }}</span>
               </div>
             </td>
             <td>
@@ -133,7 +136,35 @@
 
           <div class="form-row-2">
             <div class="f-group">
-              <label>Kategori:</label>
+              <div class="label-with-action">
+                <label>Kategori:</label>
+                <button 
+                  type="button" 
+                  class="btn-text-action" 
+                  @click="showQuickCategory = !showQuickCategory"
+                >
+                  {{ showQuickCategory ? 'Tutup' : '+ Kategori Baru' }}
+                </button>
+              </div>
+
+              <!-- Quick add input box if toggled -->
+              <div v-if="showQuickCategory" class="quick-category-box">
+                <input 
+                  v-model="quickCategoryName" 
+                  type="text" 
+                  placeholder="Nama kategori baru..."
+                  @keydown.enter.prevent="submitQuickCategory"
+                />
+                <button 
+                  type="button" 
+                  class="btn-quick-save" 
+                  :disabled="isSavingQuickCategory || !quickCategoryName.trim()"
+                  @click="submitQuickCategory"
+                >
+                  {{ isSavingQuickCategory ? '...' : 'Tambah' }}
+                </button>
+              </div>
+
               <select v-model="form.categoryId" required>
                 <option v-for="c in categories" :key="c.id" :value="c.id">
                   {{ c.name }}
@@ -260,6 +291,36 @@ const showModal = ref(false)
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
 const isSaving = ref(false)
+
+const showQuickCategory = ref(false)
+const quickCategoryName = ref('')
+const isSavingQuickCategory = ref(false)
+
+const submitQuickCategory = async () => {
+  const name = quickCategoryName.value.trim()
+  if (!name) return
+
+  isSavingQuickCategory.value = true
+  try {
+    const res = await $fetch<{ success: boolean; category: { id: number; name: string; slug: string } }>('/api/admin/categories', {
+      method: 'POST',
+      body: { name }
+    })
+    if (res?.category) {
+      if (adminData.value && adminData.value.categories) {
+        adminData.value.categories.push(res.category)
+      }
+      form.value.categoryId = res.category.id
+      quickCategoryName.value = ''
+      showQuickCategory.value = false
+      showToast('Kategori Ditambahkan', `Kategori "${res.category.name}" berhasil dibuat dan dipilih.`, 'success')
+    }
+  } catch (err: any) {
+    showToast('Gagal Tambah Kategori', err?.data?.message || 'Terjadi kesalahan saat membuat kategori.', 'warning')
+  } finally {
+    isSavingQuickCategory.value = false
+  }
+}
 
 const form = ref({
   name: '',
@@ -820,6 +881,90 @@ const formatRupiah = (val: number) => {
 
 .btn-save:disabled {
   opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-manage-cat {
+  background: #ffffff;
+  color: var(--color-primary, #8C6D3F);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+}
+
+.btn-manage-cat:hover {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+}
+
+.label-with-action {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.label-with-action label {
+  margin-bottom: 0;
+}
+
+.btn-text-action {
+  background: none;
+  border: none;
+  color: var(--color-primary, #8C6D3F);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.btn-text-action:hover {
+  color: var(--color-primary-hover, #6F5530);
+}
+
+.quick-category-box {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.quick-category-box input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 6px;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.quick-category-box input:focus {
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.btn-quick-save {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-quick-save:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 </style>

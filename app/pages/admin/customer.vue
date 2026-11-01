@@ -1,10 +1,7 @@
 <template>
   <div class="admin-customers-page">
     <div class="page-head">
-      <div>
-        <h1 class="page-title">Daftar Pelanggan (Customer)</h1>
-        <p class="page-subtitle">Daftar pengguna terdaftar yang pernah melakukan transaksi jastip maupun ready stock di dbb_luxe.</p>
-      </div>
+      <h1 class="page-title">Pelanggan</h1>
     </div>
 
     <div class="table-card">

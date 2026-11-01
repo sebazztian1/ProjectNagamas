@@ -75,6 +75,7 @@
 
             <!-- Chat via Live Chat Button -->
             <button 
+              v-if="!isAdmin"
               class="chat-main-btn"
               @click="handleChatLive"
             >
@@ -93,6 +94,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { Product } from '../types/product'
+import { useAuth } from '../composables/useAuth'
 import { useCustomerChat } from '../composables/useCustomerChat'
 import { useWishlist } from '../composables/useWishlist'
 
@@ -105,6 +107,8 @@ const emit = defineEmits<{
   (e: 'chatWhatsApp', product: Product): void
 }>()
 
+const { currentUser } = useAuth()
+const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff')
 const { openChatWithProduct } = useCustomerChat()
 const { isWishlisted, toggleWishlist } = useWishlist()
 

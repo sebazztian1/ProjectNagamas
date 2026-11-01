@@ -14,9 +14,7 @@
 
       <!-- Header -->
       <div class="auth-header">
-        <div class="brand-badge">DBB_LUXE</div>
-        <h1 class="auth-title">Masuk ke Akun</h1>
-        <p class="auth-subtitle">Masukkan username atau nomor WhatsApp dan kata sandi Anda untuk mengakses akun.</p>
+        <h1 class="auth-title">Masuk</h1>
       </div>
 
       <!-- Form -->
@@ -24,15 +22,11 @@
         <div class="form-group">
           <label for="identifier">Username atau No. WhatsApp</label>
           <div class="input-wrap">
-            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
             <input 
               id="identifier" 
               v-model="form.identifier"
               type="text" 
-              placeholder="Contoh: sitirahma atau 081234567890" 
+              placeholder="Username atau 0812..." 
               required 
             />
           </div>
@@ -44,10 +38,6 @@
             <a href="#" @click.prevent="forgotPassword" class="forgot-link">Lupa kata sandi?</a>
           </div>
           <div class="input-wrap">
-            <svg class="input-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
             <input 
               id="password" 
               v-model="form.password"
@@ -68,13 +58,13 @@
         <div class="remember-row">
           <label class="checkbox-label">
             <input type="checkbox" v-model="form.rememberMe" />
-            <span>Ingat saya di perangkat ini</span>
+            <span>Ingat saya</span>
           </label>
         </div>
 
         <button type="submit" class="submit-btn" :disabled="isLoading">
           <span v-if="isLoading">Memproses...</span>
-          <span v-else>Masuk Sekarang</span>
+          <span v-else>Masuk</span>
         </button>
 
         <div class="bottom-switch">
@@ -263,7 +253,7 @@ const forgotPassword = () => {
 
 .input-wrap input {
   width: 100%;
-  padding: 10px 14px 10px 38px;
+  padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
   background: #ffffff;

@@ -24,11 +24,7 @@
 
           <!-- Trip Reminder Box -->
           <div class="trip-reminder-box">
-            <div class="trip-rem-head">
-              <span class="plane-icon">✈️</span>
-              <strong>Jadwal Pembelian Trip Ini:</strong>
-            </div>
-            <p>{{ product.tripTitle }}</p>
+            <strong>{{ product.tripTitle }}</strong>
             <div class="dates-row">
               <span>Batas PO: <strong>20 Okt 2026</strong></span>
               <span>Estimasi Tiba: <strong>02 Nov 2026</strong></span>
@@ -38,32 +34,29 @@
 
         <!-- Info / Buying Action -->
         <div class="info-col">
-          <div class="store-tag">
-            <span>Dibelikan di toko: <strong>{{ product.sourceStore || 'Store Resmi Luar Negeri' }}</strong></span>
+          <div class="store-tag" v-if="product.sourceStore">
+            <span><strong>{{ product.sourceStore }}</strong></span>
           </div>
 
           <h1 class="product-name">{{ product.name }}</h1>
 
           <!-- Price Calculation Transparency Box (Jastip specific) -->
           <div class="jastip-price-breakdown">
-            <span class="calc-label">Rincian Perhitungan Harga Titip:</span>
             <div class="calc-formula">
-              <div class="f-item">
-                <span>Harga Toko Asal:</span>
+              <div class="f-item" v-if="product.originalPrice">
+                <span>Harga Asal:</span>
                 <strong>{{ product.originalCurrency }} {{ product.originalPrice?.toLocaleString('id-ID') }}</strong>
               </div>
-              <span class="math-op">&times; Kurs + Fee =</span>
               <div class="f-item highlight">
-                <span>Total Harga Bersih (IDR):</span>
+                <span>Harga Bersih (IDR):</span>
                 <strong class="final-price">{{ formatRupiah(product.price) }}</strong>
               </div>
             </div>
-            <span class="calc-note">*Sudah termasuk biaya titip bagasi & pajak. Tanpa biaya tersembunyi.</span>
           </div>
 
           <!-- Quota Remaining Alert -->
           <div class="quota-alert">
-            <span>Sisa kuota slot titip untuk produk ini: <strong>{{ product.quotaRemaining || 12 }} pcs lagi</strong></span>
+            <span>Sisa kuota: <strong>{{ product.quotaRemaining || 12 }} pcs</strong></span>
           </div>
 
           <!-- Variants selection if any -->
@@ -108,7 +101,7 @@
               PO Telah Ditutup
             </button>
             <div class="cta-sub-row">
-              <button class="btn-chat-admin" @click="handleChatAdmin">
+              <button v-if="!isAdmin" class="btn-chat-admin" @click="handleChatAdmin">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
@@ -165,6 +158,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useAuth } from '../../../composables/useAuth'
 import { useCustomerChat } from '../../../composables/useCustomerChat'
 import { useWishlist } from '../../../composables/useWishlist'
 import type { ApiProduct } from '../../../composables/useProducts'
@@ -172,6 +166,8 @@ import type { ApiProduct } from '../../../composables/useProducts'
 const route = useRoute()
 const tripSlug = route.params.tripSlug as string
 const slug = route.params.slug as string
+const { currentUser } = useAuth()
+const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff')
 const { openChat, openChatWithProduct } = useCustomerChat()
 const { isWishlisted, toggleWishlist } = useWishlist()
 
@@ -570,7 +566,6 @@ const handleChatAdmin = () => {
   color: #D32F2F;
   background: #FFF1F0;
   font-weight: 700;
-}
 }
 
 .guarantee-box {

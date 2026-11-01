@@ -4,16 +4,11 @@
       <div class="breadcrumb">
         <NuxtLink to="/">Beranda</NuxtLink>
         <span>/</span>
-        <span class="active">Wishlist Favorit Saya</span>
+        <span class="active">Wishlist</span>
       </div>
 
       <div class="page-header">
-        <div class="title-wrap">
-          <h1 class="page-title">Daftar Produk Favorit (Wishlist)</h1>
-          <p class="page-subtitle">
-            Simpan barang ready stock dan produk jastip incaran Anda sebelum kehabisan stok atau kuota PO tutup.
-          </p>
-        </div>
+        <h1 class="page-title">Wishlist</h1>
 
         <!-- Guest Warning Banner -->
         <div v-if="!isAuthenticated && displayItems.length > 0" class="guest-banner">
@@ -141,6 +136,7 @@
               <!-- Secondary Row: Chat Admin & Detail Link -->
               <div class="action-sub-row">
                 <button 
+                  v-if="!isAdmin"
                   class="btn-chat-action" 
                   @click="handleChatWithAdmin(item)" 
                   title="Kirim produk ini ke Live Chat Admin"
@@ -167,16 +163,11 @@
 
       <!-- Completely Empty State -->
       <div v-else class="empty-state">
-        <div class="empty-icon-wrap">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#D8B978" stroke-width="1.5">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </div>
-        <h3>Wishlist Anda Masih Kosong</h3>
-        <p>Belum ada produk favorit yang Anda simpan. Temukan tas, baju, sepatu, dan aksesoris mewah impian Anda sekarang!</p>
+        <h3>Wishlist Kosong</h3>
+        <p>Belum ada produk favorit yang disimpan.</p>
         <div class="empty-cta-row">
-          <NuxtLink to="/ready" class="btn-explore-ready">Katalog Ready Stock</NuxtLink>
-          <NuxtLink to="/jastip" class="btn-explore-jastip">Jadwal Trip Jastip</NuxtLink>
+          <NuxtLink to="/ready" class="btn-explore-ready">Ready Stock</NuxtLink>
+          <NuxtLink to="/jastip" class="btn-explore-jastip">Jadwal Jastip</NuxtLink>
         </div>
       </div>
     </div>
@@ -191,7 +182,8 @@ import { useCustomerChat } from '../composables/useCustomerChat'
 import { useToast } from '../composables/useToast'
 import type { ApiProduct } from '../composables/useProducts'
 
-const { isAuthenticated } = useAuth()
+const { isAuthenticated, currentUser } = useAuth()
+const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff')
 const { wishlistItems, wishlistProductIds, removeWishlist, fetchWishlist } = useWishlist()
 const { openChatWithProduct } = useCustomerChat()
 const { showToast } = useToast()

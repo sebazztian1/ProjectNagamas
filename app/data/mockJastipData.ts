@@ -482,25 +482,7 @@ export const mockOrders: Order[] = [
   }
 ]
 
-export const mockProductRequests: ProductRequest[] = [
-  {
-    id: 'req-01',
-    userId: 'user-01',
-    userName: 'Siti Rahmawati',
-    productName: 'Pokemon Center Tokyo Pikachu Kimono Plush Doll Limited',
-    description: 'Boneka Pikachu berbusana kimono musim gugur edisi terbatas Pokemon Center Tokyo Station. Mohon carikan yang jahitan mukanya rapi.',
-    targetCountry: 'Jepang',
-    tripId: 'trip-jpn-01',
-    tripTitle: 'Japan Autumn Special Trip 2026',
-    referenceImageUrl: 'https://images.unsplash.com/photo-1613771404784-3a5686aa2be3?auto=format&fit=crop&w=800&q=80',
-    referenceLink: 'https://www.pokemoncenter-online.com',
-    status: 'quoted',
-    quotedPrice: 420000,
-    quoteNote: 'Estimasi harga di store JPY 2,800 + fee jastip Rp50.000 + bubble wrap. Tersedia di store Tokyo Station.',
-    quoteExpiresAt: '2026-10-18T23:59:59Z',
-    createdAt: '2026-10-02 11:00'
-  }
-]
+export const mockProductRequests: ProductRequest[] = []
 
 export const mockNotifications: AppNotification[] = [
   {
@@ -512,16 +494,6 @@ export const mockNotifications: AppNotification[] = [
     linkUrl: '/orders/JST-20261002-001',
     isRead: false,
     createdAt: '2 jam yang lalu'
-  },
-  {
-    id: 'notif-02',
-    userId: 'user-01',
-    type: 'request',
-    title: 'Penawaran Harga Masuk',
-    body: 'Admin telah memberikan penawaran harga untuk request boneka Pikachu Kimono Anda (Rp420.000). Silakan review & setujui.',
-    linkUrl: '/request',
-    isRead: false,
-    createdAt: '5 jam yang lalu'
   }
 ]
 

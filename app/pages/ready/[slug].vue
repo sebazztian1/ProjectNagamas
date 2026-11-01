@@ -15,12 +15,6 @@
         <div class="gallery-col">
           <div class="main-image">
             <img :src="activeImage" :alt="product.name" />
-            <span class="badge-ready">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
-                <polyline points="20 6 9 17 4 12"></polyline>
-              </svg>
-              Ready Stock - Siap Kirim
-            </span>
           </div>
 
           <div v-if="product.gallery && product.gallery.length > 1" class="thumbnail-row">
@@ -36,24 +30,22 @@
           </div>
         </div>
 
-          <!-- Info / Buying Action -->
+        <!-- Info / Buying Action -->
         <div class="info-col">
-          <div class="origin-tag">
-            <span>Produk Impor Asli ({{ product.sourceStore || 'Store Resmi' }})</span>
+          <div class="origin-tag" v-if="product.sourceStore">
+            <span>{{ product.sourceStore }}</span>
           </div>
 
           <h1 class="product-name">{{ product.name }}</h1>
 
           <div class="rating-stock-row">
             <div class="stock-pill" :class="{ 'out': !product.inStock }">
-              Status Stok: <strong>{{ product.inStock ? 'Tersedia (' + product.stockQuantity + ' pcs)' : 'Habis' }}</strong>
+              <strong>{{ product.inStock ? 'Stok: ' + product.stockQuantity + ' pcs' : 'Stok Habis' }}</strong>
             </div>
           </div>
 
           <div class="price-box">
-            <span class="price-label">Harga Barang Ready:</span>
             <div class="price-amount">{{ formatRupiah(product.price) }}</div>
-            <span class="tax-note">*Harga pas di toko (tanpa biaya jastip tambahan).</span>
           </div>
 
           <!-- Variants selection if any -->
@@ -98,7 +90,7 @@
               Stok Habis
             </button>
             <div class="cta-sub-row">
-              <button class="btn-chat-admin" @click="handleChatAdmin">
+              <button v-if="!isAdmin" class="btn-chat-admin" @click="handleChatAdmin">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
@@ -148,11 +140,14 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
+import { useAuth } from '../../composables/useAuth'
 import { useCustomerChat } from '../../composables/useCustomerChat'
 import { useWishlist } from '../../composables/useWishlist'
 import type { ApiProduct } from '../../composables/useProducts'
 
 const route = useRoute()
+const { currentUser } = useAuth()
+const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff')
 const { openChat, openChatWithProduct } = useCustomerChat()
 const { isWishlisted, toggleWishlist } = useWishlist()
 

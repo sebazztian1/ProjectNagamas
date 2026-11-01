@@ -1,10 +1,7 @@
 <template>
   <div class="admin-audit-page">
     <div class="page-head">
-      <div>
-        <h1 class="page-title">Audit Log Aktivitas</h1>
-        <p class="page-subtitle">Rekam jejak tindakan admin dalam memverifikasi transfer, mengubah status trip jastip, dan input penawaran harga.</p>
-      </div>
+      <h1 class="page-title">Audit Log</h1>
     </div>
 
     <div class="table-card">

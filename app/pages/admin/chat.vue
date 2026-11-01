@@ -1,117 +1,383 @@
 <template>
   <div class="admin-chat-page">
     <div class="page-head">
-      <div>
-        <h1 class="page-title">Live Chat & Notifikasi Masuk</h1>
-        <p class="page-subtitle">Balas pertanyaan calon pembeli seputar detail produk, stok fisik toko Jakarta, maupun request trip luar negeri.</p>
-      </div>
+      <h1 class="page-title">Live Chat Pelanggan</h1>
     </div>
 
     <div class="chat-inbox-card">
       <!-- Conversation List -->
       <div class="inbox-sidebar">
         <div class="inbox-search">
-          <input v-model="search" type="text" placeholder="Cari nama customer..." />
+          <input v-model="search" type="text" placeholder="Cari username / no. WhatsApp..." />
         </div>
 
         <div class="customer-room-list">
-          <div 
-            v-for="c in customers" 
-            :key="c.id"
+          <div v-if="filteredRooms.length === 0" class="empty-rooms">
+            Belum ada ruang percakapan.
+          </div>
+
+          <div
+            v-for="r in filteredRooms"
+            :key="r.id"
             class="cust-room-item"
-            :class="{ active: activeCust.id === c.id }"
-            @click="activeCust = c"
+            :class="{ active: activeRoom?.id === r.id }"
+            @click="selectRoom(r)"
           >
-            <div class="cust-avatar">{{ c.name.charAt(0) }}</div>
+            <div class="cust-avatar">{{ r.customerUsername.charAt(0).toUpperCase() }}</div>
             <div class="cust-meta">
               <div class="cust-top">
-                <span class="cust-name">{{ c.name }}</span>
-                <span class="cust-time">{{ c.time }}</span>
+                <span class="cust-name">@{{ r.customerUsername }}</span>
+                <span class="cust-time">{{ formatRoomTime(r.updatedAt) }}</span>
               </div>
-              <p class="cust-preview">{{ c.lastMsg }}</p>
+              <div class="cust-bottom">
+                <p class="cust-preview">{{ r.lastMessage || 'Belum ada pesan' }}</p>
+                <span v-if="r.unreadAdminCount > 0" class="unread-pill">{{ r.unreadAdminCount }}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
 
       <!-- Active Conversation Area -->
-      <div class="inbox-conversation">
+      <div v-if="activeRoom" class="inbox-conversation">
         <div class="conv-header">
           <div class="user-info">
-            <strong>{{ activeCust.name }}</strong>
-            <span class="user-phone">{{ activeCust.phone }}</span>
+            <strong>@{{ activeRoom.customerUsername }}</strong>
+            <span class="user-phone">{{ activeRoom.customerPhone }}</span>
           </div>
-          <span class="active-badge">&bull; Sesi Chat Aktif</span>
+          <span class="active-badge">&bull; Realtime Aktif</span>
         </div>
 
         <!-- Chat Stream -->
-        <div class="chat-bubbles-area">
-          <div 
-            v-for="(m, i) in activeCust.messages" 
-            :key="i"
+        <div ref="messagesArea" class="chat-bubbles-area">
+          <div v-if="messages.length === 0" class="empty-stream">
+            Belum ada pesan pada ruang chat ini.
+          </div>
+
+          <div
+            v-for="m in messages"
+            :key="m.id"
             class="bubble-row"
-            :class="{ 'admin-reply': m.sender === 'admin' }"
+            :class="{ 'admin-reply': m.senderRole === 'admin' || m.senderRole === 'staff' }"
           >
             <div class="chat-bubble">
-              <span class="sender-name">{{ m.sender === 'admin' ? 'Admin dbb_luxe' : activeCust.name }}</span>
-              <p>{{ m.text }}</p>
-              <span class="time-stamp">{{ m.time }}</span>
+              <span class="sender-name">
+                {{ m.senderRole === 'admin' || m.senderRole === 'staff' ? 'Admin dbb_luxe' : '@' + activeRoom.customerUsername }}
+              </span>
+
+              <!-- Shared Product Card -->
+              <NuxtLink
+                v-if="m.product"
+                :to="m.product.productType === 'jastip' && m.product.tripSlug ? `/jastip/${m.product.tripSlug}/${m.product.slug}` : `/ready/${m.product.slug}`"
+                target="_blank"
+                class="msg-product-card"
+              >
+                <img v-if="m.product.imageUrl" :src="m.product.imageUrl" :alt="m.product.name" class="msg-prod-img" />
+                <div class="msg-prod-meta">
+                  <span class="msg-prod-type">{{ m.product.productType === 'jastip' ? 'Jastip' : 'Ready Stock' }}</span>
+                  <strong class="msg-prod-title">{{ m.product.name }}</strong>
+                  <span class="msg-prod-price">{{ formatRupiah(m.product.price) }}</span>
+                </div>
+              </NuxtLink>
+
+              <!-- Shared Image -->
+              <a v-if="m.imageUrl" :href="m.imageUrl" target="_blank" rel="noopener" class="msg-img-wrap">
+                <img :src="m.imageUrl" alt="Lampiran" class="msg-img" />
+              </a>
+
+              <p v-if="m.content">{{ m.content }}</p>
+              <span class="time-stamp">{{ formatMsgTime(m.createdAt) }}</span>
             </div>
           </div>
         </div>
 
         <!-- Reply Input Bar -->
         <form @submit.prevent="sendAdminReply" class="admin-input-bar">
-          <input v-model="replyText" type="text" placeholder="Ketik balasan admin ke customer..." required />
-          <button type="submit" class="btn-reply">Kirim Balasan</button>
+          <input
+            ref="fileInput"
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style="display: none"
+            @change="handleAdminImageUpload"
+          />
+          <button
+            type="button"
+            class="btn-attach"
+            title="Kirim gambar"
+            :disabled="isUploading"
+            @click="fileInput?.click()"
+          >
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+              <circle cx="9" cy="9" r="2"></circle>
+              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+            </svg>
+          </button>
+          <input
+            v-model="replyText"
+            type="text"
+            placeholder="Ketik balasan admin ke customer..."
+          />
+          <button type="submit" class="btn-reply" :disabled="isSending || !replyText.trim()">
+            {{ isSending ? '...' : 'Kirim Balasan' }}
+          </button>
         </form>
+      </div>
+
+      <div v-else class="inbox-empty-placeholder">
+        <p>Pilih percakapan pelanggan di sebelah kiri untuk mulai membalas pesan.</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import Ably from 'ably'
+import { useToast } from '../../composables/useToast'
+
+definePageMeta({
+  middleware: 'admin'
+})
+
+const route = useRoute()
+const { showToast } = useToast()
 
 const search = ref('')
 const replyText = ref('')
+const isSending = ref(false)
+const isUploading = ref(false)
+const fileInput = ref<HTMLInputElement | null>(null)
+const messagesArea = ref<HTMLElement | null>(null)
 
-const customers = ref([
-  {
-    id: 'c-1',
-    name: 'Siti Rahmawati',
-    phone: '0812-3456-7890',
-    time: '10:30',
-    lastMsg: 'Apakah produk SK-II ini asli beli di Jepang?',
-    messages: [
-      { sender: 'customer', text: 'Halo admin, apakah produk SK-II ini asli beli di Jepang?', time: '10:28' },
-      { sender: 'admin', text: 'Halo kak Siti! Betul 100% original dari Don Quijote Tokyo ya, struk resmi toko akan kami sertakan.', time: '10:30' }
-    ]
-  },
-  {
-    id: 'c-2',
-    name: 'Budi Santoso',
-    phone: '0819-8765-4321',
-    time: '09:12',
-    lastMsg: 'Kak kalau titip sepatu Onitsuka Tiger bisa?',
-    messages: [
-      { sender: 'customer', text: 'Kak kalau titip sepatu Onitsuka Tiger size 42 di trip Jepang nanti bisa?', time: '09:10' },
-      { sender: 'admin', text: 'Bisa banget kak Budi! Silakan submit di menu Request Titip Produk ya, nanti kami cek harga store Jepangnya.', time: '09:12' }
-    ]
-  }
-])
+const rooms = ref<any[]>([])
+const activeRoom = ref<any | null>(null)
+const messages = ref<any[]>([])
 
-const activeCust = ref(customers.value[0])
+let ablyClient: Ably.Realtime | null = null
+let inboxChannel: Ably.RealtimeChannel | null = null
+let activeRoomChannel: Ably.RealtimeChannel | null = null
 
-const sendAdminReply = () => {
-  if (!replyText.value.trim()) return
+const filteredRooms = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return rooms.value
+  return rooms.value.filter(
+    r =>
+      r.customerUsername?.toLowerCase().includes(q) ||
+      r.customerPhone?.toLowerCase().includes(q) ||
+      r.lastMessage?.toLowerCase().includes(q)
+  )
+})
 
-  activeCust.value.messages.push({
-    sender: 'admin',
-    text: replyText.value,
-    time: 'Baru saja'
+const formatRupiah = (val: number) => 'Rp ' + Number(val || 0).toLocaleString('id-ID')
+
+const formatMsgTime = (dateStr?: string) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+}
+
+const formatRoomTime = (dateStr?: string) => {
+  if (!dateStr) return ''
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return ''
+  return d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+}
+
+const scrollToBottom = () => {
+  nextTick(() => {
+    if (messagesArea.value) {
+      messagesArea.value.scrollTop = messagesArea.value.scrollHeight
+    }
   })
-  replyText.value = ''
+}
+
+const subscribeToRoom = async (roomId: number) => {
+  if (!ablyClient) return
+  try {
+    if (activeRoomChannel) {
+      activeRoomChannel.unsubscribe()
+    }
+    activeRoomChannel = ablyClient.channels.get(`chat:room-${roomId}`)
+    await activeRoomChannel.subscribe('new-message', (msg) => {
+      const incoming = msg.data
+      if (!messages.value.some(m => String(m.id) === String(incoming.id))) {
+        messages.value.push(incoming)
+        scrollToBottom()
+      }
+      if (incoming.senderRole === 'customer') {
+        $fetch('/api/chat/read', { method: 'POST', body: { roomId } }).catch(() => {})
+      }
+    })
+  } catch (err) {
+    // Non-blocking
+  }
+}
+
+const selectRoom = async (roomItem: any) => {
+  try {
+    const res = await $fetch<{ room: any; messages: any[] }>('/api/chat/room', {
+      query: { roomId: roomItem.id }
+    })
+    if (res?.room) {
+      activeRoom.value = res.room
+      messages.value = res.messages || []
+      const idx = rooms.value.findIndex(r => r.id === res.room.id)
+      if (idx !== -1) {
+        rooms.value[idx].unreadAdminCount = 0
+      }
+      scrollToBottom()
+      await subscribeToRoom(res.room.id)
+    }
+  } catch (err: any) {
+    showToast('Gagal Memuat', err?.data?.message || 'Gagal membuka percakapan', 'warning')
+  }
+}
+
+const fetchRooms = async () => {
+  try {
+    const list = await $fetch<any[]>('/api/chat/rooms')
+    rooms.value = list || []
+
+    // Check if ?userId=... was passed from /admin/request
+    const targetUserId = route.query.userId ? Number(route.query.userId) : null
+    if (targetUserId && !isNaN(targetUserId)) {
+      const res = await $fetch<{ room: any; messages: any[] }>('/api/chat/room', {
+        query: { customerId: targetUserId }
+      })
+      if (res?.room) {
+        if (!rooms.value.some(r => r.id === res.room.id)) {
+          rooms.value.unshift(res.room)
+        }
+        activeRoom.value = res.room
+        messages.value = res.messages || []
+        scrollToBottom()
+        await subscribeToRoom(res.room.id)
+        return
+      }
+    }
+
+    if (rooms.value.length > 0 && !activeRoom.value) {
+      await selectRoom(rooms.value[0])
+    }
+  } catch (err) {
+    // Non-blocking
+  }
+}
+
+const initAblyAdmin = async () => {
+  if (import.meta.server) return
+  try {
+    ablyClient = new Ably.Realtime({
+      authUrl: '/api/chat/token'
+    })
+    inboxChannel = ablyClient.channels.get('chat:admin-inbox')
+    await inboxChannel.subscribe('room-updated', (event) => {
+      const updated = event.data
+      const existingIdx = rooms.value.findIndex(r => r.id === updated.id)
+      if (existingIdx !== -1) {
+        const isCurrentActive = activeRoom.value?.id === updated.id
+        rooms.value[existingIdx] = {
+          ...rooms.value[existingIdx],
+          lastMessage: updated.lastMessage,
+          unreadAdminCount: isCurrentActive ? 0 : updated.unreadAdminCount,
+          updatedAt: updated.updatedAt
+        }
+        // Move updated room to top
+        const [moved] = rooms.value.splice(existingIdx, 1)
+        rooms.value.unshift(moved)
+      } else {
+        rooms.value.unshift(updated)
+      }
+
+      if (updated.latestMessage?.senderRole === 'customer' && activeRoom.value?.id !== updated.id) {
+        showToast(
+          `Pesan Baru dari @${updated.customerUsername}`,
+          updated.lastMessage || 'Mengirim pesan baru',
+          'info'
+        )
+      }
+    })
+  } catch (err) {
+    // Ably belum dikonfigurasi
+  }
+}
+
+onMounted(async () => {
+  await initAblyAdmin()
+  await fetchRooms()
+})
+
+onBeforeUnmount(() => {
+  activeRoomChannel?.unsubscribe()
+  inboxChannel?.unsubscribe()
+  ablyClient?.close()
+})
+
+const sendAdminReply = async () => {
+  if (!replyText.value.trim() || !activeRoom.value) return
+  isSending.value = true
+  try {
+    const text = replyText.value.trim()
+    replyText.value = ''
+    const sent = await $fetch<any>('/api/chat/send', {
+      method: 'POST',
+      body: {
+        roomId: activeRoom.value.id,
+        messageType: 'text',
+        content: text
+      }
+    })
+    if (!messages.value.some(m => String(m.id) === String(sent.id))) {
+      messages.value.push(sent)
+      scrollToBottom()
+    }
+  } catch (err: any) {
+    showToast('Gagal Mengirim', err?.data?.message || 'Gagal mengirim balasan', 'warning')
+  } finally {
+    isSending.value = false
+  }
+}
+
+const handleAdminImageUpload = async (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file || !activeRoom.value) return
+
+  isUploading.value = true
+  try {
+    const fd = new FormData()
+    fd.append('folder', 'chat')
+    fd.append('file', file)
+
+    const uploaded = await $fetch<{ url: string }>('/api/upload', {
+      method: 'POST',
+      body: fd
+    })
+
+    if (uploaded?.url) {
+      const sent = await $fetch<any>('/api/chat/send', {
+        method: 'POST',
+        body: {
+          roomId: activeRoom.value.id,
+          messageType: 'image',
+          imageUrl: uploaded.url,
+          content: replyText.value.trim() || null
+        }
+      })
+      replyText.value = ''
+      if (!messages.value.some(m => String(m.id) === String(sent.id))) {
+        messages.value.push(sent)
+        scrollToBottom()
+      }
+    }
+  } catch (err: any) {
+    showToast('Gagal Upload', err?.data?.message || 'Gagal mengunggah gambar', 'warning')
+  } finally {
+    isUploading.value = false
+    if (fileInput.value) fileInput.value.value = ''
+  }
 }
 </script>
 
@@ -129,18 +395,13 @@ const sendAdminReply = () => {
   margin-bottom: 4px;
 }
 
-.page-subtitle {
-  font-size: 0.88rem;
-  color: var(--color-text-muted, #7A6A55);
-}
-
 .chat-inbox-card {
   background: #ffffff;
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   display: grid;
   grid-template-columns: 320px 1fr;
-  height: 600px;
+  height: 620px;
   overflow: hidden;
 }
 
@@ -162,11 +423,19 @@ const sendAdminReply = () => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.82rem;
   outline: none;
+  box-sizing: border-box;
 }
 
 .customer-room-list {
   overflow-y: auto;
   flex: 1;
+}
+
+.empty-rooms {
+  padding: 32px 16px;
+  text-align: center;
+  font-size: 0.84rem;
+  color: var(--color-text-muted, #7A6A55);
 }
 
 .cust-room-item {
@@ -223,18 +492,50 @@ const sendAdminReply = () => {
   color: var(--color-text-muted, #7A6A55);
 }
 
+.cust-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
 .cust-preview {
   font-size: 0.76rem;
   color: var(--color-text-muted, #7A6A55);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  margin: 0;
 }
 
-/* Conversation */
+.unread-pill {
+  background: var(--color-danger, #A33A2A);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .inbox-conversation {
   display: flex;
   flex-direction: column;
+  background: var(--color-canvas, #FFFBF2);
+  height: 100%;
+  overflow: hidden;
+}
+
+.inbox-empty-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted, #7A6A55);
+  font-size: 0.9rem;
   background: var(--color-canvas, #FFFBF2);
 }
 
@@ -273,6 +574,12 @@ const sendAdminReply = () => {
   gap: 12px;
 }
 
+.empty-stream {
+  margin: auto;
+  color: var(--color-text-muted, #7A6A55);
+  font-size: 0.86rem;
+}
+
 .bubble-row {
   display: flex;
   justify-content: flex-start;
@@ -306,6 +613,66 @@ const sendAdminReply = () => {
   opacity: 0.8;
 }
 
+.msg-product-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  border-radius: 8px;
+  background: rgba(255, 251, 242, 0.95);
+  color: #2B2116;
+  text-decoration: none;
+  margin-bottom: 8px;
+  border: 1px solid #EFE1C6;
+}
+
+.msg-prod-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.msg-prod-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.msg-prod-type {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #8C6D3F;
+  text-transform: uppercase;
+}
+
+.msg-prod-title {
+  font-size: 0.78rem;
+  color: #2B2116;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.msg-prod-price {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #8C6D3F;
+}
+
+.msg-img-wrap {
+  display: block;
+  margin-bottom: 6px;
+}
+
+.msg-img {
+  max-width: 220px;
+  max-height: 220px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
 .time-stamp {
   display: block;
   font-size: 0.65rem;
@@ -322,7 +689,16 @@ const sendAdminReply = () => {
   gap: 10px;
 }
 
-.admin-input-bar input {
+.btn-attach {
+  background: none;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  padding: 8px 10px;
+  border-radius: 8px;
+  color: var(--color-text-muted, #7A6A55);
+  cursor: pointer;
+}
+
+.admin-input-bar input[type="text"] {
   flex: 1;
   padding: 10px 14px;
   border-radius: 8px;
@@ -340,5 +716,10 @@ const sendAdminReply = () => {
   font-size: 0.85rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.btn-reply:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

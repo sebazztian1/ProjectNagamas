@@ -1,11 +1,8 @@
 <template>
   <div class="admin-settings-page">
     <div class="page-head">
-      <div>
-        <h1 class="page-title">Pengaturan Toko & Rekening Bank</h1>
-        <p class="page-subtitle">Atur nomor rekening tujuan transfer manual, gambar QRIS statis, kurs harian, dan kebijakan toko dbb_luxe.</p>
-      </div>
-      <button class="btn-save-all" @click="saveSettings">Simpan Seluruh Pengaturan</button>
+      <h1 class="page-title">Pengaturan Toko</h1>
+      <button class="btn-save-all" @click="saveSettings">Simpan Pengaturan</button>
     </div>
 
     <div class="settings-grid">
