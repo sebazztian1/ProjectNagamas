@@ -1,5 +1,5 @@
 import { defineEventHandler, createError } from 'h3'
-import { getSessionFromEvent } from '../../utils/session'
+import { getSessionFromEvent, clearSessionCookie } from '../../utils/session'
 import { prisma } from '../../utils/prisma'
 import { requireAblyRest } from '../../utils/ably'
 
@@ -7,6 +7,20 @@ export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
   if (!session) {
     throw createError({ statusCode: 401, message: 'Harus login untuk mengakses live chat' })
+  }
+
+  // Validate that the user in session actually exists in the current database
+  const user = await prisma.users.findUnique({
+    where: { id: session.userId },
+    select: { id: true, is_active: true }
+  })
+
+  if (!user || !user.is_active) {
+    clearSessionCookie(event)
+    throw createError({
+      statusCode: 401,
+      message: 'Sesi akun tidak valid atau sudah tidak ada di database. Silakan masuk kembali.'
+    })
   }
 
   const ably = requireAblyRest()

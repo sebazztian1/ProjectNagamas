@@ -1,5 +1,5 @@
 import { defineEventHandler, readBody, createError } from 'h3'
-import { getSessionFromEvent } from '../../utils/session'
+import { getSessionFromEvent, clearSessionCookie } from '../../utils/session'
 import { prisma } from '../../utils/prisma'
 import { useAblyRest } from '../../utils/ably'
 
@@ -7,6 +7,16 @@ export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
   if (!session) {
     throw createError({ statusCode: 401, message: 'Harus login untuk mengirim pesan' })
+  }
+
+  // Ensure sender still exists in database
+  const currentUser = await prisma.users.findUnique({
+    where: { id: session.userId },
+    select: { id: true, is_active: true }
+  })
+  if (!currentUser || !currentUser.is_active) {
+    clearSessionCookie(event)
+    throw createError({ statusCode: 401, message: 'Sesi akun kedaluwarsa. Silakan masuk kembali.' })
   }
 
   const body = await readBody(event)

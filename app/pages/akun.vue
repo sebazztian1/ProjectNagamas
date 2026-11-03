@@ -9,7 +9,7 @@
 
       <div class="page-header">
         <h1 class="page-title">Pengaturan Akun</h1>
-        <p class="page-subtitle">Kelola informasi data diri, nomor WhatsApp untuk notifikasi jastip, dan kata sandi akun Anda.</p>
+        <p class="page-subtitle">Kelola informasi data diri, nomor WhatsApp, dan kata sandi akun Anda.</p>
       </div>
 
       <!-- Admin / Staff Access Banner -->
@@ -80,23 +80,119 @@
           <form @submit.prevent="handleChangePassword" class="acc-form">
             <div class="form-group">
               <label>Kata Sandi Saat Ini:</label>
-              <input v-model="pass.current" type="password" placeholder="••••••••" required />
+              <div class="input-wrap">
+                <input
+                  v-model="pass.current"
+                  :type="showPassCurrent ? 'text' : 'password'"
+                  placeholder="••••••••"
+                  required
+                />
+                <button
+                  type="button"
+                  class="toggle-eye"
+                  :aria-label="showPassCurrent ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+                  @click="showPassCurrent = !showPassCurrent"
+                >
+                  {{ showPassCurrent ? 'Sembunyikan' : 'Tampilkan' }}
+                </button>
+              </div>
             </div>
 
             <div class="form-group">
               <label>Kata Sandi Baru:</label>
-              <input v-model="pass.newPass" type="password" placeholder="Minimal 6 karakter" minlength="6" required />
+              <div class="input-wrap">
+                <input
+                  v-model="pass.newPass"
+                  :type="showPassNew ? 'text' : 'password'"
+                  placeholder="Minimal 12 karakter"
+                  minlength="12"
+                  maxlength="128"
+                  required
+                />
+                <button
+                  type="button"
+                  class="toggle-eye"
+                  :aria-label="showPassNew ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+                  @click="showPassNew = !showPassNew"
+                >
+                  {{ showPassNew ? 'Sembunyikan' : 'Tampilkan' }}
+                </button>
+              </div>
+              <span class="field-hint">
+                Minimal 12 karakter. Boleh pakai kalimat, contoh: kucingku suka makan ikan
+              </span>
             </div>
 
             <div class="form-group">
               <label>Konfirmasi Kata Sandi Baru:</label>
-              <input v-model="pass.confirmPass" type="password" placeholder="Ulangi kata sandi baru" minlength="6" required />
+              <div class="input-wrap">
+                <input
+                  v-model="pass.confirmPass"
+                  :type="showPassConfirm ? 'text' : 'password'"
+                  placeholder="Ulangi kata sandi baru"
+                  minlength="12"
+                  maxlength="128"
+                  required
+                />
+                <button
+                  type="button"
+                  class="toggle-eye"
+                  :aria-label="showPassConfirm ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'"
+                  @click="showPassConfirm = !showPassConfirm"
+                >
+                  {{ showPassConfirm ? 'Sembunyikan' : 'Tampilkan' }}
+                </button>
+              </div>
             </div>
 
             <button type="submit" class="btn-change-pass" :disabled="isChangingPassword">
               {{ isChangingPassword ? 'Memperbarui...' : 'Ubah Kata Sandi' }}
             </button>
           </form>
+
+          <!-- Recovery Code Section -->
+          <div class="recovery-box-section">
+            <div class="recovery-box-head">
+              <div>
+                <strong class="recovery-section-title">Kode Pemulihan Akun</strong>
+                <p class="recovery-section-desc">
+                  Dipakai untuk mereset kata sandi jika Anda lupa. Kode ini dapat digunakan berkali-kali.
+                </p>
+              </div>
+            </div>
+
+            <div class="code-view-card">
+              <span class="code-text-mono" role="text">{{ recoveryData.code || 'Memuat...' }}</span>
+              <button type="button" class="btn-copy-mini" @click="copyAccountRecoveryCode">
+                {{ copyCodeSuccess ? '✓ Tersalin' : 'Salin Kode' }}
+              </button>
+            </div>
+
+            <div class="shuffle-control-row">
+              <button
+                type="button"
+                class="btn-shuffle"
+                :disabled="!recoveryData.canShuffle || isShuffling"
+                @click="shuffleRecoveryCode"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="16 3 21 3 21 8"></polyline>
+                  <line x1="4" y1="20" x2="21" y2="3"></line>
+                  <polyline points="21 16 21 21 16 21"></polyline>
+                  <line x1="15" y1="15" x2="21" y2="21"></line>
+                  <line x1="4" y1="4" x2="9" y2="9"></line>
+                </svg>
+                <span>{{ isShuffling ? 'Mengacak...' : 'Acak Ulang Kode (Shuffle)' }}</span>
+              </button>
+
+              <span v-if="!recoveryData.canShuffle" class="shuffle-wait-badge">
+                ⏳ Dapat diacak ulang dalam {{ recoveryData.remainingHours }} jam lagi (Jeda 3 hari)
+              </span>
+              <span v-else class="shuffle-ready-badge">
+                ✓ Siap diacak ulang
+              </span>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -130,8 +226,86 @@ const pass = ref({
   confirmPass: ''
 })
 
+const showPassCurrent = ref(false)
+const showPassNew = ref(false)
+const showPassConfirm = ref(false)
+
 const isSavingProfile = ref(false)
 const isChangingPassword = ref(false)
+
+const recoveryData = ref({
+  code: '',
+  canShuffle: false,
+  remainingHours: 72,
+  remainingDays: 3
+})
+const isShuffling = ref(false)
+const copyCodeSuccess = ref(false)
+
+const loadRecoveryCode = async () => {
+  try {
+    const res = await $fetch<{
+      recoveryCode: string
+      canShuffle: boolean
+      nextAvailableInHours: number
+      nextAvailableInDays: number
+    }>('/api/auth/recovery-code')
+
+    recoveryData.value = {
+      code: res.recoveryCode,
+      canShuffle: res.canShuffle,
+      remainingHours: res.nextAvailableInHours,
+      remainingDays: res.nextAvailableInDays
+    }
+  } catch {
+    // Ignore error
+  }
+}
+
+const copyAccountRecoveryCode = async () => {
+  if (!recoveryData.value.code) return
+  try {
+    await navigator.clipboard.writeText(recoveryData.value.code)
+    copyCodeSuccess.value = true
+    showToast('Kode Disalin', 'Kode pemulihan Anda berhasil disalin.', 'success')
+    setTimeout(() => {
+      copyCodeSuccess.value = false
+    }, 2500)
+  } catch {
+    showToast('Kode Pemulihan', recoveryData.value.code, 'info')
+  }
+}
+
+const shuffleRecoveryCode = async () => {
+  if (!recoveryData.value.canShuffle) return
+  if (!confirm('Yakin ingin mengacak ulang kode pemulihan akun Anda? Kode lama akan langsung tidak berlaku.')) return
+
+  isShuffling.value = true
+  try {
+    const res = await $fetch<{
+      success: boolean
+      message: string
+      recoveryCode: string
+      canShuffle: boolean
+      nextAvailableInHours: number
+      nextAvailableInDays: number
+    }>('/api/auth/recovery-code', {
+      method: 'POST'
+    })
+
+    recoveryData.value = {
+      code: res.recoveryCode,
+      canShuffle: res.canShuffle,
+      remainingHours: res.nextAvailableInHours,
+      remainingDays: res.nextAvailableInDays
+    }
+    showToast('Kode Diacak Ulang', 'Kode pemulihan baru berhasil dibuat.', 'success')
+  } catch (err: any) {
+    showToast('Gagal Mengacak Kode', err?.data?.message || 'Terjadi kesalahan.', 'warning')
+  } finally {
+    isShuffling.value = false
+  }
+}
 
 const userRoleLabel = computed(() => {
   if (currentUser.value?.role === 'admin') return 'Administrator Toko'
@@ -148,6 +322,7 @@ const populateUserData = () => {
 
 onMounted(() => {
   populateUserData()
+  loadRecoveryCode()
 })
 
 watch(currentUser, () => {
@@ -171,13 +346,47 @@ const saveProfile = async () => {
 }
 
 const handleChangePassword = async () => {
+  if (!pass.value.current) {
+    showToast('Kata Sandi Saat Ini Wajib Diisi', 'Silakan masukkan kata sandi Anda saat ini.', 'warning')
+    return
+  }
+
   if (pass.value.newPass !== pass.value.confirmPass) {
     showToast('Kata Sandi Tidak Cocok', 'Konfirmasi kata sandi baru tidak sama.', 'warning')
     return
   }
 
-  if (pass.value.newPass.length < 6) {
-    showToast('Kata Sandi Terlalu Pendek', 'Kata sandi baru minimal 6 karakter.', 'warning')
+  const p = pass.value.newPass
+  const len = Array.from(p).length
+  if (len < 12) {
+    showToast('Kata Sandi Terlalu Pendek', 'Kata sandi minimal 12 karakter.', 'warning')
+    return
+  }
+
+  if (len > 128) {
+    showToast('Kata Sandi Terlalu Panjang', 'Kata sandi maksimal 128 karakter.', 'warning')
+    return
+  }
+
+  if (pass.value.current === p) {
+    showToast('Kata Sandi Sama', 'Kata sandi baru tidak boleh sama dengan kata sandi saat ini.', 'warning')
+    return
+  }
+
+  const pLower = p.toLowerCase()
+  if (pLower.includes('dbbluxe') || pLower.includes('dbb_luxe')) {
+    showToast('Kata Sandi Ditolak', 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs.', 'warning')
+    return
+  }
+
+  if (currentUser.value?.username && currentUser.value.username.length >= 3 && pLower.includes(currentUser.value.username.toLowerCase())) {
+    showToast('Kata Sandi Ditolak', 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs.', 'warning')
+    return
+  }
+
+  const phoneDigits = (currentUser.value?.phone_number || '').replace(/\D/g, '')
+  if (phoneDigits.length >= 7 && pLower.includes(phoneDigits)) {
+    showToast('Kata Sandi Ditolak', 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs.', 'warning')
     return
   }
 
@@ -193,6 +402,9 @@ const handleChangePassword = async () => {
     pass.value.current = ''
     pass.value.newPass = ''
     pass.value.confirmPass = ''
+    showPassCurrent.value = false
+    showPassNew.value = false
+    showPassConfirm.value = false
   } catch (err: any) {
     const message = err?.data?.message || err?.message || 'Gagal mengubah kata sandi.'
     showToast('Gagal Ubah Sandi', message, 'warning')
@@ -415,6 +627,36 @@ const handleChangePassword = async () => {
   border-color: var(--color-primary, #8C6D3F);
 }
 
+.input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-wrap input {
+  width: 100%;
+  padding-right: 86px;
+  box-sizing: border-box;
+}
+
+.toggle-eye {
+  position: absolute;
+  right: 6px;
+  background: none;
+  border: none;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  color: var(--color-text-muted, #7A6A55);
+  font-weight: 700;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.toggle-eye:hover {
+  color: var(--color-text, #2B2116);
+}
+
 .input-disabled {
   background: var(--color-canvas, #FFFBF2);
   color: #A8957A;
@@ -441,6 +683,121 @@ const handleChangePassword = async () => {
 
 .btn-save:hover, .btn-change-pass:hover {
   background: var(--color-primary-hover, #6F5530);
+}
+
+/* Recovery Code Section in Account Settings */
+.recovery-box-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1.5px dashed var(--color-secondary, #EFE1C6);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recovery-section-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: var(--color-text, #2B2116);
+  display: block;
+}
+
+.recovery-section-desc {
+  font-size: 0.8rem;
+  color: var(--color-text-muted, #7A6A55);
+  margin: 2px 0 0;
+  line-height: 1.4;
+}
+
+.code-view-card {
+  background: #FFFDF8;
+  border: 1.5px dashed var(--color-primary, #8C6D3F);
+  border-radius: 8px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.code-text-mono {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  font-family: monospace;
+  color: var(--color-primary, #8C6D3F);
+  user-select: all;
+}
+
+.btn-copy-mini {
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  color: var(--color-text, #2B2116);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-copy-mini:hover {
+  background: #FFFBF2;
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.shuffle-control-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.btn-shuffle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #FFFBF2;
+  border: 1.5px solid var(--color-primary, #8C6D3F);
+  color: var(--color-primary, #8C6D3F);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-shuffle:hover:not(:disabled) {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+}
+
+.btn-shuffle:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  border-color: #CBB99E;
+  color: #7A6A55;
+  background: #FAF7F2;
+}
+
+.shuffle-wait-badge {
+  font-size: 0.76rem;
+  color: #854D0E;
+  background: #FEF9C3;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.shuffle-ready-badge {
+  font-size: 0.76rem;
+  color: #166534;
+  background: #DCFCE7;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
 }
 
 @media (max-width: 800px) {
