@@ -107,7 +107,7 @@
               :type="showPassword ? 'text' : 'password'"
               autocomplete="new-password"
               maxlength="128"
-              placeholder="Minimal 12 karakter"
+              placeholder="Minimal 8 karakter (angka/simbol)"
               :aria-invalid="!!fieldErrors.password"
               :aria-describedby="fieldErrors.password ? 'err-password' : 'hint-password'"
               @blur="validateField('password')"
@@ -123,7 +123,7 @@
             </button>
           </div>
           <span id="hint-password" class="field-hint">
-            Minimal 12 karakter. Boleh pakai kalimat, contoh: kucingku suka makan ikan
+            Minimal 8 karakter dengan minimal 1 angka atau simbol
           </span>
           <span v-if="fieldErrors.password" id="err-password" class="field-error">
             {{ fieldErrors.password }}
@@ -277,26 +277,16 @@ const validateField = (field: string): boolean => {
       return false
     }
     const len = Array.from(p).length
-    if (len < 12) {
-      fieldErrors.password = 'Kata sandi minimal 12 karakter'
+    if (len < 8) {
+      fieldErrors.password = 'Kata sandi minimal 8 karakter'
       return false
     }
     if (len > 128) {
       fieldErrors.password = 'Kata sandi maksimal 128 karakter'
       return false
     }
-    const pLower = p.toLowerCase()
-    if (pLower.includes('dbbluxe') || pLower.includes('dbb_luxe')) {
-      fieldErrors.password = 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs'
-      return false
-    }
-    if (form.username && form.username.length >= 3 && pLower.includes(form.username.toLowerCase())) {
-      fieldErrors.password = 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs'
-      return false
-    }
-    const digitsOnly = form.phone.replace(/\D/g, '')
-    if (digitsOnly.length >= 7 && pLower.includes(digitsOnly)) {
-      fieldErrors.password = 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs'
+    if (!/[^a-zA-Z\s]/.test(p)) {
+      fieldErrors.password = 'Kata sandi harus mengandung minimal 1 angka atau simbol'
       return false
     }
     fieldErrors.password = ''

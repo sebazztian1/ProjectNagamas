@@ -1,5 +1,6 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { prisma } from '../../utils/prisma'
+import { normalizeProductVariants } from '../../utils/variants'
 import type { Prisma } from '@prisma/client'
 
 export default defineEventHandler(async (event) => {
@@ -111,7 +112,11 @@ export default defineEventHandler(async (event) => {
       inStock: p.stock_status === 'in_stock' && (p.stock_quantity === null || p.stock_quantity > 0),
       quota: p.quota || null,
       maxQtyPerOrder: p.max_qty_per_order || 5,
-      variants: p.variants as Record<string, string[]> | null,
+      variants: normalizeProductVariants(
+        p.variants,
+        Number(p.price),
+        p.product_type === 'ready' ? (p.stock_quantity ?? 10) : (p.quota ?? 20)
+      ),
       trip: p.jastip_trips
         ? {
             id: p.jastip_trips.id,

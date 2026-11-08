@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
 import { signPrivate } from './r2'
+import { normalizeProductVariants, findVariantCombination, syncProductVariantsTable } from './variants'
 
 const STATUS_TITLES: Record<string, string> = {
   pending_approval: 'Pesanan Diajukan (Menunggu ACC Admin)',
@@ -63,7 +64,29 @@ export async function restoreOrderStock(orderId: number) {
     const prod = item.products
     if (!prod) continue
 
-    if (prod.product_type === 'ready' && prod.stock_quantity !== null) {
+    const normVariants = normalizeProductVariants(
+      prod.variants,
+      Number(prod.price),
+      prod.product_type === 'ready' ? (prod.stock_quantity ?? 0) : (prod.quota ?? 0)
+    )
+
+    if (normVariants && normVariants.combinations.length > 0) {
+      const combo = findVariantCombination(normVariants, item.variant_snapshot)
+      if (combo) {
+        combo.stock = Math.max(0, (Number(combo.stock) || 0) + item.qty)
+      }
+      const totalStock = normVariants.combinations.reduce((sum, c) => sum + Math.max(0, Number(c.stock) || 0), 0)
+      const synced = await syncProductVariantsTable(prod.id, prod.product_type as 'ready' | 'jastip', normVariants)
+      await prisma.products.update({
+        where: { id: prod.id },
+        data: {
+          variants: synced as any,
+          stock_quantity: prod.product_type === 'ready' ? totalStock : prod.stock_quantity,
+          quota: prod.product_type === 'jastip' ? totalStock : prod.quota,
+          stock_status: totalStock > 0 ? 'in_stock' : prod.stock_status
+        }
+      })
+    } else if (prod.product_type === 'ready' && prod.stock_quantity !== null) {
       const nextStock = prod.stock_quantity + item.qty
       await prisma.products.update({
         where: { id: prod.id },

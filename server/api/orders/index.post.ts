@@ -4,6 +4,7 @@ import { getSessionFromEvent } from '../../utils/session'
 import { generateOrderCode, formatOrderResponse } from '../../utils/orders'
 import { validateAndBuildAddressSnapshot, saveUserAddress } from '../../utils/addresses'
 import { normalizeIndonesianPhone } from '../../utils/indonesiaRegions'
+import { normalizeProductVariants, findVariantCombination, syncProductVariantsTable } from '../../utils/variants'
 
 interface CheckoutItemInput {
   productId?: number
@@ -108,6 +109,8 @@ export default defineEventHandler(async (event) => {
     productId: number
     productName: string
     variant: string
+    variantKey?: string | null
+    variantId?: number | null
     qty: number
     priceAtOrder: number
     subtotal: number
@@ -210,8 +213,22 @@ export default defineEventHandler(async (event) => {
         })
       }
 
+      const normVariants = normalizeProductVariants(
+        product.variants,
+        Number(product.price),
+        product.product_type === 'ready' ? (product.stock_quantity ?? 0) : (product.quota ?? 0)
+      )
+      const matchedCombo = findVariantCombination(normVariants, variant)
+
       if (product.product_type === 'ready') {
-        if (product.stock_status !== 'in_stock' || (product.stock_quantity !== null && product.stock_quantity < qty)) {
+        if (matchedCombo) {
+          if (matchedCombo.stock < qty) {
+            throw createError({
+              statusCode: 400,
+              message: `Stok variasi "${matchedCombo.label}" untuk produk "${product.name}" tidak mencukupi (tersedia: ${matchedCombo.stock} unit).`
+            })
+          }
+        } else if (product.stock_status !== 'in_stock' || (product.stock_quantity !== null && product.stock_quantity < qty)) {
           throw createError({
             statusCode: 400,
             message: `Stok produk Ready Stock "${product.name}" tidak mencukupi (tersedia: ${product.stock_quantity ?? 0} unit).`
@@ -227,7 +244,14 @@ export default defineEventHandler(async (event) => {
             })
           }
         }
-        if (product.stock_status !== 'in_stock' || (product.quota !== null && product.quota < qty)) {
+        if (matchedCombo) {
+          if (matchedCombo.stock < qty) {
+            throw createError({
+              statusCode: 400,
+              message: `Kuota variasi "${matchedCombo.label}" untuk produk "${product.name}" tidak mencukupi (tersedia: ${matchedCombo.stock} slot).`
+            })
+          }
+        } else if (product.stock_status !== 'in_stock' || (product.quota !== null && product.quota < qty)) {
           throw createError({
             statusCode: 400,
             message: `Kuota titipan untuk produk "${product.name}" tidak mencukupi.`
@@ -235,11 +259,15 @@ export default defineEventHandler(async (event) => {
         }
       }
 
-      const unitPrice = Number(product.price)
+      const unitPrice = matchedCombo ? Number(matchedCombo.price) : Number(product.price)
+      const resolvedVariantLabel = matchedCombo ? matchedCombo.label : variant
+
       resolvedItems.push({
         productId: product.id,
         productName: product.name,
-        variant,
+        variant: resolvedVariantLabel,
+        variantKey: matchedCombo?.key || null,
+        variantId: matchedCombo?.id || null,
         qty,
         priceAtOrder: unitPrice,
         subtotal: unitPrice * qty,
@@ -334,11 +362,46 @@ export default defineEventHandler(async (event) => {
       }
     })
 
-    // Reserve stock / quota on products
+    // Reserve stock / quota on products (and per-variation inventory if applicable)
     for (const it of group.items) {
+      if (it.variantId) {
+        try {
+          await prisma.$executeRaw`
+            UPDATE order_items
+            SET variant_id = ${it.variantId}
+            WHERE order_id = ${created.id} AND product_id = ${it.productId} AND variant_snapshot = ${it.variant}
+          `
+        } catch {
+          // Non-blocking
+        }
+      }
+
       const prod = await prisma.products.findUnique({ where: { id: it.productId } })
       if (!prod) continue
-      if (prod.product_type === 'ready' && prod.stock_quantity !== null) {
+
+      const normVariants = normalizeProductVariants(
+        prod.variants,
+        Number(prod.price),
+        prod.product_type === 'ready' ? (prod.stock_quantity ?? 0) : (prod.quota ?? 0)
+      )
+
+      if (normVariants && normVariants.combinations.length > 0) {
+        const combo = findVariantCombination(normVariants, it.variantKey || it.variant)
+        if (combo) {
+          combo.stock = Math.max(0, combo.stock - it.qty)
+        }
+        const totalRemaining = normVariants.combinations.reduce((sum, c) => sum + Math.max(0, Number(c.stock) || 0), 0)
+        const synced = await syncProductVariantsTable(prod.id, prod.product_type as 'ready' | 'jastip', normVariants)
+        await prisma.products.update({
+          where: { id: prod.id },
+          data: {
+            variants: synced as any,
+            stock_quantity: prod.product_type === 'ready' ? totalRemaining : prod.stock_quantity,
+            quota: prod.product_type === 'jastip' ? totalRemaining : prod.quota,
+            stock_status: totalRemaining === 0 ? 'out_of_stock' : 'in_stock'
+          }
+        })
+      } else if (prod.product_type === 'ready' && prod.stock_quantity !== null) {
         const nextStock = Math.max(0, prod.stock_quantity - it.qty)
         await prisma.products.update({
           where: { id: prod.id },
@@ -357,6 +420,21 @@ export default defineEventHandler(async (event) => {
           }
         })
       }
+    }
+
+    // Create in-app notification for customer
+    try {
+      await prisma.notifications.create({
+        data: {
+          user_id: session.userId,
+          type: 'order_created',
+          title: `Pesanan #${orderCode} Berhasil Diajukan`,
+          body: 'Pesanan Anda telah diterima dan sedang ditinjau oleh Admin dbb_luxe untuk konfirmasi ketersediaan stok/kuota & ongkir.',
+          link_url: `/orders/${orderCode}`
+        }
+      })
+    } catch {
+      // Non-blocking
     }
 
     createdOrders.push(await formatOrderResponse(created))

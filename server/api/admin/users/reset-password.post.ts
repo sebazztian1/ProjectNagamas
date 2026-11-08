@@ -20,8 +20,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'ID pengguna tidak valid' })
   }
 
-  if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
-    throw createError({ statusCode: 400, message: 'Kata sandi baru minimal 6 karakter' })
+  if (!newPassword || typeof newPassword !== 'string' || Array.from(newPassword).length < 8) {
+    throw createError({ statusCode: 400, message: 'Kata sandi baru minimal 8 karakter' })
+  }
+
+  if (!/[^a-zA-Z\s]/.test(newPassword)) {
+    throw createError({ statusCode: 400, message: 'Kata sandi harus mengandung minimal 1 angka atau simbol' })
   }
 
   const user = await prisma.users.findUnique({

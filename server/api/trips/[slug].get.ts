@@ -1,6 +1,7 @@
 import { defineEventHandler, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { getCountryFlag } from '../../utils/countryFlags'
+import { normalizeProductVariants } from '../../utils/variants'
 
 export default defineEventHandler(async (event) => {
   const slug = event.context.params?.slug
@@ -62,7 +63,7 @@ export default defineEventHandler(async (event) => {
       stockStatus: p.stock_status,
       quota: p.quota,
       maxQtyPerOrder: p.max_qty_per_order || 5,
-      variants: p.variants,
+      variants: normalizeProductVariants(p.variants, Number(p.price), p.quota ?? 20),
       description: p.description || ''
     }
   })

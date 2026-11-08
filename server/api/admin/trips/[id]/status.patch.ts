@@ -37,16 +37,40 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  // If status is changed to arrived or completed, we can automatically create notification for customers
-  if (nextStatus === 'arrived') {
+  // Automatically create notification for customers who have orders in this trip
+  const tripNotifMessages: Record<string, { type: string; title: string; getBody: (code: string) => string }> = {
+    purchasing: {
+      type: 'trip_purchasing',
+      title: `Trip ${existing.title} Sedang Belanja di Luar Negeri!`,
+      getBody: (code) => `Tim dbb_luxe sedang membelikan barang titipan untuk trip ${existing.title} (Pesanan #${code}).`
+    },
+    arrived: {
+      type: 'trip_arrived',
+      title: `Barang Trip ${existing.title} Telah Tiba!`,
+      getBody: (code) => `Koper jastip dari trip ${existing.title} sudah tiba di Indonesia. Pesanan Anda (#${code}) sedang dalam proses sortir & persiapan pengiriman.`
+    },
+    completed: {
+      type: 'trip_completed',
+      title: `Jadwal Trip ${existing.title} Selesai`,
+      getBody: (code) => `Seluruh rangkaian pengiriman trip ${existing.title} untuk pesanan #${code} telah selesai. Terima kasih telah menitip di dbb_luxe!`
+    },
+    cancelled: {
+      type: 'trip_cancelled',
+      title: `Jadwal Trip ${existing.title} Dibatalkan`,
+      getBody: (code) => `Mohon maaf, jadwal trip ${existing.title} terkait pesanan #${code} mengalami pembatalan. Silakan cek detail pesanan atau hubungi Admin.`
+    }
+  }
+
+  const notifTemplate = tripNotifMessages[nextStatus]
+  if (notifTemplate && existing.orders.length > 0) {
     for (const ord of existing.orders) {
       try {
         await prisma.notifications.create({
           data: {
             user_id: ord.user_id,
-            type: 'trip_arrived',
-            title: `Barang Trip ${existing.title} Telah Tiba!`,
-            body: `Koper jastip dari trip ${existing.title} sudah tiba di Indonesia. Pesanan Anda (${ord.order_code}) sedang dalam proses sortir & persiapan pengiriman.`,
+            type: notifTemplate.type,
+            title: notifTemplate.title,
+            body: notifTemplate.getBody(ord.order_code),
             link_url: `/orders/${ord.order_code}`
           }
         })

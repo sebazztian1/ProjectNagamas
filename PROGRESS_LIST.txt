@@ -541,9 +541,9 @@ FASE 9: CHECKOUT, ORDER & PEMBAYARAN MANUAL (NON-MIDTRANS)
 --------------------------------------------------------------------------------
 FASE 10: TRACKING & NOTIFIKASI CUSTOMER
 --------------------------------------------------------------------------------
-[ ] 10.1 Notifikasi In-App Customer
-    [ ] Tabel & API `notifications`, badge di navbar, halaman daftar notifikasi
-    [ ] Trigger: pembayaran diverifikasi/ditolak, status order berubah, barang tiba, penawaran request masuk, balasan chat
+[X] 10.1 Notifikasi In-App Customer
+    [X] Tabel & API `notifications`, badge di navbar, halaman daftar notifikasi
+    [X] Trigger: pembayaran diverifikasi/ditolak, status order berubah, barang tiba, penawaran request masuk, balasan chat
 
 [ ] 10.2 Notifikasi Cadangan via WhatsApp
     [ ] Tombol/link `wa.me` dengan template pesan otomatis (kode order & status)

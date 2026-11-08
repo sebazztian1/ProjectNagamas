@@ -23,7 +23,7 @@
         <h3>Masih punya pertanyaan yang belum terjawab?</h3>
         <p>Hubungi admin kami langsung melalui live chat di web atau WhatsApp untuk respon cepat.</p>
         <div class="contact-btns">
-          <NuxtLink to="/chat" class="btn-chat">Buka Live Chat</NuxtLink>
+          <NuxtLink :to="currentUser ? '/chat' : '/register'" class="btn-chat">Buka Live Chat</NuxtLink>
           <a href="https://wa.me/6281298765432" target="_blank" class="btn-wa">WhatsApp Admin</a>
         </div>
       </div>
@@ -32,6 +32,10 @@
 </template>
 
 <script setup lang="ts">
+import { useAuth } from '../composables/useAuth'
+
+const { currentUser } = useAuth()
+
 const faqs = [
   {
     q: 'Apa perbedaan antara produk "Ready Stock" dan "Jastip"?',

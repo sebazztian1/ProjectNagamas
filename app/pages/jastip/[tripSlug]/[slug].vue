@@ -7,7 +7,7 @@
         <span>/</span>
         <NuxtLink to="/jastip">Jadwal Jastip</NuxtLink>
         <span>/</span>
-        <NuxtLink :to="`/jastip/${tripSlug}`">{{ product.tripTitle || 'Trip' }}</NuxtLink>
+        <NuxtLink :to="`/jastip/${tripSlug}`">{{ product.trip?.title || 'Trip' }}</NuxtLink>
         <span>/</span>
         <span class="active">{{ product.name }}</span>
       </div>
@@ -18,16 +18,16 @@
           <div class="main-image">
             <img :src="product.image" :alt="product.name" />
             <span class="badge-jastip-po">
-              {{ product.flag }} Open PO Jastip {{ product.country }}
+              Open PO Jastip {{ product.trip?.country || '' }}
             </span>
           </div>
 
           <!-- Trip Reminder Box -->
-          <div class="trip-reminder-box">
-            <strong>{{ product.tripTitle }}</strong>
+          <div class="trip-reminder-box" v-if="product.trip">
+            <strong>{{ product.trip.title }}</strong>
             <div class="dates-row">
-              <span>Batas PO: <strong>20 Okt 2026</strong></span>
-              <span>Estimasi Tiba: <strong>02 Nov 2026</strong></span>
+              <span>Negara: <strong>{{ product.trip.country }}</strong></span>
+              <span>Status: <strong>{{ product.trip.status === 'open' ? 'Buka PO' : product.trip.status }}</strong></span>
             </div>
           </div>
         </div>
@@ -49,65 +49,94 @@
               </div>
               <div class="f-item highlight">
                 <span>Harga Bersih (IDR):</span>
-                <strong class="final-price">{{ formatRupiah(product.price) }}</strong>
+                <strong class="final-price">{{ formatRupiah(currentDisplayPrice) }}</strong>
               </div>
+            </div>
+            <div v-if="priceRangeHint" class="price-range-sub">
+              Rentang harga variasi: {{ priceRangeHint }}
             </div>
           </div>
 
           <!-- Quota Remaining Alert -->
-          <div class="quota-alert">
-            <span>Sisa kuota: <strong>{{ product.quotaRemaining || 12 }} pcs</strong></span>
+          <div class="quota-alert" :class="{ out: currentAvailableQuota <= 0 }">
+            <span>
+              Sisa kuota{{ activeVariantCombo ? ` (${activeVariantCombo.label})` : '' }}:
+              <strong>{{ currentAvailableQuota }} slot</strong>
+            </span>
           </div>
 
-          <!-- Variants selection if any -->
-          <div v-if="product.variants" class="variants-area">
-            <div v-for="(options, name) in product.variants" :key="name" class="variant-group">
-              <label class="variant-label">Pilih {{ name }}:</label>
+          <!-- Multi-Tier Variants Selection -->
+          <div v-if="variantTiers.length > 0" class="variants-card">
+            <div v-for="tier in variantTiers" :key="tier.name" class="variant-group">
+              <div class="variant-header-row">
+                <label class="variant-label">Pilih {{ tier.name }}</label>
+                <span v-if="selectedTierValues[tier.name]" class="variant-picked-val">
+                  {{ selectedTierValues[tier.name] }}
+                </span>
+              </div>
               <div class="variant-options">
-                <button 
-                  v-for="opt in options" 
+                <button
+                  v-for="opt in tier.options"
                   :key="opt"
+                  type="button"
                   class="variant-btn"
-                  :class="{ active: selectedVariant === opt }"
-                  @click="selectedVariant = opt"
+                  :class="{
+                    active: selectedTierValues[tier.name] === opt,
+                    'is-empty': isOptionOutOfStock(tier.name, opt)
+                  }"
+                  @click="selectTierOption(tier.name, opt)"
                 >
-                  {{ opt }}
+                  <span class="opt-txt">{{ opt }}</span>
+                  <span v-if="isOptionOutOfStock(tier.name, opt)" class="opt-out-tag">Habis</span>
                 </button>
+              </div>
+            </div>
+
+            <div v-if="activeVariantCombo" class="variant-summary-bar">
+              <div class="vs-left">
+                <span class="vs-caption">Kombinasi Dipilih</span>
+                <strong class="vs-label">{{ activeVariantCombo.label }}</strong>
+              </div>
+              <div class="vs-right">
+                <span class="vs-stock" :class="{ empty: currentAvailableQuota <= 0 }">
+                  {{ currentAvailableQuota > 0 ? `Sisa ${currentAvailableQuota} slot` : 'Kuota Variasi Habis' }}
+                </span>
               </div>
             </div>
           </div>
 
           <!-- Quantity Selector -->
-          <div class="qty-section">
-            <label class="qty-label">Jumlah Titip (Maks {{ product.maxQtyPerOrder || 5 }} pcs):</label>
+          <div class="qty-section" v-if="currentAvailableQuota > 0">
+            <label class="qty-label">Jumlah Titip (Maks {{ maxOrderableQty }} pcs):</label>
             <div class="qty-ctrl">
-              <button @click="qty > 1 ? qty-- : null" :disabled="qty <= 1">-</button>
+              <button type="button" @click="qty > 1 ? qty-- : null" :disabled="qty <= 1">-</button>
               <span class="qty-num">{{ qty }}</span>
-              <button @click="qty < (product.maxQtyPerOrder || 5) ? qty++ : null" :disabled="qty >= (product.maxQtyPerOrder || 5)">+</button>
+              <button type="button" @click="qty < maxOrderableQty ? qty++ : null" :disabled="qty >= maxOrderableQty">+</button>
             </div>
-            <span class="subtotal-hint">Total: {{ formatRupiah(product.price * qty) }}</span>
+            <span class="subtotal-hint">Total: {{ formatRupiah(currentDisplayPrice * qty) }}</span>
           </div>
 
           <!-- Action Buttons -->
           <div class="cta-actions">
-            <NuxtLink 
-              v-if="isTripOpen" 
-              :to="`/checkout?productId=${product.id}&qty=${qty}&variant=${selectedVariant || ''}&tripSlug=${tripSlug}`" 
+            <NuxtLink
+              v-if="isTripOpen && currentAvailableQuota > 0"
+              :to="`/checkout?productId=${product.id}&qty=${qty}&variant=${encodeURIComponent(selectedVariantLabel)}&tripSlug=${tripSlug}`"
               class="btn-po-now"
             >
               Titip Sekarang (Checkout PO)
             </NuxtLink>
             <button v-else disabled class="btn-po-now disabled">
-              PO Telah Ditutup
+              {{ !isTripOpen ? 'PO Telah Ditutup' : 'Kuota Variasi Ini Habis' }}
             </button>
             <div class="cta-sub-row">
-              <button v-if="!isAdmin" class="btn-chat-admin" @click="handleChatAdmin">
+              <button v-if="!isAdmin" type="button" class="btn-chat-admin" @click="handleChatAdmin">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                 </svg>
                 Chat Tanya
               </button>
-              <button 
+              <button
+                type="button"
                 class="btn-wishlist-detail"
                 :class="{ active: isWishlisted(product.id) }"
                 @click="toggleWishlist(product)"
@@ -161,7 +190,6 @@ import { ref, computed, watch } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
 import { useCustomerChat } from '../../../composables/useCustomerChat'
 import { useWishlist } from '../../../composables/useWishlist'
-import type { ApiProduct } from '../../../composables/useProducts'
 
 const route = useRoute()
 const tripSlug = route.params.tripSlug as string
@@ -171,27 +199,142 @@ const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUse
 const { openChat, openChatWithProduct } = useCustomerChat()
 const { isWishlisted, toggleWishlist } = useWishlist()
 
-const { data: product } = await useFetch<ApiProduct>(`/api/products/${slug}`)
+const { data: product } = await useFetch<any>(`/api/products/${slug}`)
 
 const isTripOpen = computed(() => {
   if (!product.value?.trip) return true
   const trip = product.value.trip
   const isStatusOpen = trip.status === 'open'
-  const isNotExpired = new Date(trip.closeDate) > new Date()
+  const isNotExpired = !trip.closeDate || new Date(trip.closeDate) > new Date()
   return isStatusOpen && isNotExpired
 })
 
 const qty = ref(1)
-const selectedVariant = ref('')
+const selectedTierValues = ref<Record<string, string>>({})
+
+const variantTiers = computed(() => {
+  const v = product.value?.variants
+  if (!v || typeof v !== 'object') return []
+  if (Array.isArray(v.tiers) && v.tiers.length > 0) {
+    return v.tiers.filter((t: any) => t && t.name && Array.isArray(t.options) && t.options.length > 0)
+  }
+  return Object.entries(v)
+    .filter(([k, val]) => k !== 'tiers' && k !== 'combinations' && Array.isArray(val) && val.length > 0)
+    .map(([name, options]) => ({ name, options }))
+})
+
+const variantCombinations = computed(() => {
+  const v = product.value?.variants
+  if (v && typeof v === 'object' && Array.isArray(v.combinations) && v.combinations.length > 0) {
+    return v.combinations
+  }
+  return []
+})
 
 watch(product, (p) => {
-  if (p?.variants && typeof p.variants === 'object' && Object.keys(p.variants).length > 0) {
-    const firstGroup = Object.values(p.variants)[0]
-    if (Array.isArray(firstGroup) && firstGroup.length > 0) {
-      selectedVariant.value = firstGroup[0]
+  if (!p) return
+  const tiers = variantTiers.value
+  const combos = variantCombinations.value
+  if (tiers.length > 0) {
+    const firstInStock = combos.find((c: any) => Number(c.stock) > 0) || combos[0]
+    const mapObj = firstInStock?.options || firstInStock?.values || {}
+    const initMap: Record<string, string> = {}
+    for (const tier of tiers) {
+      initMap[tier.name] = mapObj[tier.name] || tier.options?.[0] || ''
     }
+    selectedTierValues.value = initMap
+  } else {
+    selectedTierValues.value = {}
   }
 }, { immediate: true })
+
+const findMatchingCombination = (selectionMap: Record<string, string>) => {
+  const tiers = variantTiers.value
+  const combos = variantCombinations.value
+  if (tiers.length === 0 || combos.length === 0) return null
+
+  const keyPipe = tiers.map((t: any) => selectionMap[t.name] || t.options[0] || '').join(' | ').toLowerCase()
+  const keyDoublePipe = tiers.map((t: any) => selectionMap[t.name] || t.options[0] || '').join(' || ').toLowerCase()
+
+  return combos.find((c: any) => {
+    const ck = String(c.key || '').trim().toLowerCase()
+    if (ck === keyPipe || ck === keyDoublePipe) return true
+    const mapObj = c.options || c.values
+    if (mapObj && typeof mapObj === 'object') {
+      return tiers.every(
+        (t: any) => String(mapObj[t.name] || '').trim().toLowerCase() === String(selectionMap[t.name] || '').trim().toLowerCase()
+      )
+    }
+    return false
+  }) || null
+}
+
+const activeVariantCombo = computed(() => {
+  return findMatchingCombination(selectedTierValues.value) || variantCombinations.value[0] || null
+})
+
+const isOptionOutOfStock = (tierName: string, opt: string) => {
+  if (variantCombinations.value.length === 0) return false
+  const testSelection = {
+    ...selectedTierValues.value,
+    [tierName]: opt
+  }
+  const match = findMatchingCombination(testSelection)
+  if (match) {
+    return Number(match.stock) <= 0
+  }
+  return false
+}
+
+const selectTierOption = (tierName: string, opt: string) => {
+  selectedTierValues.value = {
+    ...selectedTierValues.value,
+    [tierName]: opt
+  }
+}
+
+const priceRangeHint = computed(() => {
+  const combos = variantCombinations.value
+  if (combos.length <= 1) return null
+  const prices = combos.map((c: any) => Number(c.price) || 0).filter((p: number) => p > 0)
+  if (prices.length <= 1) return null
+  const minP = Math.min(...prices)
+  const maxP = Math.max(...prices)
+  if (minP === maxP) return null
+  return `${formatRupiah(minP)} – ${formatRupiah(maxP)}`
+})
+
+const currentDisplayPrice = computed(() => {
+  if (activeVariantCombo.value && Number(activeVariantCombo.value.price) > 0) {
+    return Number(activeVariantCombo.value.price)
+  }
+  return Number(product.value?.price || 0)
+})
+
+const currentAvailableQuota = computed(() => {
+  if (activeVariantCombo.value && activeVariantCombo.value.stock !== undefined) {
+    return Math.max(0, Number(activeVariantCombo.value.stock) || 0)
+  }
+  return Math.max(0, Number(product.value?.quota ?? 12))
+})
+
+const maxOrderableQty = computed(() => {
+  const maxPerOrd = product.value?.maxQtyPerOrder || 5
+  return Math.max(1, Math.min(maxPerOrd, currentAvailableQuota.value || 1))
+})
+
+watch(maxOrderableQty, (maxQ) => {
+  if (qty.value > maxQ) qty.value = maxQ
+})
+
+const selectedVariantLabel = computed(() => {
+  if (activeVariantCombo.value) return activeVariantCombo.value.label
+  const tiers = variantTiers.value
+  if (tiers.length > 0) {
+    return tiers.map((t: any) => `${t.name}: ${selectedTierValues.value[t.name] || t.options[0]}`).join(', ')
+  }
+  return 'Standard'
+})
 
 const formatRupiah = (val: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
@@ -202,7 +345,7 @@ const handleChatAdmin = () => {
     openChatWithProduct({
       id: String(product.value.id),
       name: product.value.name,
-      price: product.value.price,
+      price: currentDisplayPrice.value,
       image: product.value.image,
       category: product.value.category
     } as any)
@@ -291,22 +434,6 @@ const handleChatAdmin = () => {
   padding: 16px;
 }
 
-.trip-rem-head {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.85rem;
-  color: var(--color-primary, #8C6D3F);
-  margin-bottom: 4px;
-}
-
-.trip-reminder-box p {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--color-text, #2B2116);
-  margin-bottom: 8px;
-}
-
 .dates-row {
   display: flex;
   justify-content: space-between;
@@ -314,6 +441,7 @@ const handleChatAdmin = () => {
   color: var(--color-text-muted, #7A6A55);
   border-top: 1px solid var(--color-secondary, #EFE1C6);
   padding-top: 8px;
+  margin-top: 8px;
 }
 
 /* Info Col */
@@ -329,7 +457,7 @@ const handleChatAdmin = () => {
 }
 
 .product-name {
-  font-size: 1.6rem;
+  font-size: 1.65rem;
   font-weight: 800;
   color: var(--color-text, #2B2116);
   line-height: 1.3;
@@ -344,20 +472,10 @@ const handleChatAdmin = () => {
   margin-bottom: 16px;
 }
 
-.calc-label {
-  display: block;
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--color-text-muted, #7A6A55);
-  text-transform: uppercase;
-  margin-bottom: 10px;
-}
-
 .calc-formula {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -372,42 +490,71 @@ const handleChatAdmin = () => {
   color: var(--color-text, #2B2116);
 }
 
-.math-op {
-  font-size: 0.82rem;
-  color: var(--color-text-muted, #7A6A55);
-  font-weight: 700;
-}
-
 .f-item.highlight strong.final-price {
-  font-size: 1.6rem;
+  font-size: 1.65rem;
   font-weight: 800;
   color: var(--color-primary, #8C6D3F);
 }
 
-.calc-note {
-  font-size: 0.72rem;
+.price-range-sub {
+  font-size: 0.78rem;
   color: var(--color-text-muted, #7A6A55);
+  margin-top: 6px;
 }
 
 .quota-alert {
   background: var(--color-secondary, #EFE1C6);
   color: var(--color-primary, #8C6D3F);
-  font-size: 0.8rem;
-  padding: 8px 12px;
-  border-radius: 6px;
+  font-size: 0.82rem;
+  padding: 8px 14px;
+  border-radius: 8px;
   margin-bottom: 18px;
 }
 
-.variants-area {
-  margin-bottom: 18px;
+.quota-alert.out {
+  background: #FEF2F2;
+  color: #DC2626;
+}
+
+/* Variants Card */
+.variants-card {
+  background: #FFFBF2;
+  border: 1px solid #E5D7BE;
+  border-radius: 12px;
+  padding: 16px 18px;
+  margin-bottom: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.variant-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.variant-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .variant-label {
-  display: block;
   font-size: 0.82rem;
   font-weight: 700;
-  color: var(--color-text, #2B2116);
-  margin-bottom: 6px;
+  color: #2B2116;
+  text-transform: capitalize;
+}
+
+.variant-picked-val {
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #8C6D3F;
+  background: #F4E8D1;
+  padding: 2px 9px;
+  border-radius: 999px;
 }
 
 .variant-options {
@@ -417,20 +564,95 @@ const handleChatAdmin = () => {
 }
 
 .variant-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   background: #ffffff;
-  border: 1px solid var(--color-secondary, #EFE1C6);
-  color: var(--color-text, #2B2116);
-  padding: 7px 14px;
-  border-radius: 6px;
-  font-size: 0.82rem;
+  border: 1.5px solid #E2D3B9;
+  color: #2B2116;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.84rem;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.variant-btn:hover {
+  border-color: #8C6D3F;
+  background: #FDF9F0;
 }
 
 .variant-btn.active {
-  border-color: var(--color-primary, #8C6D3F);
-  background: var(--color-primary, #8C6D3F);
+  border-color: #8C6D3F;
+  background: #8C6D3F;
   color: #ffffff;
+  box-shadow: 0 3px 10px rgba(140, 109, 63, 0.22);
+}
+
+.variant-btn.is-empty:not(.active) {
+  opacity: 0.6;
+  border-style: dashed;
+}
+
+.opt-out-tag {
+  font-size: 0.66rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(220, 38, 38, 0.12);
+  color: #DC2626;
+}
+
+.variant-btn.active .opt-out-tag {
+  background: rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+}
+
+.variant-summary-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #E2D1B3;
+  flex-wrap: wrap;
+}
+
+.vs-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.vs-caption {
+  font-size: 0.7rem;
+  color: #7A6A55;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.vs-label {
+  font-size: 0.86rem;
+  color: #2B2116;
+  font-weight: 700;
+}
+
+.vs-stock {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #047857;
+  background: #ECFDF5;
+  border: 1px solid #A7F3D0;
+  padding: 4px 10px;
+  border-radius: 6px;
+}
+
+.vs-stock.empty {
+  color: #DC2626;
+  background: #FEF2F2;
+  border-color: #FECACA;
 }
 
 .qty-section {

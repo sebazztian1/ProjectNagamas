@@ -1,6 +1,7 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
+import { normalizeProductVariants, syncProductVariantsTable } from '../../../utils/variants'
 
 function generateSlug(text: string): string {
   return text
@@ -49,9 +50,26 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, message: 'Tipe produk harus "ready" atau "jastip"' })
   }
 
-  if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-    throw createError({ statusCode: 400, message: 'Harga produk harus berupa angka positif' })
+  const basePriceInput = Number(price) || 0
+  const baseStockInput = productType === 'ready' ? (Number(stockQuantity) || 0) : (Number(quota) || 20)
+  const normalizedVariants = normalizeProductVariants(variants, basePriceInput > 0 ? basePriceInput : 0, baseStockInput)
+
+  const hasVariants = !!(normalizedVariants && normalizedVariants.combinations.length > 0)
+  const effectivePrice = hasVariants
+    ? Math.min(...normalizedVariants!.combinations.map(c => Number(c.price) || 0).filter(p => p > 0))
+    : basePriceInput
+
+  if (!effectivePrice || isNaN(effectivePrice) || effectivePrice <= 0) {
+    throw createError({ statusCode: 400, message: 'Harga produk (atau harga variasi) harus berupa angka positif' })
   }
+
+  const totalVariantStock = hasVariants
+    ? normalizedVariants!.combinations.reduce((sum, c) => sum + Math.max(0, Number(c.stock) || 0), 0)
+    : baseStockInput
+
+  const effectiveStockStatus = hasVariants
+    ? (totalVariantStock > 0 ? 'in_stock' : 'out_of_stock')
+    : (stockStatus === 'out_of_stock' ? 'out_of_stock' : 'in_stock')
 
   // Generate unique slug
   let baseSlug = generateSlug(name)
@@ -62,7 +80,7 @@ export default defineEventHandler(async (event) => {
     counter++
   }
 
-  const createdProduct = await prisma.products.create({
+  let createdProduct = await prisma.products.create({
     data: {
       name: name.trim(),
       slug: uniqueSlug,
@@ -70,19 +88,27 @@ export default defineEventHandler(async (event) => {
       category_id: Number(categoryId),
       product_type: productType,
       trip_id: productType === 'jastip' && tripId ? Number(tripId) : null,
-      price: Number(price),
+      price: effectivePrice,
       original_price: originalPrice ? Number(originalPrice) : null,
       original_currency: originalCurrency || null,
       source_store: sourceStore?.trim() || null,
       image_url: imageUrl?.trim() || null,
-      stock_status: stockStatus === 'out_of_stock' ? 'out_of_stock' : 'in_stock',
-      stock_quantity: productType === 'ready' ? (Number(stockQuantity) || 0) : null,
-      quota: productType === 'jastip' ? (Number(quota) || 20) : null,
+      stock_status: effectiveStockStatus,
+      stock_quantity: productType === 'ready' ? totalVariantStock : null,
+      quota: productType === 'jastip' ? totalVariantStock : null,
       max_qty_per_order: maxQtyPerOrder ? Number(maxQtyPerOrder) : 5,
-      variants: variants && typeof variants === 'object' ? variants : null,
+      variants: hasVariants ? (normalizedVariants as any) : null,
       is_active: true
     }
   })
+
+  if (hasVariants && normalizedVariants) {
+    const syncedVariants = await syncProductVariantsTable(createdProduct.id, productType, normalizedVariants)
+    createdProduct = await prisma.products.update({
+      where: { id: createdProduct.id },
+      data: { variants: syncedVariants as any }
+    })
+  }
 
   // If gallery images provided, create product_images entries
   if (Array.isArray(galleryImages) && galleryImages.length > 0) {

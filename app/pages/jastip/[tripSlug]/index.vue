@@ -192,6 +192,7 @@ const formatDate = (dateStr?: string | null) => {
 .hero-title {
   font-size: 2.2rem;
   font-weight: 800;
+  color: #FFFBF2;
   margin-bottom: 8px;
   line-height: 1.2;
 }

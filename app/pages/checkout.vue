@@ -558,8 +558,23 @@
                     </div>
                     <span v-else class="qty-fixed">{{ entry.qty }} pcs</span>
 
+                    <select
+                      v-if="!quoteId && entry.combinations && entry.combinations.length > 0"
+                      v-model="entry.variant"
+                      class="variant-input"
+                      @change="onEntryVariantChange(entry)"
+                    >
+                      <option
+                        v-for="comb in entry.combinations"
+                        :key="comb.key"
+                        :value="comb.label"
+                        :disabled="comb.stock <= 0"
+                      >
+                        {{ comb.label }} — {{ formatRupiah(comb.price) }} (Sisa: {{ comb.stock }})
+                      </option>
+                    </select>
                     <input
-                      v-if="!quoteId"
+                      v-else-if="!quoteId"
                       v-model="entry.variant"
                       type="text"
                       class="variant-input"
@@ -703,10 +718,53 @@ interface CheckoutEntry {
   tripTitle: string | null
   qty: number
   maxQty: number
+  maxQtyPerOrder: number
   variant: string
+  combinations?: { key: string; label: string; price: number; stock: number }[]
 }
 
 const checkoutItems = ref<CheckoutEntry[]>([])
+
+const resolveProductVariantInfo = (prod: ApiProduct, requestedVariant?: string) => {
+  const combos = prod.variants?.combinations || []
+  if (combos.length > 0) {
+    const cleanReq = String(requestedVariant || '').trim().toLowerCase()
+    const matched = combos.find(
+      c => c.label.toLowerCase() === cleanReq || c.key.toLowerCase() === cleanReq
+    ) || combos.find(c => c.stock > 0) || combos[0]
+
+    const maxAllowed = Math.min(prod.maxQtyPerOrder || 10, Math.max(1, matched?.stock ?? 1))
+    return {
+      price: Number(matched?.price || prod.price),
+      variant: matched?.label || 'Standard',
+      maxQty: Math.max(1, maxAllowed),
+      combinations: combos
+    }
+  }
+
+  const maxAllowed = Math.min(
+    prod.maxQtyPerOrder || 10,
+    prod.productType === 'ready' ? (prod.stockQuantity ?? 10) : (prod.quota ?? 10)
+  )
+  return {
+    price: Number(prod.price),
+    variant: requestedVariant || 'Standard',
+    maxQty: Math.max(1, maxAllowed),
+    combinations: []
+  }
+}
+
+const onEntryVariantChange = (entry: CheckoutEntry) => {
+  if (!entry.combinations || entry.combinations.length === 0) return
+  const matched = entry.combinations.find(c => c.label === entry.variant)
+  if (matched) {
+    entry.price = Number(matched.price)
+    entry.maxQty = Math.max(1, Math.min(entry.maxQtyPerOrder || 10, matched.stock || 1))
+    if (entry.qty > entry.maxQty) {
+      entry.qty = entry.maxQty
+    }
+  }
+}
 
 const initCheckoutItems = () => {
   if (quoteId) {
@@ -723,6 +781,7 @@ const initCheckoutItems = () => {
         tripTitle: 'Request Khusus',
         qty: initialQty,
         maxQty: 10,
+        maxQtyPerOrder: 10,
         variant: 'Custom Request'
       }
     ]
@@ -734,24 +793,23 @@ const initCheckoutItems = () => {
     list.find(p => String(p.id) === String(productId) || p.slug === String(productId)) || list[0]
 
   if (found) {
-    const maxAllowed = Math.min(
-      found.maxQtyPerOrder || 10,
-      found.productType === 'ready' ? (found.stockQuantity ?? 10) : (found.quota ?? 10)
-    )
+    const resolved = resolveProductVariantInfo(found, initialVariant)
     checkoutItems.value = [
       {
         key: `prod-${found.id}`,
         productId: Number(found.id),
         name: found.name,
         slug: found.slug,
-        price: Number(found.price),
+        price: resolved.price,
         image: found.image,
         productType: found.productType,
         tripId: found.trip?.id || null,
         tripTitle: found.trip?.title || null,
-        qty: Math.min(initialQty, Math.max(1, maxAllowed)),
-        maxQty: Math.max(1, maxAllowed),
-        variant: initialVariant
+        qty: Math.min(initialQty, resolved.maxQty),
+        maxQty: resolved.maxQty,
+        maxQtyPerOrder: found.maxQtyPerOrder || 10,
+        variant: resolved.variant,
+        combinations: resolved.combinations
       }
     ]
   }
@@ -784,24 +842,23 @@ const addProductToCheckout = (prod: ApiProduct) => {
     return
   }
 
-  const maxAllowed = Math.min(
-    prod.maxQtyPerOrder || 10,
-    prod.productType === 'ready' ? (prod.stockQuantity ?? 10) : (prod.quota ?? 10)
-  )
+  const resolved = resolveProductVariantInfo(prod)
 
   checkoutItems.value.push({
     key: `prod-${prod.id}-${Date.now()}`,
     productId: Number(prod.id),
     name: prod.name,
     slug: prod.slug,
-    price: Number(prod.price),
+    price: resolved.price,
     image: prod.image,
     productType: prod.productType,
     tripId: prod.trip?.id || null,
     tripTitle: prod.trip?.title || null,
     qty: 1,
-    maxQty: Math.max(1, maxAllowed),
-    variant: 'Standard'
+    maxQty: resolved.maxQty,
+    maxQtyPerOrder: prod.maxQtyPerOrder || 10,
+    variant: resolved.variant,
+    combinations: resolved.combinations
   })
   showToast('Produk Ditambahkan', `${prod.name} masuk ke daftar checkout.`, 'success')
 }

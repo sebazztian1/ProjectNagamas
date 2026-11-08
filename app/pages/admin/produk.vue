@@ -6,6 +6,15 @@
         <p class="page-subtitle">Kelola inventaris barang ready di toko serta katalog titip beli luar negeri per jadwal trip langsung dari database.</p>
       </div>
       <div class="head-actions">
+        <button class="btn-refresh" @click="refresh()" :disabled="status === 'pending'">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': status === 'pending' }">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
         <NuxtLink to="/admin/kategori" class="btn-manage-cat">Kelola Kategori</NuxtLink>
         <button class="btn-add-product" @click="openCreateModal">+ Tambah Produk Baru</button>
       </div>
@@ -52,6 +61,11 @@
               <div class="prod-info-txt">
                 <strong>{{ p.name }}</strong>
                 <span>{{ p.categoryName }}</span>
+                <div v-if="p.variants?.combinations?.length" class="prod-variant-badges">
+                  <span class="variant-count-pill">
+                    {{ p.variants.combinations.length }} Variasi ({{ formatVariantTiersSummary(p) }})
+                  </span>
+                </div>
               </div>
             </td>
             <td>
@@ -61,7 +75,7 @@
               <span class="country-text">{{ p.sourceStore || (p.tripCountry ? 'Store di ' + p.tripCountry : 'Store Resmi') }}</span>
             </td>
             <td class="col-price">
-              <strong>{{ formatRupiah(p.price) }}</strong>
+              <strong>{{ getProductPriceDisplay(p) }}</strong>
               <span v-if="p.originalPrice" class="calc-hint">{{ p.originalCurrency }} {{ p.originalPrice }}</span>
             </td>
             <td>
@@ -73,6 +87,14 @@
               >
                 {{ p.stockStatus === 'in_stock' ? (p.productType === 'ready' ? `Tersedia (${p.stockQuantity} pcs)` : `Buka (${p.quota} slot)`) : 'Habis (Out of Stock)' }}
               </button>
+              <div v-if="p.variants?.combinations?.length" class="variant-stock-mini">
+                <span v-for="c in p.variants.combinations.slice(0, 3)" :key="c.key" class="v-stock-chip" :class="{ empty: c.stock <= 0 }">
+                  {{ c.label }}: <b>{{ c.stock }}</b>
+                </span>
+                <span v-if="p.variants.combinations.length > 3" class="v-stock-more">
+                  +{{ p.variants.combinations.length - 3 }} lainnya
+                </span>
+              </div>
             </td>
             <td>
               <span class="trip-tag">{{ p.tripTitle || '-' }}</span>
@@ -172,23 +194,177 @@
               </select>
             </div>
             <div class="f-group">
-              <label>Harga Jual Akhir (IDR):</label>
-              <input v-model.number="form.price" type="number" placeholder="Contoh: 1250000" min="1" required />
+              <label>
+                Harga Jual Dasar (IDR):
+                <span v-if="hasActiveVariants" class="auto-calc-badge">Otomatis dari Variasi Termurah</span>
+              </label>
+              <input
+                v-model.number="form.price"
+                type="number"
+                placeholder="Contoh: 1250000"
+                min="1"
+                :readonly="hasActiveVariants"
+                :class="{ 'input-readonly': hasActiveVariants }"
+                required
+              />
             </div>
           </div>
 
           <div class="form-row-2">
             <div class="f-group" v-if="form.productType === 'ready'">
-              <label>Jumlah Stok Fisik:</label>
-              <input v-model.number="form.stockQuantity" type="number" placeholder="10" min="0" />
+              <label>
+                Jumlah Stok Fisik:
+                <span v-if="hasActiveVariants" class="auto-calc-badge">Total Stok Variasi</span>
+              </label>
+              <input
+                v-model.number="form.stockQuantity"
+                type="number"
+                placeholder="10"
+                min="0"
+                :readonly="hasActiveVariants"
+                :class="{ 'input-readonly': hasActiveVariants }"
+              />
             </div>
             <div class="f-group" v-else>
-              <label>Batas Kuota Titip:</label>
-              <input v-model.number="form.quota" type="number" placeholder="25" min="1" />
+              <label>
+                Batas Kuota Titip:
+                <span v-if="hasActiveVariants" class="auto-calc-badge">Total Kuota Variasi</span>
+              </label>
+              <input
+                v-model.number="form.quota"
+                type="number"
+                placeholder="25"
+                min="0"
+                :readonly="hasActiveVariants"
+                :class="{ 'input-readonly': hasActiveVariants }"
+              />
             </div>
             <div class="f-group">
               <label>Toko Sumber / Asal:</label>
               <input v-model="form.sourceStore" type="text" placeholder="Contoh: Don Quijote Ginza / Store Resmi" />
+            </div>
+          </div>
+
+          <!-- Multi-Tier Product Variations Section (Optional) -->
+          <div class="variants-builder-card">
+            <div class="vb-header">
+              <div>
+                <h4 class="vb-title">Variasi Produk <span class="vb-opt-tag">Opsional • Multi-Tier</span></h4>
+                <p class="vb-sub">
+                  Tambahkan 1 atau lebih tingkatan variasi (contoh: <b>Warna</b> lalu <b>Ukuran</b>). Setiap kombinasi memiliki harga & stok inventaris masing-masing.
+                </p>
+              </div>
+              <button type="button" class="btn-add-tier" @click="addVariantTier">
+                + Tambah Tingkatan Variasi
+              </button>
+            </div>
+
+            <div v-if="variantTiers.length === 0" class="vb-empty">
+              Produk ini menggunakan harga & stok tunggal. Klik <b>"+ Tambah Tingkatan Variasi"</b> jika produk memiliki pilihan variasi.
+            </div>
+
+            <div v-else class="vb-tiers-list">
+              <div v-for="(tier, tIdx) in variantTiers" :key="tIdx" class="vb-tier-box">
+                <div class="vb-tier-top">
+                  <div class="vb-tier-name-wrap">
+                    <span class="tier-badge">Tier {{ tIdx + 1 }}</span>
+                    <input
+                      v-model="tier.name"
+                      type="text"
+                      placeholder="Nama Variasi (cth: Warna, Ukuran, Tipe)"
+                      class="tier-name-input"
+                      @input="rebuildVariantCombinations"
+                    />
+                  </div>
+                  <button type="button" class="btn-remove-tier" @click="removeVariantTier(tIdx)">
+                    Hapus Tier
+                  </button>
+                </div>
+
+                <div class="vb-tier-options-area">
+                  <div class="vb-option-chips" v-if="tier.options.length > 0">
+                    <span v-for="(opt, oIdx) in tier.options" :key="oIdx" class="vb-opt-chip">
+                      {{ opt }}
+                      <button type="button" class="chip-del" @click="removeTierOption(tIdx, oIdx)" title="Hapus opsi">&times;</button>
+                    </span>
+                  </div>
+                  <div class="vb-add-opt-row">
+                    <input
+                      v-model="tier.draftOption"
+                      type="text"
+                      placeholder="Ketik opsi variasi (pisahkan koma, cth: Hitam, Cream, Navy) lalu tekan Enter..."
+                      @keydown.enter.prevent="addTierOption(tIdx)"
+                    />
+                    <button type="button" class="btn-add-opt" @click="addTierOption(tIdx)">
+                      + Tambah Opsi
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Combination Matrix Table for Price & Inventory -->
+              <div v-if="variantCombinations.length > 0" class="vb-matrix-section">
+                <div class="vb-bulk-bar">
+                  <span class="bulk-label">Atur Massal ({{ variantCombinations.length }} Kombinasi):</span>
+                  <div class="bulk-inputs">
+                    <input v-model.number="bulkPrice" type="number" placeholder="Harga (IDR)" min="1" />
+                    <input v-model.number="bulkStock" type="number" :placeholder="form.productType === 'ready' ? 'Stok (pcs)' : 'Kuota (slot)'" min="0" />
+                    <button type="button" class="btn-apply-bulk" @click="applyBulkToCombinations">
+                      Terapkan ke Semua
+                    </button>
+                  </div>
+                </div>
+
+                <div class="vb-table-wrap">
+                  <table class="vb-matrix-table">
+                    <thead>
+                      <tr>
+                        <th>Kombinasi Variasi</th>
+                        <th>Harga Jual (IDR)</th>
+                        <th>{{ form.productType === 'ready' ? 'Stok Inventaris (pcs)' : 'Kuota Titip (slot)' }}</th>
+                        <th>SKU / Kode (Opsional)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr v-for="comb in variantCombinations" :key="comb.key">
+                        <td class="comb-label-cell">
+                          <span class="comb-pill">{{ comb.label }}</span>
+                        </td>
+                        <td>
+                          <div class="rupiah-input-box">
+                            <span>Rp</span>
+                            <input
+                              v-model.number="comb.price"
+                              type="number"
+                              min="1"
+                              required
+                              @input="syncBaseTotalsFromCombinations"
+                            />
+                          </div>
+                        </td>
+                        <td>
+                          <input
+                            v-model.number="comb.stock"
+                            type="number"
+                            min="0"
+                            class="stock-num-input"
+                            required
+                            @input="syncBaseTotalsFromCombinations"
+                          />
+                        </td>
+                        <td>
+                          <input
+                            v-model="comb.sku"
+                            type="text"
+                            placeholder="SKU-01"
+                            class="sku-txt-input"
+                          />
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -338,6 +514,181 @@ const form = ref({
   description: ''
 })
 
+interface EditableTier {
+  name: string
+  options: string[]
+  draftOption: string
+}
+
+interface EditableCombination {
+  id?: number
+  key: string
+  label: string
+  values: Record<string, string>
+  price: number
+  stock: number
+  sku: string
+}
+
+const variantTiers = ref<EditableTier[]>([])
+const variantCombinations = ref<EditableCombination[]>([])
+const bulkPrice = ref<number | null>(null)
+const bulkStock = ref<number | null>(null)
+
+const hasActiveVariants = computed(() => variantCombinations.value.length > 0)
+
+const syncBaseTotalsFromCombinations = () => {
+  if (variantCombinations.value.length === 0) return
+  const validPrices = variantCombinations.value
+    .map(c => Number(c.price) || 0)
+    .filter(p => p > 0)
+  if (validPrices.length > 0) {
+    form.value.price = Math.min(...validPrices)
+  }
+  const totalStock = variantCombinations.value.reduce((sum, c) => sum + Math.max(0, Number(c.stock) || 0), 0)
+  if (form.value.productType === 'ready') {
+    form.value.stockQuantity = totalStock
+  } else {
+    form.value.quota = totalStock
+  }
+  form.value.stockStatus = totalStock > 0 ? 'in_stock' : 'out_of_stock'
+}
+
+const rebuildVariantCombinations = () => {
+  const activeTiers = variantTiers.value
+    .map((t, idx) => ({
+      name: t.name.trim() || `Variasi ${idx + 1}`,
+      options: t.options.map(o => o.trim()).filter(Boolean)
+    }))
+    .filter(t => t.options.length > 0)
+
+  if (activeTiers.length === 0) {
+    variantCombinations.value = []
+    return
+  }
+
+  const prevByKey = new Map<string, EditableCombination>()
+  for (const c of variantCombinations.value) {
+    prevByKey.set(c.key, c)
+    prevByKey.set(c.label.toLowerCase(), c)
+  }
+
+  let acc: { opts: string[]; values: Record<string, string> }[] = [{ opts: [], values: {} }]
+  for (const tier of activeTiers) {
+    const next: { opts: string[]; values: Record<string, string> }[] = []
+    for (const prefix of acc) {
+      for (const opt of tier.options) {
+        next.push({
+          opts: [...prefix.opts, opt],
+          values: { ...prefix.values, [tier.name]: opt }
+        })
+      }
+    }
+    acc = next
+  }
+
+  const defaultPrice = Number(form.value.price) > 0 ? Number(form.value.price) : 150000
+  const defaultStock = form.value.productType === 'ready'
+    ? (Number(form.value.stockQuantity) || 5)
+    : (Number(form.value.quota) || 10)
+
+  variantCombinations.value = acc.map((item) => {
+    const key = item.opts.join(' | ')
+    const label = activeTiers.length === 1
+      ? `${activeTiers[0].name}: ${item.opts[0]}`
+      : activeTiers.map((t, i) => `${t.name}: ${item.opts[i]}`).join(', ')
+    const existing = prevByKey.get(key) || prevByKey.get(item.opts.join(' || ')) || prevByKey.get(label.toLowerCase())
+    return {
+      id: existing?.id,
+      key,
+      label,
+      values: item.values,
+      price: existing ? Number(existing.price) : defaultPrice,
+      stock: existing ? Number(existing.stock) : defaultStock,
+      sku: existing?.sku || ''
+    }
+  })
+
+  syncBaseTotalsFromCombinations()
+}
+
+const addVariantTier = () => {
+  const defaultNames = ['Warna', 'Ukuran', 'Tipe', 'Kapasitas']
+  const nextName = defaultNames[variantTiers.value.length] || `Variasi ${variantTiers.value.length + 1}`
+  variantTiers.value.push({
+    name: nextName,
+    options: [],
+    draftOption: ''
+  })
+}
+
+const removeVariantTier = (index: number) => {
+  variantTiers.value.splice(index, 1)
+  rebuildVariantCombinations()
+}
+
+const addTierOption = (tierIndex: number) => {
+  const tier = variantTiers.value[tierIndex]
+  if (!tier || !tier.draftOption.trim()) return
+
+  const parts = tier.draftOption
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean)
+
+  for (const part of parts) {
+    if (!tier.options.includes(part)) {
+      tier.options.push(part)
+    }
+  }
+  tier.draftOption = ''
+  rebuildVariantCombinations()
+}
+
+const removeTierOption = (tierIndex: number, optionIndex: number) => {
+  const tier = variantTiers.value[tierIndex]
+  if (!tier) return
+  tier.options.splice(optionIndex, 1)
+  rebuildVariantCombinations()
+}
+
+const applyBulkToCombinations = () => {
+  for (const comb of variantCombinations.value) {
+    if (bulkPrice.value !== null && bulkPrice.value > 0) {
+      comb.price = Number(bulkPrice.value)
+    }
+    if (bulkStock.value !== null && bulkStock.value >= 0) {
+      comb.stock = Number(bulkStock.value)
+    }
+  }
+  syncBaseTotalsFromCombinations()
+  showToast('Diterapkan', 'Harga & stok massal berhasil diterapkan ke seluruh kombinasi variasi.', 'info')
+}
+
+const formatVariantTiersSummary = (p: AdminProduct) => {
+  const tiers = p.variants?.tiers
+  if (Array.isArray(tiers) && tiers.length > 0) {
+    return tiers.map((t: any) => t.name).join(' × ')
+  }
+  return 'Multi-Tier'
+}
+
+const getProductPriceDisplay = (p: AdminProduct) => {
+  const combos = p.variants?.combinations
+  if (Array.isArray(combos) && combos.length > 0) {
+    const prices = combos.map((c: any) => Number(c.price) || 0).filter((v: number) => v > 0)
+    if (prices.length > 0) {
+      const minP = Math.min(...prices)
+      const maxP = Math.max(...prices)
+      if (minP !== maxP) {
+        return `${formatRupiah(minP)} - ${formatRupiah(maxP)}`
+      }
+      return formatRupiah(minP)
+    }
+  }
+  return formatRupiah(p.price)
+}
+
 const filteredProducts = computed(() => {
   let list = [...products.value]
   if (typeFilter.value !== 'all') {
@@ -368,6 +719,10 @@ const openCreateModal = () => {
     imageUrl: '',
     description: ''
   }
+  variantTiers.value = []
+  variantCombinations.value = []
+  bulkPrice.value = null
+  bulkStock.value = null
   showModal.value = true
 }
 
@@ -389,6 +744,34 @@ const editProduct = (p: AdminProduct) => {
     imageUrl: p.imageUrl || '',
     description: p.description || ''
   }
+
+  if (p.variants && Array.isArray(p.variants.tiers) && p.variants.tiers.length > 0) {
+    variantTiers.value = p.variants.tiers.map((t: any) => ({
+      name: String(t.name || ''),
+      options: Array.isArray(t.options) ? [...t.options] : [],
+      draftOption: ''
+    }))
+    variantCombinations.value = Array.isArray(p.variants.combinations)
+      ? p.variants.combinations.map((c: any) => ({
+          id: c.id,
+          key: String(c.key || ''),
+          label: String(c.label || ''),
+          values: c.options ? { ...c.options } : (c.values ? { ...c.values } : {}),
+          price: Number(c.price) || p.price,
+          stock: Number(c.stock) >= 0 ? Number(c.stock) : 0,
+          sku: c.sku ? String(c.sku) : ''
+        }))
+      : []
+    if (variantCombinations.value.length === 0) {
+      rebuildVariantCombinations()
+    }
+  } else {
+    variantTiers.value = []
+    variantCombinations.value = []
+  }
+
+  bulkPrice.value = null
+  bulkStock.value = null
   showModal.value = true
 }
 
@@ -462,16 +845,55 @@ const handleFileUpload = async (event: Event) => {
 const saveProduct = async () => {
   isSaving.value = true
   try {
+    // Flush any uncommitted draftOption text in tiers before saving
+    for (let i = 0; i < variantTiers.value.length; i++) {
+      if (variantTiers.value[i]?.draftOption?.trim()) {
+        addTierOption(i)
+      }
+    }
+
+    const activeTiers = variantTiers.value
+      .map((t, idx) => ({
+        name: t.name.trim() || `Variasi ${idx + 1}`,
+        options: t.options.map(o => o.trim()).filter(Boolean)
+      }))
+      .filter(t => t.options.length > 0)
+
+    const variantsPayload = activeTiers.length > 0 && variantCombinations.value.length > 0
+      ? {
+          tiers: activeTiers,
+          combinations: variantCombinations.value.map(c => ({
+            id: c.id,
+            key: c.key,
+            label: c.label,
+            options: c.values,
+            values: c.values,
+            price: Number(c.price) || Number(form.value.price) || 0,
+            stock: Math.max(0, Number(c.stock) || 0),
+            sku: c.sku?.trim() || null
+          }))
+        }
+      : null
+
+    if (variantsPayload) {
+      syncBaseTotalsFromCombinations()
+    }
+
+    const payload = {
+      ...form.value,
+      variants: variantsPayload
+    }
+
     if (isEditing.value && editingId.value) {
       await $fetch(`/api/admin/products/${editingId.value}`, {
         method: 'PUT',
-        body: form.value
+        body: payload
       })
-      showToast('Berhasil', 'Perubahan produk berhasil disimpan.', 'success')
+      showToast('Berhasil', 'Perubahan produk & variasi berhasil disimpan.', 'success')
     } else {
       await $fetch('/api/admin/products', {
         method: 'POST',
-        body: form.value
+        body: payload
       })
       showToast('Berhasil', 'Produk baru berhasil ditambahkan ke database.', 'success')
     }
@@ -758,7 +1180,7 @@ const formatRupiah = (val: number) => {
   background: #ffffff;
   border-radius: 12px;
   width: 100%;
-  max-width: 600px;
+  max-width: 760px;
   padding: 24px;
   max-height: 90vh;
   overflow-y: auto;
@@ -890,6 +1312,40 @@ const formatRupiah = (val: number) => {
   gap: 10px;
 }
 
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--color-canvas, #FFFBF2);
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
 .btn-manage-cat {
   background: #ffffff;
   color: var(--color-primary, #8C6D3F);
@@ -966,5 +1422,396 @@ const formatRupiah = (val: number) => {
 .btn-quick-save:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* Multi-tier Variations Builder */
+.prod-variant-badges {
+  margin-top: 4px;
+}
+
+.variant-count-pill {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: #FFFBF2;
+  color: #8C6D3F;
+  border: 1px solid #E5D7BE;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.variant-stock-mini {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.v-stock-chip {
+  font-size: 0.68rem;
+  background: #F9F5EC;
+  color: #5A4B3B;
+  border: 1px solid #EFE1C6;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+.v-stock-chip.empty {
+  background: #FEF2F2;
+  color: #DC2626;
+  border-color: #FECACA;
+}
+
+.v-stock-more {
+  font-size: 0.68rem;
+  color: #7A6A55;
+  font-weight: 600;
+}
+
+.auto-calc-badge {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #8C6D3F;
+  background: #F7EEDC;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-left: 4px;
+}
+
+.input-readonly {
+  background: #F9F5EC;
+  color: #7A6A55;
+  cursor: not-allowed;
+}
+
+.variants-builder-card {
+  background: #FFFBF2;
+  border: 1px solid #E5D7BE;
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.vb-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.vb-title {
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #2B2116;
+  margin: 0 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vb-opt-tag {
+  font-size: 0.7rem;
+  font-weight: 700;
+  background: #EFE1C6;
+  color: #6F5530;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.vb-sub {
+  font-size: 0.78rem;
+  color: #7A6A55;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.btn-add-tier {
+  background: #ffffff;
+  color: #8C6D3F;
+  border: 1px solid #8C6D3F;
+  padding: 7px 12px;
+  border-radius: 7px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-add-tier:hover {
+  background: #8C6D3F;
+  color: #ffffff;
+}
+
+.vb-empty {
+  font-size: 0.8rem;
+  color: #7A6A55;
+  background: #ffffff;
+  border: 1px dashed #D6C3A5;
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+}
+
+.vb-tiers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vb-tier-box {
+  background: #ffffff;
+  border: 1px solid #EFE1C6;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vb-tier-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.vb-tier-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.tier-badge {
+  background: #8C6D3F;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+.tier-name-input {
+  flex: 1;
+  padding: 6px 10px;
+  border: 1px solid #EFE1C6;
+  border-radius: 6px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #2B2116;
+}
+
+.btn-remove-tier {
+  background: #FEE2E2;
+  color: #DC2626;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 5px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vb-tier-options-area {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vb-option-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.vb-opt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #F7EEDC;
+  color: #2B2116;
+  border: 1px solid #E2D1B3;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.chip-del {
+  background: none;
+  border: none;
+  color: #8C6D3F;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.chip-del:hover {
+  color: #DC2626;
+}
+
+.vb-add-opt-row {
+  display: flex;
+  gap: 8px;
+}
+
+.vb-add-opt-row input {
+  flex: 1;
+  padding: 7px 10px;
+  border: 1px solid #EFE1C6;
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.btn-add-opt {
+  background: #EFE1C6;
+  color: #6F5530;
+  border: none;
+  padding: 7px 12px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.btn-add-opt:hover {
+  background: #E2D1B3;
+}
+
+.vb-matrix-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.vb-bulk-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: #F7EEDC;
+  padding: 8px 12px;
+  border-radius: 8px;
+}
+
+.bulk-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #5A4B3B;
+}
+
+.bulk-inputs {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.bulk-inputs input {
+  width: 130px;
+  padding: 5px 8px;
+  border: 1px solid #D6C3A5;
+  border-radius: 5px;
+  font-size: 0.78rem;
+  background: #ffffff;
+}
+
+.btn-apply-bulk {
+  background: #8C6D3F;
+  color: #ffffff;
+  border: none;
+  padding: 6px 10px;
+  border-radius: 5px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vb-table-wrap {
+  background: #ffffff;
+  border: 1px solid #EFE1C6;
+  border-radius: 8px;
+  overflow-x: auto;
+}
+
+.vb-matrix-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+}
+
+.vb-matrix-table th {
+  background: #FAF5EA;
+  color: #6F5530;
+  font-weight: 700;
+  padding: 8px 10px;
+  text-align: left;
+  border-bottom: 1px solid #EFE1C6;
+}
+
+.vb-matrix-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid #F5ECE0;
+  vertical-align: middle;
+}
+
+.comb-pill {
+  display: inline-block;
+  font-weight: 700;
+  color: #2B2116;
+  background: #FFFBF2;
+  border: 1px solid #E5D7BE;
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.rupiah-input-box {
+  display: flex;
+  align-items: center;
+  border: 1px solid #EFE1C6;
+  border-radius: 6px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.rupiah-input-box span {
+  background: #FAF5EA;
+  color: #7A6A55;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 6px 8px;
+  border-right: 1px solid #EFE1C6;
+}
+
+.rupiah-input-box input {
+  border: none !important;
+  padding: 6px 8px !important;
+  width: 100%;
+  font-size: 0.82rem;
+  outline: none;
+}
+
+.stock-num-input {
+  width: 90px;
+  padding: 6px 8px;
+  border: 1px solid #EFE1C6;
+  border-radius: 6px;
+}
+
+.sku-txt-input {
+  width: 110px;
+  padding: 6px 8px;
+  border: 1px solid #EFE1C6;
+  border-radius: 6px;
 }
 </style>

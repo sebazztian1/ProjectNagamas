@@ -43,7 +43,7 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  // Create customer notification if status changed to 'quoted' or 'rejected'
+  // Create customer notification if status changed to 'quoted', 'reviewed', or 'rejected'
   if (status === 'quoted' && quotedPrice) {
     await prisma.notifications.create({
       data: {
@@ -54,13 +54,23 @@ export default defineEventHandler(async (event) => {
         link_url: '/request'
       }
     })
+  } else if (status === 'reviewed') {
+    await prisma.notifications.create({
+      data: {
+        user_id: req.user_id,
+        type: 'request',
+        title: 'Request Produk Sedang Ditinjau Admin',
+        body: `Permintaan titip barang "${req.product_name}" sedang dicek ketersediaan & harganya oleh tim dbb_luxe.`,
+        link_url: '/request'
+      }
+    })
   } else if (status === 'rejected') {
     await prisma.notifications.create({
       data: {
         user_id: req.user_id,
         type: 'request',
         title: 'Update Request Titip Barang',
-        body: `Mohon maaf, permintaan titip barang "${req.product_name}" saat ini belum dapat dipenuhi.`,
+        body: `Mohon maaf, permintaan titip barang "${req.product_name}" saat ini belum dapat dipenuhi.${adminNote ? ' Catatan: ' + adminNote : ''}`,
         link_url: '/request'
       }
     })

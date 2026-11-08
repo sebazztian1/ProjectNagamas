@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
+import { normalizeProductVariants } from '../../../utils/variants'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -81,7 +82,11 @@ export default defineEventHandler(async (event) => {
     stockQuantity: p.stock_quantity ?? 0,
     quota: p.quota ?? 0,
     maxQtyPerOrder: p.max_qty_per_order ?? 5,
-    variants: p.variants,
+    variants: normalizeProductVariants(
+      p.variants,
+      Number(p.price),
+      p.product_type === 'ready' ? (p.stock_quantity ?? 0) : (p.quota ?? 0)
+    ),
     isActive: p.is_active,
     createdAt: p.created_at,
     updatedAt: p.updated_at

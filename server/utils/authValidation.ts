@@ -153,17 +153,14 @@ export async function checkPwnedPassword(password: string): Promise<boolean> {
 }
 
 /**
- * Validate password according to design-password_spec.md:
- * - Minimum 12 characters (length over complexity)
+ * Validate password rules:
+ * - Minimum 8 characters
  * - Maximum 128 characters
- * - No forced uppercase/symbol/number composition rules
- * - Must not contain username, normalized phone, local phone (08...), or site name (dbbluxe, dbb_luxe)
- * - Must not be repeated pattern (e.g. aaaaaaaaaaaa) or sequential pattern (123456789012, abcdefghijkl)
- * - Must not be common password or breached password
+ * - Must contain at least 1 number or symbol
  */
 export async function validatePasswordRules(
   password: string,
-  context?: { username?: string; phone?: string; isAdmin?: boolean }
+  _context?: { username?: string; phone?: string; isAdmin?: boolean }
 ): Promise<{ valid: boolean; error?: string }> {
   if (!password || typeof password !== 'string') {
     return { valid: false, error: 'Kata sandi wajib diisi' }
@@ -171,12 +168,11 @@ export async function validatePasswordRules(
 
   // Count characters, not bytes (supports Unicode/emoji)
   const charLength = Array.from(password).length
-  const minLength = context?.isAdmin ? 15 : 12
 
-  if (charLength < minLength) {
+  if (charLength < 8) {
     return {
       valid: false,
-      error: `Kata sandi minimal ${minLength} karakter`
+      error: 'Kata sandi minimal 8 karakter'
     }
   }
 
@@ -184,61 +180,12 @@ export async function validatePasswordRules(
     return { valid: false, error: 'Kata sandi maksimal 128 karakter' }
   }
 
-  const passLower = password.toLowerCase()
-
-  // Common password check
-  if (COMMON_PASSWORDS.has(passLower)) {
-    return { valid: false, error: 'Kata sandi ini terlalu umum, coba yang lain' }
-  }
-
-  // Site name check
-  if (passLower.includes('dbbluxe') || passLower.includes('dbb_luxe')) {
-    return { valid: false, error: 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs' }
-  }
-
-  // Username check
-  if (context?.username && context.username.length >= 3) {
-    const userClean = context.username.toLowerCase().replace(/[._]/g, '')
-    if (passLower.includes(context.username.toLowerCase()) || passLower.includes(userClean)) {
-      return { valid: false, error: 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs' }
+  // Must contain at least 1 number or symbol (non-alphabetic, non-whitespace)
+  if (!/[^a-zA-Z\s]/.test(password)) {
+    return {
+      valid: false,
+      error: 'Kata sandi harus mengandung minimal 1 angka atau simbol'
     }
-  }
-
-  // Phone number check
-  if (context?.phone) {
-    const phoneClean = context.phone.replace(/[\s\-\(\)\.]/g, '')
-    const digitsOnly = phoneClean.replace(/\D/g, '')
-    const localPhone = digitsOnly.startsWith('62') ? '0' + digitsOnly.slice(2) : digitsOnly
-
-    if (
-      (digitsOnly.length >= 7 && passLower.includes(digitsOnly)) ||
-      (localPhone.length >= 7 && passLower.includes(localPhone))
-    ) {
-      return { valid: false, error: 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs' }
-    }
-  }
-
-  // Repeated character pattern check (e.g. aaaaaaaaaaaa)
-  if (/^(.)\1+$/.test(password)) {
-    return { valid: false, error: 'Kata sandi ini terlalu umum, coba yang lain' }
-  }
-
-  // Sequential pattern check
-  const sequentialPatterns = [
-    '123456789012',
-    '012345678901',
-    'abcdefghijkl',
-    'qwertyuiopas',
-    'asdfghjklzxc'
-  ]
-  if (sequentialPatterns.some((seq) => passLower.includes(seq))) {
-    return { valid: false, error: 'Kata sandi ini terlalu umum, coba yang lain' }
-  }
-
-  // Breached password check (HIBP)
-  const isBreached = await checkPwnedPassword(password)
-  if (isBreached) {
-    return { valid: false, error: 'Kata sandi ini pernah bocor di internet, gunakan yang lain' }
   }
 
   return { valid: true }

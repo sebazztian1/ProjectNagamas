@@ -39,21 +39,27 @@ model categories {
 }
 
 model chat_messages {
-  id           BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
-  room_id      Int                        @db.UnsignedInt
-  sender_id    Int                        @db.UnsignedInt
-  sender_role  chat_messages_sender_role
-  message_type chat_messages_message_type @default(text)
-  content      String?                    @db.Text
-  image_url    String?                    @db.VarChar(500)
-  product_id   Int?                       @db.UnsignedInt
-  is_read      Boolean                    @default(false)
-  created_at   DateTime                   @default(now()) @db.DateTime(0)
-  products     products?                  @relation(fields: [product_id], references: [id], onUpdate: NoAction, map: "fk_chat_messages_product")
-  chat_rooms   chat_rooms                 @relation(fields: [room_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_chat_messages_room")
-  users        users                      @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_chat_messages_sender")
+  id               BigInt                     @id @default(autoincrement()) @db.UnsignedBigInt
+  room_id          Int                        @db.UnsignedInt
+  sender_id        Int                        @db.UnsignedInt
+  sender_role      chat_messages_sender_role
+  message_type     chat_messages_message_type @default(text)
+  content          String?                    @db.Text
+  image_url        String?                    @db.VarChar(500)
+  product_id       Int?                       @db.UnsignedInt
+  trip_id          Int?                       @db.UnsignedInt
+  request_id       Int?                       @db.UnsignedInt
+  is_read          Boolean                    @default(false)
+  created_at       DateTime                   @default(now()) @db.DateTime(0)
+  products         products?                  @relation(fields: [product_id], references: [id], onUpdate: NoAction, map: "fk_chat_messages_product")
+  jastip_trips     jastip_trips?              @relation(fields: [trip_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_chat_messages_trip")
+  product_requests product_requests?          @relation(fields: [request_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_chat_messages_request")
+  chat_rooms       chat_rooms                 @relation(fields: [room_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_chat_messages_room")
+  users            users                      @relation(fields: [sender_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_chat_messages_sender")
 
   @@index([product_id], map: "idx_chat_messages_product")
+  @@index([trip_id], map: "idx_chat_messages_trip")
+  @@index([request_id], map: "idx_chat_messages_request")
   @@index([room_id, created_at], map: "idx_chat_messages_room")
   @@index([sender_id], map: "idx_chat_messages_sender")
 }
@@ -92,6 +98,7 @@ model jastip_trips {
   created_at             DateTime              @default(now()) @db.DateTime(0)
   updated_at             DateTime?             @db.DateTime(0)
   users                  users                 @relation(fields: [created_by], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_trips_created_by")
+  chat_messages          chat_messages[]
   orders                 orders[]
   product_requests       product_requests[]
   products               products[]
@@ -115,19 +122,22 @@ model notifications {
 }
 
 model order_items {
-  id                    Int      @id @default(autoincrement()) @db.UnsignedInt
-  order_id              Int      @db.UnsignedInt
-  product_id            Int      @db.UnsignedInt
-  product_name_snapshot String   @db.VarChar(200)
-  variant_snapshot      String?  @db.VarChar(255)
-  qty                   Int      @db.UnsignedInt
-  price_at_order        Decimal  @db.Decimal(15, 2)
-  subtotal              Decimal  @db.Decimal(15, 2)
-  orders                orders   @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_order_items_order")
-  products              products @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_product")
+  id                    Int               @id @default(autoincrement()) @db.UnsignedInt
+  order_id              Int               @db.UnsignedInt
+  product_id            Int               @db.UnsignedInt
+  variant_id            Int?              @db.UnsignedInt
+  product_name_snapshot String            @db.VarChar(200)
+  variant_snapshot      String?           @db.VarChar(255)
+  qty                   Int               @db.UnsignedInt
+  price_at_order        Decimal           @db.Decimal(15, 2)
+  subtotal              Decimal           @db.Decimal(15, 2)
+  orders                orders            @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_order_items_order")
+  products              products          @relation(fields: [product_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_order_items_product")
+  product_variants      product_variants? @relation(fields: [variant_id], references: [id], onDelete: SetNull, onUpdate: NoAction, map: "fk_order_items_variant")
 
   @@index([order_id], map: "idx_order_items_order")
   @@index([product_id], map: "idx_order_items_product")
+  @@index([variant_id], map: "idx_order_items_variant")
 }
 
 model order_status_logs {
@@ -239,10 +249,30 @@ model product_requests {
   updated_at          DateTime?               @db.DateTime(0)
   jastip_trips        jastip_trips?           @relation(fields: [trip_id], references: [id], onUpdate: NoAction, map: "fk_requests_trip")
   users               users                   @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_requests_user")
+  chat_messages       chat_messages[]
 
   @@index([status], map: "idx_requests_status")
   @@index([trip_id], map: "idx_requests_trip")
   @@index([user_id], map: "idx_requests_user")
+}
+
+model product_variants {
+  id             Int           @id @default(autoincrement()) @db.UnsignedInt
+  product_id     Int           @db.UnsignedInt
+  variant_key    String        @db.VarChar(255)
+  variant_label  String        @db.VarChar(255)
+  tier_values    Json
+  price          Decimal       @db.Decimal(15, 2)
+  stock_quantity Int           @default(0) @db.UnsignedInt
+  quota          Int?          @db.UnsignedInt
+  sku            String?       @db.VarChar(100)
+  is_active      Boolean       @default(true)
+  created_at     DateTime      @default(now()) @db.DateTime(0)
+  updated_at     DateTime?     @db.DateTime(0)
+  products       products      @relation(fields: [product_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "fk_product_variants_product")
+  order_items    order_items[]
+
+  @@index([product_id], map: "idx_product_variants_product")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -272,6 +302,7 @@ model products {
   chat_messages     chat_messages[]
   order_items       order_items[]
   product_images    product_images[]
+  product_variants  product_variants[]
   categories        categories            @relation(fields: [category_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_category")
   jastip_trips      jastip_trips?         @relation(fields: [trip_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "fk_products_trip")
   wishlists         wishlists[]
@@ -342,6 +373,8 @@ enum chat_messages_message_type {
   text
   image
   product
+  jastip
+  request
 }
 
 enum products_product_type {

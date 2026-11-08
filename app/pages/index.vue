@@ -151,6 +151,125 @@
       </div>
     </section>
 
+    <!-- 1. Trust Bar -->
+    <section class="trust-bar-section" aria-label="Jaminan layanan dbb_luxe">
+      <div class="trust-bar">
+        <div v-for="item in trustItems" :key="item.title" class="trust-item">
+          <span class="trust-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path v-for="(d, i) in item.paths" :key="i" :d="d" />
+            </svg>
+          </span>
+          <div class="trust-text">
+            <strong>{{ item.title }}</strong>
+            <span>{{ item.desc }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Category Chips -->
+    <section v-if="categoryRows.length > 0" class="category-chips-section" aria-label="Jelajahi kategori">
+      <div class="section-head-inline">
+        <h2 class="section-title-sm">Jelajahi Kategori</h2>
+      </div>
+      <div class="category-chips">
+        <NuxtLink
+          v-for="cat in categoryRows"
+          :key="cat.name"
+          :to="`/ready?category=${encodeURIComponent(cat.name)}`"
+          class="category-chip"
+        >
+          <span class="chip-initial" aria-hidden="true">{{ cat.name.charAt(0).toUpperCase() }}</span>
+          <span class="chip-name">{{ cat.name }}</span>
+          <span class="chip-count">{{ cat.products.length }}</span>
+        </NuxtLink>
+      </div>
+    </section>
+
+    <!-- 3. Open Jastip Schedules -->
+    <section v-if="sortedOpenTrips.length > 0" class="open-trips-section" aria-label="Jadwal Jastip terbuka">
+      <div class="section-head-row">
+        <div>
+          <h2 class="section-title-sm">Jadwal Jastip Terbuka</h2>
+          <p class="section-sub">Titip belanja dari luar negeri sebelum PO ditutup.</p>
+        </div>
+        <NuxtLink to="/jastip" class="section-link">
+          Lihat semua jadwal &rarr;
+        </NuxtLink>
+      </div>
+
+      <div class="open-trips-grid">
+        <NuxtLink
+          v-for="trip in sortedOpenTrips"
+          :key="trip.id"
+          :to="`/jastip/${trip.slug}`"
+          class="open-trip-card"
+        >
+          <div class="ot-media">
+            <img
+              :src="trip.coverImageUrl || 'https://images.unsplash.com/photo-1508009603885-50cf7c579365?auto=format&fit=crop&w=800&q=80'"
+              :alt="trip.title"
+              loading="lazy"
+            />
+            <span class="ot-country">{{ trip.flag }} {{ trip.country }}</span>
+            <span class="ot-days" :class="{ urgent: daysLeft(trip.closeDate) <= 3 }">
+              {{ daysLeftLabel(trip.closeDate) }}
+            </span>
+          </div>
+          <div class="ot-body">
+            <h3 class="ot-title">{{ trip.title }}</h3>
+            <p class="ot-area">{{ trip.cityOrArea || 'Open PO Jastip' }}</p>
+
+            <div class="ot-dates">
+              <div>
+                <span>Tutup PO</span>
+                <strong>{{ formatDate(trip.closeDate) }}</strong>
+              </div>
+              <div v-if="trip.estimatedArrivalDate">
+                <span>Estimasi Tiba</span>
+                <strong>{{ formatDate(trip.estimatedArrivalDate) }}</strong>
+              </div>
+            </div>
+
+            <div class="ot-quota">
+              <div class="ot-quota-label">
+                <span>Kuota terisi</span>
+                <strong>{{ trip.quotaFilled }} / {{ trip.quotaTotal }}</strong>
+              </div>
+              <div class="ot-progress" role="progressbar" :aria-valuenow="quotaPercent(trip)" aria-valuemin="0" aria-valuemax="100">
+                <span class="ot-progress-fill" :style="{ width: quotaPercent(trip) + '%' }"></span>
+              </div>
+              <span class="ot-quota-remaining">Sisa {{ trip.quotaRemaining }} slot</span>
+            </div>
+          </div>
+        </NuxtLink>
+      </div>
+    </section>
+
+    <!-- 5. Request Product CTA Banner -->
+    <section class="request-feature-section">
+      <div class="request-feature-card">
+        <div class="rf-content">
+          <span class="rf-eyebrow">Titip Barang Impian</span>
+          <h2 class="rf-title">Barang yang kamu cari tidak ada di katalog?</h2>
+          <p class="rf-desc">
+            Kirim foto atau link produk dari toko luar negeri. Admin akan mengecek ketersediaan dan memberikan
+            penawaran harga langsung ke akun kamu.
+          </p>
+          <div class="rf-actions">
+            <NuxtLink to="/request" class="rf-btn-primary">Request Produk Sekarang</NuxtLink>
+            <NuxtLink to="/cara-order" class="rf-btn-ghost">Pelajari Caranya</NuxtLink>
+          </div>
+        </div>
+        <ul class="rf-points">
+          <li><span>1</span> Kirim foto / link produk</li>
+          <li><span>2</span> Admin kirim penawaran harga</li>
+          <li><span>3</span> Setujui &amp; lakukan pembayaran</li>
+        </ul>
+      </div>
+    </section>
+
     <!-- Main Content: Product Catalog by Category Rows (Alphabetical) -->
     <main class="main-catalog-container">
       <div v-if="categoryRows.length > 0" class="category-rows-wrapper">
@@ -227,15 +346,28 @@
         <p>Belum ada produk yang tersedia di katalog.</p>
       </div>
 
-      <!-- Bottom Banner: Request Jastip -->
-      <section class="request-cta-banner">
-        <div class="request-content">
-          <h3 class="request-heading">Barang yang dicari belum ada di katalog?</h3>
-          <p class="request-sub">Kirimkan foto atau link produk luar negeri yang Anda inginkan untuk dicek langsung oleh admin.</p>
+      <!-- 6. How to Order Steps -->
+      <section class="how-order-section" aria-label="Cara order">
+        <div class="section-head-row">
+          <div>
+            <h2 class="section-title-sm">Cara Order di dbb_luxe</h2>
+            <p class="section-sub">Proses mudah dalam 5 langkah.</p>
+          </div>
+          <NuxtLink to="/cara-order" class="section-link">Selengkapnya &rarr;</NuxtLink>
         </div>
-        <NuxtLink to="/request" class="request-btn">
-          Request Barang &rarr;
-        </NuxtLink>
+
+        <ol class="how-order-steps">
+          <li v-for="(step, idx) in orderSteps" :key="step.title" class="how-step">
+            <span class="how-step-num">{{ idx + 1 }}</span>
+            <div class="how-step-icon" aria-hidden="true">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path v-for="(d, i) in step.paths" :key="i" :d="d" />
+              </svg>
+            </div>
+            <strong>{{ step.title }}</strong>
+            <span>{{ step.desc }}</span>
+          </li>
+        </ol>
       </section>
     </main>
   </div>
@@ -465,6 +597,82 @@ const categoryRows = computed(() => {
     }))
     .filter(row => row.products.length > 0)
 })
+
+// 1. Trust bar items
+const trustItems = [
+  {
+    title: 'Struk Pembelian Asli',
+    desc: 'Bukti belanja toko fisik disertakan',
+    paths: ['M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z', 'M14 2v6h6', 'M9 13h6', 'M9 17h6']
+  },
+  {
+    title: 'Garansi Uang Kembali',
+    desc: 'Jika barang kosong di toko asal',
+    paths: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'm9 12 2 2 4-4']
+  },
+  {
+    title: 'Dikemas Aman',
+    desc: 'Dikirim langsung ke alamat Anda',
+    paths: ['M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z', 'M3.3 7 12 12l8.7-5', 'M12 22V12']
+  },
+  {
+    title: 'Admin Responsif',
+    desc: 'Tanya langsung lewat live chat',
+    paths: ['M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z']
+  }
+]
+
+// 3. All open trips (soonest close date first)
+const sortedOpenTrips = computed(() => {
+  return [...(openTrips.value || [])].sort(
+    (a, b) => new Date(a.closeDate).getTime() - new Date(b.closeDate).getTime()
+  )
+})
+
+const daysLeft = (closeDate: string) => {
+  const diff = new Date(closeDate).getTime() - nowTimestamp.value
+  return Math.max(0, Math.ceil(diff / 86400000))
+}
+
+const daysLeftLabel = (closeDate: string) => {
+  const d = daysLeft(closeDate)
+  if (d <= 0) return 'Hari ini terakhir'
+  return `${d} hari lagi`
+}
+
+const quotaPercent = (trip: ApiTrip) => {
+  if (!trip.quotaTotal) return 0
+  return Math.min(100, Math.round((trip.quotaFilled / trip.quotaTotal) * 100))
+}
+
+// 6. How to order steps
+const orderSteps = [
+  {
+    title: 'Pilih Produk',
+    desc: 'Ready Stock atau Jastip dari jadwal trip yang buka',
+    paths: ['M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z', 'M3 6h18', 'M16 10a4 4 0 0 1-8 0']
+  },
+  {
+    title: 'Checkout',
+    desc: 'Isi alamat dan ajukan pesanan',
+    paths: ['M9 11l3 3L22 4', 'M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11']
+  },
+  {
+    title: 'ACC Admin',
+    desc: 'Admin cek stok/kuota dan konfirmasi ongkir',
+    paths: ['M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', 'm9 12 2 2 4-4']
+  },
+  {
+    title: 'Bayar',
+    desc: 'Transfer dalam 24 jam, bisa DP 50% untuk Jastip',
+    paths: ['M2 7a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z', 'M2 10h20']
+  },
+  {
+    title: 'Barang Dikirim',
+    desc: 'Pesanan dikemas dan dikirim ke alamat Anda',
+    paths: ['M1 3h15v13H1z', 'M16 8h4l3 3v5h-7z', 'M5.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z', 'M18.5 21a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z']
+  }
+]
 
 const getProductLink = (product: ApiProduct) => {
   if (product.productType === 'jastip' && product.trip?.slug) {
@@ -952,6 +1160,503 @@ const formatDate = (dateStr: string) => {
   background: var(--color-primary-hover);
   transform: translateY(-2px);
   box-shadow: 0 8px 20px -4px rgba(140, 109, 63, 0.4);
+}
+
+/* ===== Shared section helpers ===== */
+.trust-bar-section,
+.category-chips-section,
+.open-trips-section,
+.request-feature-section {
+  max-width: 1240px;
+  margin: 36px auto 0;
+  padding: 0 24px;
+}
+
+.section-title-sm {
+  font-size: 1.45rem !important;
+  margin: 0 !important;
+}
+
+.section-sub {
+  font-size: 0.88rem;
+  color: var(--color-text-muted);
+  margin-top: 2px;
+}
+
+.section-head-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.section-head-inline {
+  margin-bottom: 14px;
+}
+
+.section-link {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: var(--brand-accent);
+  text-decoration: none;
+}
+
+.section-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== 1. Trust bar ===== */
+.trust-bar {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-subtle);
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-right: 1px solid var(--color-border);
+}
+
+.trust-item:last-child {
+  border-right: none;
+}
+
+.trust-icon {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--brand-primary);
+  color: var(--brand-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.trust-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.35;
+}
+
+.trust-text strong {
+  font-size: 0.88rem;
+  color: var(--color-text);
+}
+
+.trust-text span {
+  font-size: 0.76rem;
+  color: var(--color-text-muted);
+}
+
+/* ===== 2. Category chips ===== */
+.category-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.category-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px 8px 8px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  text-decoration: none;
+  color: var(--color-text);
+  font-size: 0.88rem;
+  font-weight: 600;
+  transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.category-chip:hover {
+  border-color: var(--brand-secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.chip-initial {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--brand-accent);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.chip-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--brand-accent);
+  background: var(--brand-primary);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ===== 3. Open trips ===== */
+.open-trips-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 20px;
+}
+
+.open-trip-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.open-trip-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--brand-secondary);
+}
+
+.ot-media {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  background: var(--brand-primary);
+}
+
+.ot-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.ot-country,
+.ot-days {
+  position: absolute;
+  top: 12px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 5px 11px;
+  border-radius: 999px;
+}
+
+.ot-country {
+  left: 12px;
+  background: rgba(28, 20, 12, 0.78);
+  color: #fff;
+}
+
+.ot-days {
+  right: 12px;
+  background: #fff;
+  color: var(--brand-accent);
+}
+
+.ot-days.urgent {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.ot-body {
+  padding: 16px 18px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ot-title {
+  font-size: 1.02rem;
+  font-weight: 700;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.ot-area {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-top: -4px;
+}
+
+.ot-dates {
+  display: flex;
+  gap: 18px;
+  padding: 10px 0;
+  border-top: 1px dashed var(--color-border);
+  border-bottom: 1px dashed var(--color-border);
+}
+
+.ot-dates div {
+  display: flex;
+  flex-direction: column;
+}
+
+.ot-dates span {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-text-light);
+}
+
+.ot-dates strong {
+  font-size: 0.84rem;
+}
+
+.ot-quota {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ot-quota-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--color-text-muted);
+}
+
+.ot-quota-label strong {
+  color: var(--color-text);
+}
+
+.ot-progress {
+  height: 7px;
+  border-radius: 999px;
+  background: var(--brand-primary);
+  overflow: hidden;
+}
+
+.ot-progress-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--brand-secondary), var(--brand-accent));
+}
+
+.ot-quota-remaining {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--brand-accent);
+}
+
+/* ===== 5. Request feature banner ===== */
+.request-feature-card {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 32px;
+  align-items: center;
+  padding: 36px 40px;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, #1C140C 0%, #2A1F16 55%, #3A2B1A 100%);
+  color: #FFFBF2;
+  box-shadow: var(--shadow-md);
+}
+
+.rf-eyebrow {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--brand-secondary);
+  margin-bottom: 10px;
+}
+
+.rf-title {
+  font-size: clamp(1.5rem, 2.4vw, 2rem) !important;
+  color: #FFFBF2 !important;
+  margin-bottom: 10px !important;
+}
+
+.rf-desc {
+  font-size: 0.92rem;
+  line-height: 1.65;
+  color: rgba(255, 251, 242, 0.78);
+  max-width: 520px;
+}
+
+.rf-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+
+.rf-btn-primary,
+.rf-btn-ghost {
+  text-decoration: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 11px 22px;
+  border-radius: 999px;
+  transition: transform 0.2s, background 0.2s;
+}
+
+.rf-btn-primary {
+  background: var(--brand-secondary);
+  color: #1C140C;
+}
+
+.rf-btn-primary:hover {
+  transform: translateY(-1px);
+  background: #E3C98E;
+}
+
+.rf-btn-ghost {
+  border: 1px solid rgba(255, 251, 242, 0.35);
+  color: #FFFBF2;
+}
+
+.rf-btn-ghost:hover {
+  background: rgba(255, 251, 242, 0.1);
+}
+
+.rf-points {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rf-points li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  background: rgba(255, 251, 242, 0.07);
+  border: 1px solid rgba(255, 251, 242, 0.12);
+  font-size: 0.88rem;
+}
+
+.rf-points li span {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--brand-secondary);
+  color: #1C140C;
+  font-weight: 700;
+  font-size: 0.82rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== 6. How to order ===== */
+.how-order-section {
+  margin-top: 56px;
+}
+
+.how-order-steps {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+.how-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 20px 18px;
+  background: #fff;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.how-step-num {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--brand-primary);
+}
+
+.how-step-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: var(--brand-primary);
+  color: var(--brand-accent);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
+.how-step strong {
+  font-size: 0.95rem;
+}
+
+.how-step > span:last-child {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+@media (max-width: 1000px) {
+  .trust-bar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .trust-item:nth-child(2) {
+    border-right: none;
+  }
+  .trust-item:nth-child(-n + 2) {
+    border-bottom: 1px solid var(--color-border);
+  }
+  .how-order-steps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .request-feature-card {
+    grid-template-columns: 1fr;
+    padding: 28px 24px;
+  }
+}
+
+@media (max-width: 560px) {
+  .trust-bar-section,
+  .category-chips-section,
+  .open-trips-section,
+  .request-feature-section {
+    padding: 0 16px;
+  }
+  .trust-bar {
+    grid-template-columns: 1fr;
+  }
+  .trust-item {
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .trust-item:last-child {
+    border-bottom: none;
+  }
+  .how-order-steps {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Main Catalog Area */

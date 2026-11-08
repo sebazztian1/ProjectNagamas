@@ -119,6 +119,33 @@ export default defineEventHandler(async (event) => {
             select: { slug: true, title: true }
           }
         }
+      },
+      jastip_trips: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          country: true,
+          city_or_area: true,
+          cover_image_url: true,
+          status: true,
+          close_date: true,
+          estimated_arrival_date: true
+        }
+      },
+      product_requests: {
+        select: {
+          id: true,
+          product_name: true,
+          description: true,
+          reference_image_url: true,
+          reference_link: true,
+          status: true,
+          quoted_price: true,
+          jastip_trips: {
+            select: { title: true, country: true }
+          }
+        }
       }
     }
   })
@@ -143,6 +170,8 @@ export default defineEventHandler(async (event) => {
       content: m.content,
       imageUrl: m.image_url,
       productId: m.product_id,
+      tripId: m.trip_id,
+      requestId: m.request_id,
       product: m.products
         ? {
             id: m.products.id,
@@ -154,6 +183,32 @@ export default defineEventHandler(async (event) => {
             stockStatus: m.products.stock_status,
             tripSlug: m.products.jastip_trips?.slug || null,
             tripTitle: m.products.jastip_trips?.title || null
+          }
+        : null,
+      trip: m.jastip_trips
+        ? {
+            id: m.jastip_trips.id,
+            title: m.jastip_trips.title,
+            slug: m.jastip_trips.slug,
+            country: m.jastip_trips.country,
+            cityOrArea: m.jastip_trips.city_or_area || '',
+            coverImageUrl: m.jastip_trips.cover_image_url || null,
+            status: m.jastip_trips.status,
+            closeDate: m.jastip_trips.close_date,
+            estimatedArrivalDate: m.jastip_trips.estimated_arrival_date
+          }
+        : null,
+      productRequest: m.product_requests
+        ? {
+            id: m.product_requests.id,
+            productName: m.product_requests.product_name,
+            description: m.product_requests.description || '',
+            referenceImageUrl: m.product_requests.reference_image_url || null,
+            referenceLink: m.product_requests.reference_link || null,
+            status: m.product_requests.status,
+            quotedPrice: m.product_requests.quoted_price ? Number(m.product_requests.quoted_price) : null,
+            tripTitle: m.product_requests.jastip_trips?.title || null,
+            tripCountry: m.product_requests.jastip_trips?.country || null
           }
         : null,
       isRead: m.is_read,

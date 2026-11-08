@@ -11,7 +11,7 @@
           <path d="M3 22v-6h6"></path>
           <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
         </svg>
-        <span>Segarkan</span>
+        <span>Refresh</span>
       </button>
     </div>
 
@@ -369,16 +369,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useToast } from '../../composables/useToast'
-import { useAuth } from '../../composables/useAuth'
+import { useAdminStats } from '../../composables/useAdminStats'
 
 definePageMeta({
   middleware: 'admin'
 })
 
 const { showToast } = useToast()
-const { token } = useAuth()
+const { fetchAdminStats } = useAdminStats()
 
 interface AdminRequestItem {
   id: number
@@ -430,12 +430,19 @@ const currentStatus = ref('all')
 const searchQuery = ref('')
 
 // Fetch requests from DB
-const { data: requestsData, pending, refresh: refreshRequests } = await useFetch<AdminRequestItem[]>('/api/admin/requests', {
-  headers: computed(() => token.value ? { Authorization: `Bearer ${token.value}` } : {}),
-  query: computed(() => ({
-    status: currentStatus.value,
-    search: searchQuery.value
-  }))
+const { data: requestsData, pending, refresh: fetchRequests } = await useFetch<AdminRequestItem[]>('/api/admin/requests', {
+  query: {
+    status: currentStatus,
+    search: searchQuery
+  }
+})
+
+const refreshRequests = async () => {
+  await Promise.all([fetchRequests(), fetchAdminStats(true)])
+}
+
+onMounted(() => {
+  refreshRequests()
 })
 
 const rawRequests = computed<AdminRequestItem[]>(() => requestsData.value || [])

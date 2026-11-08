@@ -7,6 +7,15 @@
           Tinjau pengajuan pesanan (ACC + Ongkir), verifikasi bukti mutasi bank, input resi pengiriman, atau proses refund manual.
         </p>
       </div>
+      <button class="btn-refresh" @click="refresh()" :disabled="pending">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
+          <path d="M21 2v6h-6"></path>
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+          <path d="M3 22v-6h6"></path>
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+        </svg>
+        <span>Refresh</span>
+      </button>
     </div>
 
     <!-- Filter Bar -->
@@ -380,10 +389,16 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useToast } from '../../composables/useToast'
+import { useAdminStats } from '../../composables/useAdminStats'
 
 const { showToast } = useToast()
+const { fetchAdminStats } = useAdminStats()
 
-const { data: ordersData, pending, refresh } = await useFetch<any[]>('/api/admin/orders')
+const { data: ordersData, pending, refresh: fetchOrders } = await useFetch<any[]>('/api/admin/orders')
+
+const refresh = async () => {
+  await Promise.all([fetchOrders(), fetchAdminStats(true)])
+}
 
 const orders = computed(() => ordersData.value || [])
 const currentFilter = ref('all')
@@ -672,6 +687,47 @@ const formatRupiah = (val: number) => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--color-canvas, #FFFBF2);
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .page-title {

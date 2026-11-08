@@ -2,6 +2,15 @@
   <div class="admin-chat-page">
     <div class="page-head">
       <h1 class="page-title">Live Chat Pelanggan</h1>
+      <button class="btn-refresh" @click="refreshChat" :disabled="isRefreshing">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': isRefreshing }">
+          <path d="M21 2v6h-6"></path>
+          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+          <path d="M3 22v-6h6"></path>
+          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+        </svg>
+        <span>Refresh</span>
+      </button>
     </div>
 
     <div class="chat-inbox-card">
@@ -74,9 +83,40 @@
               >
                 <img v-if="m.product.imageUrl" :src="m.product.imageUrl" :alt="m.product.name" class="msg-prod-img" />
                 <div class="msg-prod-meta">
-                  <span class="msg-prod-type">{{ m.product.productType === 'jastip' ? 'Jastip' : 'Ready Stock' }}</span>
+                  <span class="msg-prod-type">{{ m.product.productType === 'jastip' ? 'Produk Jastip' : 'Produk Tersedia' }}</span>
                   <strong class="msg-prod-title">{{ m.product.name }}</strong>
                   <span class="msg-prod-price">{{ formatRupiah(m.product.price) }}</span>
+                </div>
+              </NuxtLink>
+
+              <!-- Shared Jastip Trip Card -->
+              <NuxtLink
+                v-if="m.trip && !m.product"
+                :to="`/jastip/${m.trip.slug}`"
+                target="_blank"
+                class="msg-product-card"
+              >
+                <img v-if="m.trip.coverImageUrl" :src="m.trip.coverImageUrl" :alt="m.trip.title" class="msg-prod-img" />
+                <div class="msg-prod-meta">
+                  <span class="msg-prod-type">Trip Jastip &bull; {{ m.trip.country }}</span>
+                  <strong class="msg-prod-title">{{ m.trip.title }}</strong>
+                  <span class="msg-prod-price">{{ m.trip.status === 'open' ? 'Open PO' : 'Tutup PO' }}</span>
+                </div>
+              </NuxtLink>
+
+              <!-- Shared Product Request Card -->
+              <NuxtLink
+                v-if="m.productRequest"
+                to="/admin/request"
+                class="msg-product-card"
+              >
+                <img v-if="m.productRequest.referenceImageUrl" :src="m.productRequest.referenceImageUrl" :alt="m.productRequest.productName" class="msg-prod-img" />
+                <div class="msg-prod-meta">
+                  <span class="msg-prod-type">Request Produk &bull; {{ m.productRequest.status }}</span>
+                  <strong class="msg-prod-title">{{ m.productRequest.productName }}</strong>
+                  <span class="msg-prod-price">
+                    {{ m.productRequest.quotedPrice ? formatRupiah(m.productRequest.quotedPrice) : (m.productRequest.tripTitle || 'Menunggu Penawaran') }}
+                  </span>
                 </div>
               </NuxtLink>
 
@@ -135,6 +175,7 @@
 import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import Ably from 'ably'
 import { useToast } from '../../composables/useToast'
+import { useAdminStats } from '../../composables/useAdminStats'
 
 definePageMeta({
   middleware: 'admin'
@@ -142,11 +183,13 @@ definePageMeta({
 
 const route = useRoute()
 const { showToast } = useToast()
+const { setUnreadChatStats, fetchAdminStats } = useAdminStats()
 
 const search = ref('')
 const replyText = ref('')
 const isSending = ref(false)
 const isUploading = ref(false)
+const isRefreshing = ref(false)
 const fileInput = ref<HTMLInputElement | null>(null)
 const messagesArea = ref<HTMLElement | null>(null)
 
@@ -161,12 +204,15 @@ let activeRoomChannel: Ably.RealtimeChannel | null = null
 const filteredRooms = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return rooms.value
-  return rooms.value.filter(
-    r =>
-      r.customerUsername?.toLowerCase().includes(q) ||
-      r.customerPhone?.toLowerCase().includes(q) ||
-      r.lastMessage?.toLowerCase().includes(q)
-  )
+  const cleanUser = q.replace(/^@/, '')
+  const digits = q.replace(/\D/g, '')
+  return rooms.value.filter(r => {
+    const matchUser = r.customerUsername?.toLowerCase().includes(cleanUser)
+    const matchPhone = r.customerPhone?.toLowerCase().includes(q)
+    const matchPhoneDigits = digits.length > 0 && (r.customerPhone || '').replace(/\D/g, '').includes(digits)
+    const matchMsg = r.lastMessage?.toLowerCase().includes(q)
+    return matchUser || matchPhone || matchPhoneDigits || matchMsg
+  })
 })
 
 const formatRupiah = (val: number) => 'Rp ' + Number(val || 0).toLocaleString('id-ID')
@@ -193,6 +239,12 @@ const scrollToBottom = () => {
   })
 }
 
+const syncAdminUnreadBadge = () => {
+  const totalUnreadMessages = rooms.value.reduce((acc, r) => acc + Number(r.unreadAdminCount || 0), 0)
+  const totalUnreadRooms = rooms.value.filter(r => Number(r.unreadAdminCount || 0) > 0).length
+  setUnreadChatStats(totalUnreadMessages, totalUnreadRooms)
+}
+
 const subscribeToRoom = async (roomId: number) => {
   if (!ablyClient) return
   try {
@@ -207,7 +259,15 @@ const subscribeToRoom = async (roomId: number) => {
         scrollToBottom()
       }
       if (incoming.senderRole === 'customer') {
-        $fetch('/api/chat/read', { method: 'POST', body: { roomId } }).catch(() => {})
+        $fetch('/api/chat/read', { method: 'POST', body: { roomId } })
+          .then(() => {
+            const idx = rooms.value.findIndex(r => r.id === roomId)
+            if (idx !== -1) {
+              rooms.value[idx].unreadAdminCount = 0
+            }
+            syncAdminUnreadBadge()
+          })
+          .catch(() => {})
       }
     })
   } catch (err) {
@@ -227,6 +287,7 @@ const selectRoom = async (roomItem: any) => {
       if (idx !== -1) {
         rooms.value[idx].unreadAdminCount = 0
       }
+      syncAdminUnreadBadge()
       scrollToBottom()
       await subscribeToRoom(res.room.id)
     }
@@ -239,19 +300,24 @@ const fetchRooms = async () => {
   try {
     const list = await $fetch<any[]>('/api/chat/rooms')
     rooms.value = list || []
+    syncAdminUnreadBadge()
 
-    // Check if ?userId=... was passed from /admin/request
+    // Check if ?userId=... was passed from /admin/request or /admin/customer
     const targetUserId = route.query.userId ? Number(route.query.userId) : null
     if (targetUserId && !isNaN(targetUserId)) {
       const res = await $fetch<{ room: any; messages: any[] }>('/api/chat/room', {
         query: { customerId: targetUserId }
       })
       if (res?.room) {
-        if (!rooms.value.some(r => r.id === res.room.id)) {
+        const existIdx = rooms.value.findIndex(r => r.id === res.room.id)
+        if (existIdx === -1) {
           rooms.value.unshift(res.room)
+        } else {
+          rooms.value[existIdx].unreadAdminCount = 0
         }
         activeRoom.value = res.room
         messages.value = res.messages || []
+        syncAdminUnreadBadge()
         scrollToBottom()
         await subscribeToRoom(res.room.id)
         return
@@ -263,6 +329,20 @@ const fetchRooms = async () => {
     }
   } catch (err) {
     // Non-blocking
+  }
+}
+
+const refreshChat = async () => {
+  if (isRefreshing.value) return
+  isRefreshing.value = true
+  try {
+    await fetchRooms()
+    if (activeRoom.value) {
+      await selectRoom(activeRoom.value)
+    }
+    await fetchAdminStats(true)
+  } finally {
+    isRefreshing.value = false
   }
 }
 
@@ -290,6 +370,8 @@ const initAblyAdmin = async () => {
       } else {
         rooms.value.unshift(updated)
       }
+
+      syncAdminUnreadBadge()
 
       if (updated.latestMessage?.senderRole === 'customer' && activeRoom.value?.id !== updated.id) {
         showToast(
@@ -388,11 +470,52 @@ const handleAdminImageUpload = async (e: Event) => {
   gap: 20px;
 }
 
+.page-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+}
+
 .page-title {
   font-size: 1.6rem;
   font-weight: 800;
   color: var(--color-text, #2B2116);
   margin-bottom: 4px;
+}
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--color-canvas, #FFFBF2);
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .chat-inbox-card {

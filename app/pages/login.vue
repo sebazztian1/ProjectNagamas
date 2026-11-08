@@ -149,7 +149,7 @@
                 v-model="resetForm.newPassword"
                 :type="showNewPassword ? 'text' : 'password'"
                 autocomplete="new-password"
-                placeholder="Minimal 12 karakter"
+                placeholder="Minimal 8 karakter (angka/simbol)"
                 required
               />
               <button
@@ -161,7 +161,7 @@
                 {{ showNewPassword ? 'Sembunyikan' : 'Tampilkan' }}
               </button>
             </div>
-            <span class="field-hint">Minimal 12 karakter. Boleh pakai kalimat.</span>
+            <span class="field-hint">Minimal 8 karakter dengan minimal 1 angka atau simbol.</span>
           </div>
 
           <button type="submit" class="submit-btn" :disabled="isResetting">
@@ -268,12 +268,27 @@ const handleResetPassword = async () => {
     return
   }
 
+  const passLen = Array.from(resetForm.newPassword).length
+  if (passLen < 8) {
+    resetError.value = 'Kata sandi minimal 8 karakter'
+    return
+  }
+  if (passLen > 128) {
+    resetError.value = 'Kata sandi maksimal 128 karakter'
+    return
+  }
+  if (!/[^a-zA-Z\s]/.test(resetForm.newPassword)) {
+    resetError.value = 'Kata sandi harus mengandung minimal 1 angka atau simbol'
+    return
+  }
+
   isResetting.value = true
   try {
     const res = await $fetch<{
       success: boolean
       message: string
-      newRecoveryCode: string
+      recoveryCode?: string
+      newRecoveryCode?: string
     }>('/api/auth/reset-password', {
       method: 'POST',
       body: {
@@ -284,8 +299,8 @@ const handleResetPassword = async () => {
     })
 
     resetSuccess.value = true
-    newRecoveryCode.value = res.newRecoveryCode
-    showToast('Kata Sandi Diubah', 'Kata sandi berhasil diubah. Silakan catat kode pemulihan baru Anda.', 'success')
+    newRecoveryCode.value = res.recoveryCode || res.newRecoveryCode || resetForm.recoveryCode.trim()
+    showToast('Kata Sandi Diubah', 'Kata sandi berhasil diubah.', 'success')
   } catch (err: any) {
     resetError.value = err?.data?.message || 'Kode pemulihan tidak cocok'
     showToast('Gagal Reset', resetError.value, 'warning')

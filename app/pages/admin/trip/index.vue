@@ -2,7 +2,18 @@
   <div class="admin-trips-page">
     <div class="page-head">
       <h1 class="page-title">Trip Jastip</h1>
-      <button class="btn-create-trip" @click="openCreateModal">+ Buat Trip</button>
+      <div class="head-actions">
+        <button class="btn-refresh" @click="refresh()" :disabled="pending">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
+        <button class="btn-create-trip" @click="openCreateModal">+ Buat Trip</button>
+      </div>
     </div>
 
     <!-- Status Filter Tabs -->
@@ -324,7 +335,7 @@ definePageMeta({
 
 const { showToast } = useToast()
 
-const { data: dbTrips, refresh } = await useFetch<ApiTrip[]>('/api/admin/trips')
+const { data: dbTrips, pending, refresh } = await useFetch<ApiTrip[]>('/api/admin/trips')
 
 const allTrips = computed(() => dbTrips.value || [])
 const activeStatus = ref<'all' | 'open' | 'closed' | 'arrived'>('all')
@@ -603,6 +614,46 @@ const formatStatusLabel = (s: string) => {
 
 .btn-create-trip:hover {
   background: var(--color-primary-hover, #6F5530);
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--color-canvas, #FFFBF2);
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .filter-tabs {

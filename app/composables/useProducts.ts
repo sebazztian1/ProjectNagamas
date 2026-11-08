@@ -1,5 +1,25 @@
 import { ref } from 'vue'
 
+export interface ProductVariantTier {
+  name: string
+  options: string[]
+}
+
+export interface ProductVariantCombination {
+  id?: number
+  key: string
+  label: string
+  values: Record<string, string>
+  price: number
+  stock: number
+  sku?: string | null
+}
+
+export interface NormalizedVariants {
+  tiers: ProductVariantTier[]
+  combinations: ProductVariantCombination[]
+}
+
 export interface ApiProduct {
   id: number
   name: string
@@ -20,13 +40,14 @@ export interface ApiProduct {
   inStock: boolean
   quota: number | null
   maxQtyPerOrder: number
-  variants: Record<string, string[]> | null
+  variants: NormalizedVariants | null
   trip: {
     id: number
     title: string
     slug: string
     country: string
     status: string
+    closeDate?: string
     estimatedArrivalDate?: string
   } | null
   createdAt: string

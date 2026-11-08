@@ -134,6 +134,20 @@ export default defineEventHandler(async (event) => {
     }
   })
 
+  try {
+    await prisma.notifications.create({
+      data: {
+        user_id: order.user_id,
+        type: 'payment_uploaded',
+        title: `Bukti Transfer #${order.order_code} Diterima`,
+        body: `Bukti transfer sebesar Rp ${amount.toLocaleString('id-ID')} via ${senderBank} telah kami terima dan sedang menunggu verifikasi Admin.`,
+        link_url: `/orders/${order.order_code}`
+      }
+    })
+  } catch {
+    // Non-blocking
+  }
+
   const updated = await prisma.orders.findUnique({
     where: { id: order.id },
     include: {

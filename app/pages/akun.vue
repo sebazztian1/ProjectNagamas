@@ -104,8 +104,8 @@
                 <input
                   v-model="pass.newPass"
                   :type="showPassNew ? 'text' : 'password'"
-                  placeholder="Minimal 12 karakter"
-                  minlength="12"
+                  placeholder="Minimal 8 karakter (angka/simbol)"
+                  minlength="8"
                   maxlength="128"
                   required
                 />
@@ -119,7 +119,7 @@
                 </button>
               </div>
               <span class="field-hint">
-                Minimal 12 karakter. Boleh pakai kalimat, contoh: kucingku suka makan ikan
+                Minimal 8 karakter dengan minimal 1 angka atau simbol
               </span>
             </div>
 
@@ -130,7 +130,7 @@
                   v-model="pass.confirmPass"
                   :type="showPassConfirm ? 'text' : 'password'"
                   placeholder="Ulangi kata sandi baru"
-                  minlength="12"
+                  minlength="8"
                   maxlength="128"
                   required
                 />
@@ -358,8 +358,8 @@ const handleChangePassword = async () => {
 
   const p = pass.value.newPass
   const len = Array.from(p).length
-  if (len < 12) {
-    showToast('Kata Sandi Terlalu Pendek', 'Kata sandi minimal 12 karakter.', 'warning')
+  if (len < 8) {
+    showToast('Kata Sandi Terlalu Pendek', 'Kata sandi minimal 8 karakter.', 'warning')
     return
   }
 
@@ -368,25 +368,13 @@ const handleChangePassword = async () => {
     return
   }
 
+  if (!/[^a-zA-Z\s]/.test(p)) {
+    showToast('Kata Sandi Kurang Kuat', 'Kata sandi harus mengandung minimal 1 angka atau simbol.', 'warning')
+    return
+  }
+
   if (pass.value.current === p) {
     showToast('Kata Sandi Sama', 'Kata sandi baru tidak boleh sama dengan kata sandi saat ini.', 'warning')
-    return
-  }
-
-  const pLower = p.toLowerCase()
-  if (pLower.includes('dbbluxe') || pLower.includes('dbb_luxe')) {
-    showToast('Kata Sandi Ditolak', 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs.', 'warning')
-    return
-  }
-
-  if (currentUser.value?.username && currentUser.value.username.length >= 3 && pLower.includes(currentUser.value.username.toLowerCase())) {
-    showToast('Kata Sandi Ditolak', 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs.', 'warning')
-    return
-  }
-
-  const phoneDigits = (currentUser.value?.phone_number || '').replace(/\D/g, '')
-  if (phoneDigits.length >= 7 && pLower.includes(phoneDigits)) {
-    showToast('Kata Sandi Ditolak', 'Kata sandi tidak boleh memuat username, nomor HP, atau nama situs.', 'warning')
     return
   }
 

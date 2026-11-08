@@ -1,6 +1,7 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../../utils/prisma'
 import { getSessionFromEvent } from '../../../../utils/session'
+import { normalizeProductVariants, syncProductVariantsTable } from '../../../../utils/variants'
 
 function generateSlug(text: string): string {
   return text
@@ -44,7 +45,13 @@ export default defineEventHandler(async (event) => {
     counter++
   }
 
-  const duplicated = await prisma.products.create({
+  const normalizedVariants = normalizeProductVariants(
+    source.variants,
+    Number(source.price),
+    targetType === 'ready' ? (newStockQty || 5) : (source.quota || 20)
+  )
+
+  let duplicated = await prisma.products.create({
     data: {
       name: `${source.name} (Salinan)`,
       slug: uniqueSlug,
@@ -61,10 +68,18 @@ export default defineEventHandler(async (event) => {
       stock_quantity: targetType === 'ready' ? (newStockQty || 5) : null,
       quota: targetType === 'jastip' ? (source.quota || 20) : null,
       max_qty_per_order: source.max_qty_per_order,
-      variants: source.variants ? JSON.parse(JSON.stringify(source.variants)) : null,
+      variants: normalizedVariants ? (normalizedVariants as any) : null,
       is_active: true
     }
   })
+
+  if (normalizedVariants && normalizedVariants.combinations.length > 0) {
+    const synced = await syncProductVariantsTable(duplicated.id, targetType, normalizedVariants)
+    duplicated = await prisma.products.update({
+      where: { id: duplicated.id },
+      data: { variants: synced as any }
+    })
+  }
 
   return {
     success: true,

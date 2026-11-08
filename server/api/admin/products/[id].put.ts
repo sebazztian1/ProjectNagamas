@@ -1,6 +1,7 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
+import { normalizeProductVariants, syncProductVariantsTable } from '../../../utils/variants'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -65,8 +66,38 @@ export default defineEventHandler(async (event) => {
   if (stockQuantity !== undefined) updateData.stock_quantity = Number(stockQuantity) || 0
   if (quota !== undefined) updateData.quota = quota ? Number(quota) : null
   if (maxQtyPerOrder !== undefined) updateData.max_qty_per_order = Number(maxQtyPerOrder) || 5
-  if (variants !== undefined) updateData.variants = variants
   if (typeof isActive === 'boolean') updateData.is_active = isActive
+
+  const effectiveType: 'ready' | 'jastip' = (updateData.product_type || existing.product_type) as 'ready' | 'jastip'
+
+  if (variants !== undefined) {
+    const fallbackPrice = updateData.price !== undefined ? Number(updateData.price) : Number(existing.price)
+    const fallbackStock = effectiveType === 'ready'
+      ? (updateData.stock_quantity !== undefined ? Number(updateData.stock_quantity) : (existing.stock_quantity ?? 0))
+      : (updateData.quota !== undefined ? Number(updateData.quota) : (existing.quota ?? 20))
+
+    const normalized = normalizeProductVariants(variants, fallbackPrice, fallbackStock)
+    if (normalized && normalized.combinations.length > 0) {
+      const synced = await syncProductVariantsTable(id, effectiveType, normalized)
+      updateData.variants = synced as any
+
+      const minPrice = Math.min(...synced.combinations.map(c => Number(c.price) || 0).filter(p => p > 0))
+      if (minPrice > 0 && isFinite(minPrice)) {
+        updateData.price = minPrice
+      }
+
+      const totalStock = synced.combinations.reduce((sum, c) => sum + Math.max(0, Number(c.stock) || 0), 0)
+      if (effectiveType === 'ready') {
+        updateData.stock_quantity = totalStock
+      } else {
+        updateData.quota = totalStock
+      }
+      updateData.stock_status = totalStock > 0 ? 'in_stock' : 'out_of_stock'
+    } else {
+      await syncProductVariantsTable(id, effectiveType, null)
+      updateData.variants = null
+    }
+  }
 
   const updated = await prisma.products.update({
     where: { id },

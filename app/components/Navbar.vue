@@ -48,7 +48,7 @@
             <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            <span class="dot-badge">1</span>
+            <span v-if="unreadCount > 0" class="dot-badge">{{ unreadCount > 99 ? '99+' : unreadCount }}</span>
           </NuxtLink>
 
           <NuxtLink to="/orders" class="icon-btn" title="Pesanan Saya">
@@ -109,8 +109,11 @@
         <NuxtLink to="/ready">Ready Stock</NuxtLink>
         <NuxtLink to="/jastip">Jadwal Jastip</NuxtLink>
         <NuxtLink to="/request">Request Titip</NuxtLink>
-        <NuxtLink v-if="!isAdmin" to="/notifikasi">Notifikasi</NuxtLink>
-        <NuxtLink v-if="!isAdmin" to="/chat">Live Chat</NuxtLink>
+        <NuxtLink v-if="!isAdmin" to="/notifikasi">
+          Notifikasi
+          <span v-if="unreadCount > 0" class="mobile-badge">{{ unreadCount }}</span>
+        </NuxtLink>
+        <NuxtLink v-if="!isAdmin" :to="currentUser ? '/chat' : '/register'">Live Chat</NuxtLink>
         <NuxtLink v-if="!currentUser" to="/login">Masuk</NuxtLink>
       </nav>
     </transition>
@@ -122,6 +125,7 @@ import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
 import { useWishlist } from '../composables/useWishlist'
+import { useNotifications } from '../composables/useNotifications'
 
 defineProps<{
   searchQuery?: string
@@ -135,6 +139,7 @@ const { currentUser, logout } = useAuth()
 const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUser.value?.role === 'staff')
 const { showToast } = useToast()
 const { wishlistCount } = useWishlist()
+const { unreadCount } = useNotifications()
 const route = useRoute()
 
 const searchOpen = ref(false)

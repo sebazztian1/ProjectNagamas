@@ -16,7 +16,7 @@
         <div class="nav-section-title">NAVIGASI UTAMA</div>
 
         <!-- 1. Ringkasan -->
-        <NuxtLink to="/admin" class="nav-item" active-class="active" exact>
+        <NuxtLink to="/admin" class="nav-item" exact-active-class="active">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect width="7" height="9" x="3" y="3" rx="1"></rect>
             <rect width="7" height="5" x="14" y="3" rx="1"></rect>
@@ -68,6 +68,7 @@
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
           <span>Live Chat Admin</span>
+          <span class="badge-count warning" v-if="stats?.unreadChatCount">{{ stats.unreadChatCount > 99 ? '99+' : stats.unreadChatCount }} Baru</span>
         </NuxtLink>
 
         <!-- 6. Request Produk -->
@@ -93,6 +94,7 @@
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
           <span>Daftar Pelanggan</span>
+          <span class="badge-count" v-if="stats?.customersCount">{{ stats.customersCount }}</span>
         </NuxtLink>
 
         <!-- 8. Pengaturan Toko -->
@@ -133,10 +135,13 @@
         </div>
 
         <div class="topbar-right">
-          <NuxtLink to="/admin/chat" class="icon-btn-round" title="Chat CS">
+          <NuxtLink to="/admin/chat" class="icon-btn-round chat-topbar-btn" title="Live Chat Pelanggan">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
             </svg>
+            <span v-if="stats?.unreadChatCount" class="topbar-badge">
+              {{ stats.unreadChatCount > 99 ? '99+' : stats.unreadChatCount }}
+            </span>
           </NuxtLink>
 
           <div class="admin-user-pill">
@@ -163,8 +168,11 @@
 </template>
 
 <script setup lang="ts">
+import { onMounted, onBeforeUnmount, watch } from 'vue'
+import Ably from 'ably'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+import { useAdminStats } from '../composables/useAdminStats'
 
 definePageMeta({
   middleware: 'admin'
@@ -174,10 +182,61 @@ useHead({
   title: 'Admin Panel | dbb_luxe'
 })
 
+const route = useRoute()
 const { currentUser, logout } = useAuth()
 const { showToast } = useToast()
+const { stats, fetchAdminStats } = useAdminStats()
 
-const { data: stats } = await useFetch<any>('/api/admin/stats')
+let ablyClient: Ably.Realtime | null = null
+let inboxChannel: Ably.RealtimeChannel | null = null
+let statsTimer: ReturnType<typeof setInterval> | null = null
+
+const initAdminRealtimeBadges = async () => {
+  if (import.meta.server) return
+  try {
+    ablyClient = new Ably.Realtime({
+      authUrl: '/api/chat/token'
+    })
+    inboxChannel = ablyClient.channels.get('chat:admin-inbox')
+    await inboxChannel.subscribe('room-updated', (event) => {
+      const updated = event.data
+      fetchAdminStats(true)
+      if (updated?.latestMessage?.senderRole === 'customer' && route.path !== '/admin/chat') {
+        showToast(
+          `Pesan Baru dari @${updated.customerUsername || 'pelanggan'}`,
+          updated.lastMessage || 'Mengirim pesan baru di Live Chat',
+          'info'
+        )
+      }
+    })
+  } catch (err) {
+    // Non-blocking
+  }
+}
+
+onMounted(async () => {
+  await fetchAdminStats(false)
+  await initAdminRealtimeBadges()
+
+  statsTimer = setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      fetchAdminStats(true)
+    }
+  }, 15000)
+})
+
+watch(() => route.fullPath, () => {
+  fetchAdminStats(true)
+})
+
+onBeforeUnmount(() => {
+  if (statsTimer) {
+    clearInterval(statsTimer)
+    statsTimer = null
+  }
+  inboxChannel?.unsubscribe()
+  ablyClient?.close()
+})
 
 const handleAdminLogout = async () => {
   await logout()
@@ -376,6 +435,7 @@ const handleAdminLogout = async () => {
 }
 
 .icon-btn-round {
+  position: relative;
   width: 36px;
   height: 36px;
   border-radius: 50%;
@@ -386,6 +446,26 @@ const handleAdminLogout = async () => {
   justify-content: center;
   color: var(--color-primary, #8C6D3F);
   text-decoration: none;
+  cursor: pointer;
+}
+
+.topbar-badge {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #DC2626;
+  color: #FFFFFF;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #FFFFFF;
+  line-height: 1;
 }
 
 .admin-user-pill {

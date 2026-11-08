@@ -30,7 +30,7 @@
             <li><NuxtLink to="/cara-order">Cara Order</NuxtLink></li>
             <li><NuxtLink to="/faq">FAQ</NuxtLink></li>
             <li><NuxtLink to="/syarat-ketentuan">Syarat &amp; Ketentuan</NuxtLink></li>
-            <li><NuxtLink to="/chat">Live Chat</NuxtLink></li>
+            <li><NuxtLink :to="currentUser ? '/chat' : '/register'">Live Chat</NuxtLink></li>
           </ul>
         </div>
 
@@ -52,6 +52,12 @@
     </div>
   </footer>
 </template>
+
+<script setup lang="ts">
+import { useAuth } from '../composables/useAuth'
+
+const { currentUser } = useAuth()
+</script>
 
 <style scoped>
 .site-footer {

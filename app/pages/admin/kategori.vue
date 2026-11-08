@@ -10,7 +10,18 @@
         <h1 class="page-title">Kelola Kategori Produk</h1>
         <p class="page-subtitle">Tambah dan kelola kategori untuk pengelompokan produk ready stock maupun jastip.</p>
       </div>
-      <button class="btn-add-category" @click="openCreateModal">+ Tambah Kategori</button>
+      <div class="head-actions">
+        <button class="btn-refresh" @click="fetchCategories" :disabled="pending">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
+        <button class="btn-add-category" @click="openCreateModal">+ Tambah Kategori</button>
+      </div>
     </div>
 
     <!-- Search bar -->
@@ -293,6 +304,42 @@ const confirmDelete = async (cat: CategoryItem) => {
 
 .btn-add-category:hover {
   background: var(--color-primary-hover, #6F5530);
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--color-canvas, #FFFBF2);
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin-icon {
+  animation: spin 0.8s linear infinite;
 }
 
 .filter-bar {

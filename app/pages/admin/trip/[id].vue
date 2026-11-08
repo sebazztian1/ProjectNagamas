@@ -17,6 +17,15 @@
       </div>
 
       <div class="head-actions">
+        <button class="btn-refresh" @click="refresh()" :disabled="pending">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
         <button class="btn-export-csv" @click="exportCSV">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -162,7 +171,7 @@ const tripId = route.params.id as string
 
 const currentTab = ref<'shopping' | 'products' | 'orders'>('shopping')
 
-const { data: opData } = await useFetch<any>(`/api/admin/trips/${tripId}/operations`)
+const { data: opData, pending, refresh } = await useFetch<any>(`/api/admin/trips/${tripId}/operations`)
 
 const trip = computed(() => opData.value?.trip)
 const tripProducts = computed(() => opData.value?.products || [])
@@ -245,6 +254,46 @@ const formatRupiah = (val: number) => {
 .trip-sub {
   font-size: 0.85rem;
   color: var(--color-text-muted, #7A6A55);
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.btn-refresh {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-refresh:hover:not(:disabled) {
+  background: var(--color-canvas, #FFFBF2);
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.btn-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.spin-icon {
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .btn-export-csv {

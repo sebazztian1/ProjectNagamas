@@ -1,24 +1,37 @@
 import { defineEventHandler } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { getCountryFlag } from '../../utils/countryFlags'
+import { autoExpireOverdueOrders } from '../../utils/orders'
 
-export default defineEventHandler(async (event) => {
+export default defineEventHandler(async () => {
   const now = new Date()
 
-  // Auto-close past trips
+  // Auto-close past trips & auto-expire overdue orders
   try {
-    await prisma.jastip_trips.updateMany({
-      where: {
-        status: 'open',
-        close_date: { lt: now }
-      },
-      data: { status: 'closed' }
-    })
+    await Promise.all([
+      prisma.jastip_trips.updateMany({
+        where: {
+          status: 'open',
+          close_date: { lt: now }
+        },
+        data: { status: 'closed' }
+      }),
+      autoExpireOverdueOrders()
+    ])
   } catch (err) {
     // Non-blocking
   }
 
-  const [openTrips, pendingOrdersCount, pendingRequestsCount, allOrders] = await Promise.all([
+  const [
+    openTrips,
+    pendingOrdersCount,
+    pendingOrdersRaw,
+    pendingRequestsCount,
+    allOrders,
+    unreadChatAgg,
+    unreadChatRoomsCount,
+    customersCount
+  ] = await Promise.all([
     prisma.jastip_trips.findMany({
       where: { status: 'open' },
       select: {
@@ -30,6 +43,9 @@ export default defineEventHandler(async (event) => {
         estimated_arrival_date: true,
         quota_total: true,
         orders: {
+          where: {
+            order_status: { notIn: ['rejected', 'cancelled', 'expired'] }
+          },
           select: {
             order_items: { select: { qty: true } }
           }
@@ -40,6 +56,18 @@ export default defineEventHandler(async (event) => {
     prisma.orders.count({
       where: {
         order_status: { in: ['pending_approval', 'pending_payment', 'payment_uploaded'] }
+      }
+    }),
+    prisma.orders.findMany({
+      where: {
+        order_status: { in: ['pending_approval', 'payment_uploaded'] }
+      },
+      orderBy: { created_at: 'desc' },
+      take: 6,
+      include: {
+        users: {
+          select: { username: true, phone_number: true }
+        }
       }
     }),
     prisma.product_requests.count({
@@ -54,11 +82,27 @@ export default defineEventHandler(async (event) => {
         total_amount: true,
         order_items: { select: { qty: true } }
       }
+    }),
+    prisma.chat_rooms.aggregate({
+      _sum: {
+        unread_admin_count: true
+      }
+    }),
+    prisma.chat_rooms.count({
+      where: {
+        unread_admin_count: { gt: 0 }
+      }
+    }),
+    prisma.users.count({
+      where: {
+        role: 'customer'
+      }
     })
   ])
 
   const totalOmzet = allOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0)
   const totalItemsSold = allOrders.reduce((sum, o) => sum + o.order_items.reduce((s, it) => s + it.qty, 0), 0)
+  const unreadChatCount = Number(unreadChatAgg._sum.unread_admin_count || 0)
 
   const mappedOpenTrips = openTrips.map(t => {
     const quotaFilled = t.orders.reduce((sum, ord) => sum + ord.order_items.reduce((s, it) => s + it.qty, 0), 0)
@@ -75,11 +119,25 @@ export default defineEventHandler(async (event) => {
     }
   })
 
+  const pendingOrders = pendingOrdersRaw.map(o => ({
+    id: o.id,
+    orderCode: o.order_code,
+    orderStatus: o.order_status,
+    customerName: o.recipient_name || `@${o.users?.username || 'customer'}`,
+    customerUsername: o.users?.username || 'customer',
+    customerPhone: o.recipient_phone || o.users?.phone_number || '-',
+    totalAmount: Number(o.total_amount || 0)
+  }))
+
   return {
     openTripsCount: mappedOpenTrips.length,
     openTrips: mappedOpenTrips,
     pendingOrdersCount,
+    pendingOrders,
     pendingRequestsCount,
+    unreadChatCount,
+    unreadChatRoomsCount,
+    customersCount,
     totalOmzet,
     totalItemsSold
   }

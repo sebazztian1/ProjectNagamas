@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import Navbar from './components/Navbar.vue'
 import Footer from './components/Footer.vue'
 import CustomerChatWidget from './components/CustomerChatWidget.vue'
@@ -33,25 +33,52 @@ import { useToast } from './composables/useToast'
 import { useAuth } from './composables/useAuth'
 import { useWishlist } from './composables/useWishlist'
 import { useCustomerChat } from './composables/useCustomerChat'
+import { useNotifications } from './composables/useNotifications'
 
 const route = useRoute()
 const { toasts, removeToast } = useToast()
 const { currentUser } = useAuth()
 const { fetchWishlist, syncGuestWishlist } = useWishlist()
 const { isChatOpen } = useCustomerChat()
+const { fetchNotifications, resetNotifications } = useNotifications()
+
+let notifPollTimer: ReturnType<typeof setInterval> | null = null
 
 onMounted(async () => {
   await fetchWishlist()
   if (currentUser.value) {
     await syncGuestWishlist()
+    await fetchNotifications(true)
+  }
+
+  notifPollTimer = setInterval(() => {
+    if (currentUser.value && currentUser.value.role === 'customer' && document.visibilityState === 'visible') {
+      fetchNotifications(true)
+    }
+  }, 20000)
+})
+
+onBeforeUnmount(() => {
+  if (notifPollTimer) {
+    clearInterval(notifPollTimer)
+    notifPollTimer = null
   }
 })
 
 watch(currentUser, async (user) => {
   if (user) {
     await syncGuestWishlist()
+    await fetchNotifications(true)
   } else {
+    isChatOpen.value = false
+    resetNotifications()
     await fetchWishlist()
+  }
+})
+
+watch(() => route.fullPath, () => {
+  if (currentUser.value && currentUser.value.role === 'customer') {
+    fetchNotifications(true)
   }
 })
 

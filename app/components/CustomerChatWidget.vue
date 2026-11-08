@@ -130,6 +130,7 @@
           <div class="chat-bubble">
             <span v-if="msg.sender === 'admin'" class="bubble-sender-label">Admin dbb_luxe</span>
 
+            <!-- Shared Product Card (Ready Stock / Jastip Product) -->
             <NuxtLink
               v-if="msg.product"
               :to="msg.product.productType === 'jastip' && msg.product.tripSlug ? `/jastip/${msg.product.tripSlug}/${msg.product.slug}` : `/ready/${msg.product.slug}`"
@@ -138,10 +139,45 @@
               <img v-if="msg.product.imageUrl" :src="msg.product.imageUrl" :alt="msg.product.name" class="bubble-prod-img" />
               <div class="bubble-prod-info">
                 <span class="bubble-prod-badge" :class="msg.product.productType === 'jastip' ? 'is-jastip' : 'is-ready'">
-                  {{ msg.product.productType === 'jastip' ? 'Jastip' : 'Ready Stock' }}
+                  {{ msg.product.productType === 'jastip' ? 'Produk Jastip' : 'Produk Tersedia' }}
                 </span>
                 <strong>{{ msg.product.name }}</strong>
                 <span>{{ formatPrice(msg.product.price) }}</span>
+              </div>
+            </NuxtLink>
+
+            <!-- Shared Jastip Trip Card -->
+            <NuxtLink
+              v-if="msg.trip && !msg.product"
+              :to="`/jastip/${msg.trip.slug}`"
+              class="bubble-product-card"
+            >
+              <img v-if="msg.trip.coverImageUrl" :src="msg.trip.coverImageUrl" :alt="msg.trip.title" class="bubble-prod-img" />
+              <div v-else class="bubble-prod-icon" aria-hidden="true">&#9992;&#65039;</div>
+              <div class="bubble-prod-info">
+                <span class="bubble-prod-badge is-jastip">
+                  Jastip &bull; {{ msg.trip.country }}
+                </span>
+                <strong>{{ msg.trip.title }}</strong>
+                <span>{{ msg.trip.status === 'open' ? 'Open PO' : 'Tutup PO' }}{{ msg.trip.cityOrArea ? ` • ${msg.trip.cityOrArea}` : '' }}</span>
+              </div>
+            </NuxtLink>
+
+            <!-- Shared Product Request Card -->
+            <NuxtLink
+              v-if="msg.productRequest"
+              to="/request"
+              class="bubble-product-card"
+            >
+              <img v-if="msg.productRequest.referenceImageUrl" :src="msg.productRequest.referenceImageUrl" :alt="msg.productRequest.productName" class="bubble-prod-img" />
+              <div v-else class="bubble-prod-icon" aria-hidden="true">&#128203;</div>
+              <div class="bubble-prod-info">
+                <span class="bubble-prod-badge is-request">
+                  Request &bull; {{ formatRequestStatus(msg.productRequest.status) }}
+                </span>
+                <strong>{{ msg.productRequest.productName }}</strong>
+                <span v-if="msg.productRequest.quotedPrice">{{ formatPrice(msg.productRequest.quotedPrice) }}</span>
+                <span v-else>{{ msg.productRequest.tripTitle || 'Request Barang Kustom' }}</span>
               </div>
             </NuxtLink>
 
@@ -152,7 +188,6 @@
             <p v-if="msg.text" class="bubble-text">{{ msg.text }}</p>
             <div class="bubble-footer">
               <span class="bubble-time">{{ msg.timestamp }}</span>
-              <span v-if="msg.sender === 'user'" class="check-status" aria-hidden="true">&#10003;&#10003;</span>
             </div>
           </div>
         </div>
@@ -170,68 +205,63 @@
         </div>
       </div>
 
-      <!-- 3. Product Picker Drawer (Available Ready Stock & Jastip Products) -->
-      <div v-if="isProductPickerOpen" class="product-picker-drawer">
+      <!-- 3. Picker Drawer (Ready Products / Jastip / Product Requests) -->
+      <div v-if="activePickerMode" class="product-picker-drawer">
         <div class="picker-header">
           <div class="picker-title-row">
-            <strong>Pilih Produk Tersedia</strong>
-            <span class="picker-count">{{ filteredPickerProducts.length }} produk</span>
+            <strong v-if="activePickerMode === 'ready'">Pilih Produk Tersedia</strong>
+            <strong v-else-if="activePickerMode === 'jastip'">Pilih Jastip</strong>
+            <strong v-else-if="activePickerMode === 'request'">Pilih Request Produk Diajukan</strong>
+            <span class="picker-count">{{ currentPickerCountLabel }}</span>
           </div>
           <button
             type="button"
             class="picker-close-btn"
-            aria-label="Tutup daftar produk"
-            @click="isProductPickerOpen = false"
+            aria-label="Tutup daftar pilihan"
+            @click="activePickerMode = null"
           >
             &times;
           </button>
         </div>
 
         <div class="picker-controls">
-          <div class="picker-tabs">
+          <div v-if="activePickerMode === 'jastip'" class="picker-tabs">
             <button
               type="button"
               class="picker-tab"
-              :class="{ active: pickerTypeFilter === 'all' }"
-              @click="pickerTypeFilter = 'all'"
+              :class="{ active: jastipSubTab === 'trips' }"
+              @click="jastipSubTab = 'trips'"
             >
-              Semua
+              Jadwal Trip Jastip
             </button>
             <button
               type="button"
               class="picker-tab"
-              :class="{ active: pickerTypeFilter === 'ready' }"
-              @click="pickerTypeFilter = 'ready'"
+              :class="{ active: jastipSubTab === 'products' }"
+              @click="jastipSubTab = 'products'"
             >
-              Ready Stock
-            </button>
-            <button
-              type="button"
-              class="picker-tab"
-              :class="{ active: pickerTypeFilter === 'jastip' }"
-              @click="pickerTypeFilter = 'jastip'"
-            >
-              Jastip
+              Katalog Produk Jastip
             </button>
           </div>
           <input
             v-model="pickerSearch"
             type="text"
             class="picker-search-input"
-            placeholder="Cari produk ready / jastip..."
+            :placeholder="pickerSearchPlaceholder"
           />
         </div>
 
-        <div class="picker-list">
+        <!-- Drawer Content: Ready Stock Products -->
+        <div v-if="activePickerMode === 'ready'" class="picker-list">
           <div v-if="isLoadingProducts" class="picker-empty">
-            Memuat daftar produk...
+            Memuat daftar produk tersedia...
           </div>
-          <div v-else-if="filteredPickerProducts.length === 0" class="picker-empty">
+          <div v-else-if="filteredReadyProducts.length === 0" class="picker-empty">
             Tidak ada produk tersedia yang cocok.
           </div>
           <button
             v-else
-            v-for="prod in filteredPickerProducts"
+            v-for="prod in filteredReadyProducts"
             :key="prod.id"
             type="button"
             class="picker-product-item"
@@ -240,12 +270,8 @@
             <img :src="prod.image" :alt="prod.name" class="picker-prod-thumb" loading="lazy" />
             <div class="picker-prod-info">
               <div class="picker-prod-badges">
-                <span class="picker-badge" :class="prod.productType === 'jastip' ? 'badge-jastip' : 'badge-ready'">
-                  {{ prod.productType === 'jastip' ? 'Jastip' : 'Ready Stock' }}
-                </span>
-                <span v-if="prod.productType === 'jastip' && prod.trip?.title" class="picker-trip-name">
-                  {{ prod.trip.title }}
-                </span>
+                <span class="picker-badge badge-ready">Ready Stock</span>
+                <span class="picker-trip-name">{{ prod.category }}</span>
               </div>
               <div class="picker-prod-name">{{ prod.name }}</div>
               <div class="picker-prod-price">{{ formatPrice(prod.price) }}</div>
@@ -253,53 +279,202 @@
             <span class="picker-select-action">Pilih &rarr;</span>
           </button>
         </div>
+
+        <!-- Drawer Content: Jastip (Trips or Jastip Products) -->
+        <div v-else-if="activePickerMode === 'jastip'" class="picker-list">
+          <template v-if="jastipSubTab === 'trips'">
+            <div v-if="isLoadingTrips" class="picker-empty">
+              Memuat jadwal trip jastip...
+            </div>
+            <div v-else-if="filteredTrips.length === 0" class="picker-empty">
+              Tidak ada jadwal jastip yang cocok.
+            </div>
+            <button
+              v-else
+              v-for="trip in filteredTrips"
+              :key="trip.id"
+              type="button"
+              class="picker-product-item"
+              @click="handleSelectTrip(trip)"
+            >
+              <img v-if="trip.coverImageUrl" :src="trip.coverImageUrl" :alt="trip.title" class="picker-prod-thumb" loading="lazy" />
+              <div v-else class="picker-prod-thumb picker-thumb-fallback">{{ trip.flag || '✈️' }}</div>
+              <div class="picker-prod-info">
+                <div class="picker-prod-badges">
+                  <span class="picker-badge badge-jastip">{{ trip.country }}</span>
+                  <span class="picker-trip-name">{{ trip.status === 'open' ? 'Open PO' : 'Tutup PO' }}</span>
+                </div>
+                <div class="picker-prod-name">{{ trip.title }}</div>
+                <div class="picker-prod-price">Sisa Kuota: {{ trip.quotaRemaining }} slot</div>
+              </div>
+              <span class="picker-select-action">Pilih &rarr;</span>
+            </button>
+          </template>
+
+          <template v-else>
+            <div v-if="isLoadingProducts" class="picker-empty">
+              Memuat katalog produk jastip...
+            </div>
+            <div v-else-if="filteredJastipProducts.length === 0" class="picker-empty">
+              Tidak ada produk jastip yang cocok.
+            </div>
+            <button
+              v-else
+              v-for="prod in filteredJastipProducts"
+              :key="prod.id"
+              type="button"
+              class="picker-product-item"
+              @click="handleSelectProduct(prod)"
+            >
+              <img :src="prod.image" :alt="prod.name" class="picker-prod-thumb" loading="lazy" />
+              <div class="picker-prod-info">
+                <div class="picker-prod-badges">
+                  <span class="picker-badge badge-jastip">Jastip</span>
+                  <span v-if="prod.trip?.title" class="picker-trip-name">{{ prod.trip.title }}</span>
+                </div>
+                <div class="picker-prod-name">{{ prod.name }}</div>
+                <div class="picker-prod-price">{{ formatPrice(prod.price) }}</div>
+              </div>
+              <span class="picker-select-action">Pilih &rarr;</span>
+            </button>
+          </template>
+        </div>
+
+        <!-- Drawer Content: Submitted Product Requests -->
+        <div v-else-if="activePickerMode === 'request'" class="picker-list">
+          <div v-if="isLoadingRequests" class="picker-empty">
+            Memuat riwayat request produk Anda...
+          </div>
+          <div v-else-if="filteredRequests.length === 0" class="picker-empty">
+            Belum ada request produk yang diajukan.
+          </div>
+          <button
+            v-else
+            v-for="req in filteredRequests"
+            :key="req.id"
+            type="button"
+            class="picker-product-item"
+            @click="handleSelectRequest(req)"
+          >
+            <img v-if="req.referenceImageUrl" :src="req.referenceImageUrl" :alt="req.productName" class="picker-prod-thumb" loading="lazy" />
+            <div v-else class="picker-prod-thumb picker-thumb-fallback">&#128203;</div>
+            <div class="picker-prod-info">
+              <div class="picker-prod-badges">
+                <span class="picker-badge badge-request">{{ formatRequestStatus(req.status) }}</span>
+                <span class="picker-trip-name">{{ req.tripTitle }}</span>
+              </div>
+              <div class="picker-prod-name">{{ req.productName }}</div>
+              <div class="picker-prod-price">
+                {{ req.quotedPrice ? formatPrice(req.quotedPrice) : 'Menunggu Penawaran Harga' }}
+              </div>
+            </div>
+            <span class="picker-select-action">Pilih &rarr;</span>
+          </button>
+        </div>
       </div>
 
-      <!-- Attached Product Inquiry Context (if present) -->
+      <!-- Attached Inquiry Context Banner (Product / Jastip / Request) -->
       <div v-if="attachedProduct" class="attached-product-banner">
-        <img :src="attachedProduct.image" :alt="attachedProduct.name" class="attached-thumb" />
+        <img v-if="attachedProduct.image" :src="attachedProduct.image" :alt="attachedProduct.name" class="attached-thumb" />
+        <div v-else class="attached-thumb picker-thumb-fallback">
+          {{ attachedProduct.kind === 'jastip_trip' ? (attachedProduct.flag || '✈️') : '📋' }}
+        </div>
         <div class="attached-details">
           <div class="attached-tag-row">
-            <span class="attached-tag">Produk Terlampir:</span>
-            <span class="attached-type-pill" :class="attachedProduct.productType === 'jastip' ? 'is-jastip' : 'is-ready'">
-              {{ attachedProduct.productType === 'jastip' ? 'Jastip' : 'Ready Stock' }}
+            <span class="attached-tag">Terlampir:</span>
+            <span
+              class="attached-type-pill"
+              :class="{
+                'is-jastip': attachedProduct.kind === 'jastip_trip' || attachedProduct.productType === 'jastip',
+                'is-request': attachedProduct.kind === 'request',
+                'is-ready': attachedProduct.kind === 'product' && attachedProduct.productType !== 'jastip'
+              }"
+            >
+              <template v-if="attachedProduct.kind === 'jastip_trip'">Trip Jastip</template>
+              <template v-else-if="attachedProduct.kind === 'request'">Request Produk</template>
+              <template v-else-if="attachedProduct.productType === 'jastip'">Produk Jastip</template>
+              <template v-else>Produk Tersedia</template>
             </span>
           </div>
           <div class="attached-title">{{ attachedProduct.name }}</div>
           <div class="attached-meta">
-            <span class="attached-price">{{ formatPrice(attachedProduct.price) }}</span>
+            <span v-if="attachedProduct.price" class="attached-price">{{ formatPrice(attachedProduct.price) }}</span>
+            <span v-else-if="attachedProduct.quotedPrice" class="attached-price">{{ formatPrice(attachedProduct.quotedPrice) }}</span>
+            <span v-else-if="attachedProduct.country" class="attached-price">{{ attachedProduct.country }} &bull; {{ attachedProduct.status === 'open' ? 'Open PO' : 'Tutup PO' }}</span>
+            <span v-else-if="attachedProduct.status" class="attached-price">Status: {{ formatRequestStatus(attachedProduct.status) }}</span>
           </div>
         </div>
         <button
           type="button"
           class="remove-attached-btn"
-          aria-label="Batal melampirkan produk ini"
-          title="Hapus produk"
+          aria-label="Batal melampirkan item ini"
+          title="Hapus lampiran"
           @click="removeAttachedProduct"
         >
           &times;
         </button>
       </div>
 
-      <!-- Button Bar to Open Available Products List -->
-      <div class="product-picker-bar">
-        <button
-          type="button"
-          class="open-product-picker-btn"
-          :class="{ 'is-active': isProductPickerOpen }"
-          @click="toggleProductPicker"
-        >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
-            <path d="M3 6h18"></path>
-            <path d="M16 10a4 4 0 0 1-8 0"></path>
-          </svg>
-          <span>{{ isProductPickerOpen ? 'Tutup Daftar Produk' : 'Pilih Produk Tersedia (Ready & Jastip)' }}</span>
-        </button>
-      </div>
-
       <!-- 4. Input Row & 5. Footer -->
       <form class="chat-footer" @submit.prevent="handleSubmitMessage">
+        <!-- Floating "+" Action Menu -->
+        <div v-if="isPlusMenuOpen" class="plus-action-menu" role="menu">
+          <button type="button" class="plus-menu-item" role="menuitem" @click="triggerUploadImage">
+            <span class="plus-menu-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
+                <circle cx="9" cy="9" r="2"></circle>
+                <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+              </svg>
+            </span>
+            <span class="plus-menu-text">
+              <strong>Upload Image</strong>
+              <small>Kirim foto dari perangkat</small>
+            </span>
+          </button>
+
+          <button type="button" class="plus-menu-item" role="menuitem" @click="openPickerMode('ready')">
+            <span class="plus-menu-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+                <path d="M3 6h18"></path>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </span>
+            <span class="plus-menu-text">
+              <strong>Pilih Produk Tersedia</strong>
+              <small>Tanyakan produk Ready Stock</small>
+            </span>
+          </button>
+
+          <button type="button" class="plus-menu-item" role="menuitem" @click="openPickerMode('jastip')">
+            <span class="plus-menu-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
+              </svg>
+            </span>
+            <span class="plus-menu-text">
+              <strong>Pilih Jastip</strong>
+              <small>Pilih jadwal trip atau produk jastip</small>
+            </span>
+          </button>
+
+          <button type="button" class="plus-menu-item" role="menuitem" @click="openPickerMode('request')">
+            <span class="plus-menu-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+                <path d="M9 14h6"></path>
+                <path d="M9 10h6"></path>
+              </svg>
+            </span>
+            <span class="plus-menu-text">
+              <strong>Pilih Request Produk</strong>
+              <small>Pilih request yang telah diajukan</small>
+            </span>
+          </button>
+        </div>
+
         <div class="input-row">
           <input
             ref="fileInput"
@@ -312,15 +487,16 @@
           <button
             type="button"
             class="attach-btn"
-            aria-label="Lampirkan gambar"
-            title="Kirim Gambar"
+            :class="{ 'is-open': isPlusMenuOpen }"
+            aria-label="Buka menu lampiran"
+            :aria-expanded="isPlusMenuOpen ? 'true' : 'false'"
+            title="Lampirkan Gambar, Produk, Jastip, atau Request"
             :disabled="isUploadingImage"
-            @click="fileInput?.click()"
+            @click="togglePlusMenu"
           >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <rect width="18" height="18" x="3" y="3" rx="2" ry="2"></rect>
-              <circle cx="9" cy="9" r="2"></circle>
-              <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"></path>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
           </button>
 
@@ -372,6 +548,8 @@ const {
   toggleChat,
   closeChat,
   attachProductToChat,
+  attachTripToChat,
+  attachRequestToChat,
   openChatWithProduct,
   removeAttachedProduct,
   sendCustomerMessage
@@ -383,11 +561,18 @@ const inputText = ref('')
 const isUploadingImage = ref(false)
 const isPeeking = ref(false)
 
-const isProductPickerOpen = ref(false)
-const isLoadingProducts = ref(false)
-const availableProducts = ref<any[]>([])
-const pickerTypeFilter = ref<'all' | 'ready' | 'jastip'>('all')
+const isPlusMenuOpen = ref(false)
+const activePickerMode = ref<'ready' | 'jastip' | 'request' | null>(null)
+const jastipSubTab = ref<'trips' | 'products'>('trips')
 const pickerSearch = ref('')
+
+const isLoadingProducts = ref(false)
+const isLoadingTrips = ref(false)
+const isLoadingRequests = ref(false)
+
+const availableProducts = ref<any[]>([])
+const availableTrips = ref<any[]>([])
+const submittedRequests = ref<any[]>([])
 
 const launcherBtn = ref<HTMLButtonElement | null>(null)
 const messagesBody = ref<HTMLElement | null>(null)
@@ -397,21 +582,97 @@ const fileInput = ref<HTMLInputElement | null>(null)
 let peekStartTimer: ReturnType<typeof setTimeout> | null = null
 let peekEndTimer: ReturnType<typeof setTimeout> | null = null
 
-const filteredPickerProducts = computed(() => {
+const filteredReadyProducts = computed(() => {
   const q = pickerSearch.value.trim().toLowerCase()
   return availableProducts.value.filter((p) => {
-    if (pickerTypeFilter.value !== 'all' && p.productType !== pickerTypeFilter.value) {
-      return false
-    }
+    if (p.productType !== 'ready') return false
     if (q) {
-      const matchName = p.name?.toLowerCase().includes(q)
-      const matchCat = p.category?.toLowerCase().includes(q)
-      const matchTrip = p.trip?.title?.toLowerCase().includes(q)
-      return matchName || matchCat || matchTrip
+      return (
+        p.name?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q)
+      )
     }
     return true
   })
 })
+
+const filteredJastipProducts = computed(() => {
+  const q = pickerSearch.value.trim().toLowerCase()
+  return availableProducts.value.filter((p) => {
+    if (p.productType !== 'jastip') return false
+    if (q) {
+      return (
+        p.name?.toLowerCase().includes(q) ||
+        p.category?.toLowerCase().includes(q) ||
+        p.trip?.title?.toLowerCase().includes(q)
+      )
+    }
+    return true
+  })
+})
+
+const filteredTrips = computed(() => {
+  const q = pickerSearch.value.trim().toLowerCase()
+  return availableTrips.value.filter((t) => {
+    if (q) {
+      return (
+        t.title?.toLowerCase().includes(q) ||
+        t.country?.toLowerCase().includes(q) ||
+        t.cityOrArea?.toLowerCase().includes(q)
+      )
+    }
+    return true
+  })
+})
+
+const filteredRequests = computed(() => {
+  const q = pickerSearch.value.trim().toLowerCase()
+  return submittedRequests.value.filter((r) => {
+    if (q) {
+      return (
+        r.productName?.toLowerCase().includes(q) ||
+        r.tripTitle?.toLowerCase().includes(q) ||
+        r.targetCountry?.toLowerCase().includes(q)
+      )
+    }
+    return true
+  })
+})
+
+const currentPickerCountLabel = computed(() => {
+  if (activePickerMode.value === 'ready') {
+    return `${filteredReadyProducts.value.length} produk`
+  }
+  if (activePickerMode.value === 'jastip') {
+    return jastipSubTab.value === 'trips'
+      ? `${filteredTrips.value.length} trip`
+      : `${filteredJastipProducts.value.length} produk`
+  }
+  if (activePickerMode.value === 'request') {
+    return `${filteredRequests.value.length} request`
+  }
+  return ''
+})
+
+const pickerSearchPlaceholder = computed(() => {
+  if (activePickerMode.value === 'ready') return 'Cari produk ready stock...'
+  if (activePickerMode.value === 'jastip') {
+    return jastipSubTab.value === 'trips' ? 'Cari negara atau jadwal trip jastip...' : 'Cari produk katalog jastip...'
+  }
+  return 'Cari request produk yang telah diajukan...'
+})
+
+const formatRequestStatus = (status?: string) => {
+  const map: Record<string, string> = {
+    pending: 'Menunggu',
+    reviewed: 'Ditinjau',
+    quoted: 'Ada Penawaran',
+    accepted: 'Disetujui',
+    available: 'Tersedia',
+    rejected: 'Ditolak'
+  }
+  return status ? map[status] || status : 'Menunggu'
+}
 
 const loadAvailableProducts = async () => {
   if (availableProducts.value.length > 0 || isLoadingProducts.value) return
@@ -428,16 +689,80 @@ const loadAvailableProducts = async () => {
   }
 }
 
-const toggleProductPicker = async () => {
-  isProductPickerOpen.value = !isProductPickerOpen.value
-  if (isProductPickerOpen.value) {
+const loadAvailableTrips = async () => {
+  if (availableTrips.value.length > 0 || isLoadingTrips.value) return
+  isLoadingTrips.value = true
+  try {
+    const res = await $fetch<any[]>('/api/trips')
+    availableTrips.value = res || []
+  } catch (err) {
+    // Abaikan jika gagal memuat
+  } finally {
+    isLoadingTrips.value = false
+  }
+}
+
+const loadSubmittedRequests = async () => {
+  isLoadingRequests.value = true
+  try {
+    const res = await $fetch<any[]>('/api/requests')
+    submittedRequests.value = res || []
+  } catch (err) {
+    submittedRequests.value = []
+  } finally {
+    isLoadingRequests.value = false
+  }
+}
+
+const togglePlusMenu = () => {
+  isPlusMenuOpen.value = !isPlusMenuOpen.value
+}
+
+const triggerUploadImage = () => {
+  isPlusMenuOpen.value = false
+  activePickerMode.value = null
+  fileInput.value?.click()
+}
+
+const openPickerMode = async (mode: 'ready' | 'jastip' | 'request') => {
+  isPlusMenuOpen.value = false
+  pickerSearch.value = ''
+  if (activePickerMode.value === mode) {
+    activePickerMode.value = null
+    return
+  }
+  activePickerMode.value = mode
+  if (mode === 'ready') {
     await loadAvailableProducts()
+  } else if (mode === 'jastip') {
+    await Promise.all([loadAvailableTrips(), loadAvailableProducts()])
+  } else if (mode === 'request') {
+    await loadSubmittedRequests()
   }
 }
 
 const handleSelectProduct = (prod: any) => {
   attachProductToChat(prod)
-  isProductPickerOpen.value = false
+  activePickerMode.value = null
+  isPlusMenuOpen.value = false
+  nextTick(() => {
+    inputField.value?.focus()
+  })
+}
+
+const handleSelectTrip = (trip: any) => {
+  attachTripToChat(trip)
+  activePickerMode.value = null
+  isPlusMenuOpen.value = false
+  nextTick(() => {
+    inputField.value?.focus()
+  })
+}
+
+const handleSelectRequest = (req: any) => {
+  attachRequestToChat(req)
+  activePickerMode.value = null
+  isPlusMenuOpen.value = false
   nextTick(() => {
     inputField.value?.focus()
   })
@@ -470,7 +795,8 @@ const handleLauncherClick = async () => {
 }
 
 const handleCloseChat = () => {
-  isProductPickerOpen.value = false
+  activePickerMode.value = null
+  isPlusMenuOpen.value = false
   closeChat()
   nextTick(() => {
     launcherBtn.value?.focus()
@@ -480,8 +806,10 @@ const handleCloseChat = () => {
 const handleKeydown = (e: KeyboardEvent) => {
   if (e.key === 'Escape' && isChatOpen.value) {
     e.preventDefault()
-    if (isProductPickerOpen.value) {
-      isProductPickerOpen.value = false
+    if (isPlusMenuOpen.value) {
+      isPlusMenuOpen.value = false
+    } else if (activePickerMode.value) {
+      activePickerMode.value = null
     } else {
       handleCloseChat()
     }
@@ -513,7 +841,8 @@ watch(isChatOpen, (open) => {
       inputField.value?.focus()
     })
   } else {
-    isProductPickerOpen.value = false
+    activePickerMode.value = null
+    isPlusMenuOpen.value = false
   }
 })
 
@@ -936,6 +1265,11 @@ onBeforeUnmount(() => {
 .attached-type-pill.is-jastip {
   background: var(--brown);
   color: var(--gold-2);
+}
+
+.attached-type-pill.is-request {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .attached-type-pill.is-ready {
@@ -1402,6 +1736,32 @@ onBeforeUnmount(() => {
   border: 1px solid var(--line);
 }
 
+.picker-thumb-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream);
+  font-size: 1.2rem;
+}
+
+.bubble-prod-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 6px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.15rem;
+  flex-shrink: 0;
+}
+
+.bubble-prod-badge.is-request {
+  background: #fef3c7;
+  color: #92400e !important;
+}
+
 .picker-prod-info {
   flex: 1;
   min-width: 0;
@@ -1429,6 +1789,11 @@ onBeforeUnmount(() => {
 .picker-badge.badge-jastip {
   background: var(--brown);
   color: var(--gold-2);
+}
+
+.picker-badge.badge-request {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .picker-badge.badge-ready {
@@ -1478,6 +1843,7 @@ onBeforeUnmount(() => {
 
 /* 4. Input Row & 5. Footer */
 .chat-footer {
+  position: relative;
   padding: 10px 14px 12px;
   background: #ffffff;
   border-top: 1px solid var(--line);
@@ -1485,6 +1851,81 @@ onBeforeUnmount(() => {
   flex-direction: column;
   gap: 6px;
   flex-shrink: 0;
+}
+
+.plus-action-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 14px;
+  width: 268px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 6px;
+  box-shadow: 0 10px 28px rgba(42, 29, 20, 0.16);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 50;
+}
+
+.plus-menu-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.plus-menu-item:hover {
+  background: var(--cream);
+}
+
+.plus-menu-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--cream);
+  border: 1px solid var(--line);
+  color: var(--brown);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+
+.plus-menu-item:hover .plus-menu-icon {
+  background: var(--brown);
+  color: var(--gold-2);
+  border-color: var(--brown);
+}
+
+.plus-menu-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.plus-menu-text strong {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+  line-height: 1.25;
+}
+
+.plus-menu-text small {
+  font-size: 0.68rem;
+  color: var(--muted);
+  line-height: 1.25;
 }
 
 .input-row {
@@ -1499,18 +1940,26 @@ onBeforeUnmount(() => {
   border-radius: 50%;
   background: var(--cream);
   border: 1px solid var(--line);
-  color: var(--muted);
+  color: var(--brown);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
-  transition: border-color 150ms ease, color 150ms ease;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease, transform 200ms ease;
 }
 
 .attach-btn:hover:not(:disabled) {
   border-color: var(--gold);
   color: var(--brown);
+  background: #f5ebd9;
+}
+
+.attach-btn.is-open {
+  background: var(--brown);
+  color: var(--gold-2);
+  border-color: var(--brown);
+  transform: rotate(45deg);
 }
 
 .attach-btn:focus-visible {
