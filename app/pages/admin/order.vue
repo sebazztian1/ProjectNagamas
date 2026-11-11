@@ -2,10 +2,7 @@
   <div class="admin-orders-page">
     <div class="page-head">
       <div>
-        <h1 class="page-title">Manajemen Pesanan &amp; Pembayaran Manual</h1>
-        <p class="page-sub">
-          Tinjau pengajuan pesanan (ACC + Ongkir), verifikasi bukti mutasi bank, input resi pengiriman, atau proses refund manual.
-        </p>
+        <h1 class="page-title">Pesanan</h1>
       </div>
       <button class="btn-refresh" @click="refresh()" :disabled="pending">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
@@ -248,7 +245,7 @@
             </div>
 
             <div class="audit-hint">
-              Pastikan nominal di mutasi internet banking BCA/Mandiri persis sama dengan angka di atas sebelum memverifikasi.
+              Pastikan nominal di mutasi BCA persis sama dengan angka di atas sebelum memverifikasi.
             </div>
 
             <div class="modal-actions-col" v-if="selectedOrderForProof.orderStatus === 'payment_uploaded'">
@@ -290,7 +287,7 @@
 
           <div class="modal-form-group" v-if="rejectReasonPreset === 'Lainnya'">
             <label>Catatan Alasan Spesifik:</label>
-            <textarea v-model="customRejectReason" rows="3" class="form-textarea" placeholder="Tuliskan alasan penolakan secara jelas kepada customer..."></textarea>
+            <textarea v-model="customRejectReason" rows="3" class="form-textarea" placeholder="Alasan penolakan..."></textarea>
           </div>
 
           <div class="modal-actions-row">
@@ -328,7 +325,7 @@
               v-model="advanceLogNote"
               rows="2"
               class="form-textarea"
-              placeholder="Contoh: Paket telah diserahkan ke gerai kurir menuju alamat tujuan."
+              placeholder="Catatan pengiriman"
             ></textarea>
           </div>
 
@@ -371,7 +368,7 @@
               v-model="refundReasonText"
               rows="3"
               class="form-textarea"
-              placeholder="Contoh: Barang out of stock di store Tokyo. Dana Rp ... telah di-refund penuh ke rekening BCA customer."
+              placeholder="Alasan refund"
             ></textarea>
           </div>
           <div class="modal-actions-row">
@@ -429,9 +426,6 @@ const statusFilters = computed(() => [
   { key: 'payment_uploaded', label: 'Cek Pembayaran', count: orders.value.filter(o => o.orderStatus === 'payment_uploaded').length },
   { key: 'pending_payment', label: 'Menunggu Bayar', count: orders.value.filter(o => o.orderStatus === 'pending_payment').length },
   { key: 'verified', label: 'Terverifikasi', count: orders.value.filter(o => o.orderStatus === 'verified').length },
-  { key: 'purchasing', label: 'Sedang Dibelikan', count: orders.value.filter(o => o.orderStatus === 'purchasing').length },
-  { key: 'arrived', label: 'Tiba di Indo', count: orders.value.filter(o => o.orderStatus === 'arrived').length },
-  { key: 'ready_handover', label: 'Sedang Dikirim', count: orders.value.filter(o => o.orderStatus === 'ready_handover' || o.orderStatus === 'ready_pickup').length },
   { key: 'completed', label: 'Selesai', count: orders.value.filter(o => o.orderStatus === 'completed').length },
   { key: 'rejected', label: 'Ditolak / Batal', count: orders.value.filter(o => ['rejected', 'cancelled', 'expired'].includes(o.orderStatus)).length }
 ])

@@ -21,26 +21,24 @@
       <NuxtLink to="/admin/order" class="kpi-card kpi-clickable">
         <span class="kpi-label">Menunggu Verifikasi</span>
         <strong class="kpi-val warning">{{ stats?.pendingOrdersCount || 0 }}</strong>
-        <span class="kpi-sub">Pesanan butuh ACC / cek bukti</span>
       </NuxtLink>
 
       <NuxtLink to="/admin/chat" class="kpi-card kpi-clickable">
         <div class="kpi-label-row">
-          <span class="kpi-label">Live Chat Belum Dibaca</span>
+          <span class="kpi-label">Chat Belum Dibaca</span>
           <span v-if="stats?.unreadChatCount > 0" class="kpi-live-dot"></span>
         </div>
         <strong class="kpi-val" :class="{ danger: (stats?.unreadChatCount || 0) > 0 }">
           {{ stats?.unreadChatCount || 0 }}
         </strong>
         <span class="kpi-sub">
-          {{ (stats?.unreadChatRoomsCount || 0) > 0 ? `${stats.unreadChatRoomsCount} pelanggan menunggu balasan` : 'Semua pesan sudah dibaca' }}
+          {{ (stats?.unreadChatRoomsCount || 0) > 0 ? `${stats.unreadChatRoomsCount} pelanggan` : '' }}
         </span>
       </NuxtLink>
 
       <NuxtLink to="/admin/request" class="kpi-card kpi-clickable">
         <span class="kpi-label">Request Masuk</span>
         <strong class="kpi-val">{{ stats?.pendingRequestsCount || 0 }}</strong>
-        <span class="kpi-sub">Menunggu penawaran harga</span>
       </NuxtLink>
 
       <NuxtLink to="/admin/trip" class="kpi-card kpi-clickable">
@@ -61,13 +59,13 @@
       <!-- Orders waiting for verification -->
       <div class="panel-box">
         <div class="panel-head">
-          <h3>Pesanan Memerlukan Verifikasi</h3>
+          <h3>Perlu Verifikasi</h3>
           <NuxtLink to="/admin/order" class="panel-link">Lihat Semua &rarr;</NuxtLink>
         </div>
 
         <div class="order-quick-list">
           <div v-if="!pendingOrders || pendingOrders.length === 0" style="padding: 24px; text-align: center; color: #7A6A55; font-size: 0.85rem;">
-            Tidak ada pesanan yang sedang menunggu verifikasi saat ini.
+            Tidak ada pesanan menunggu.
           </div>
           <div v-for="ord in pendingOrders" :key="ord.id" class="order-quick-row" v-else>
             <div>
@@ -87,13 +85,13 @@
       <!-- Active Trips Status -->
       <div class="panel-box">
         <div class="panel-head">
-          <h3>Jadwal Trip Jastip Berjalan</h3>
+          <h3>Trip Berjalan</h3>
           <NuxtLink to="/admin/trip" class="panel-link">Kelola Trip &rarr;</NuxtLink>
         </div>
 
         <div class="trip-quick-list">
           <div v-if="activeTrips.length === 0" style="padding: 24px; text-align: center; color: #7A6A55; font-size: 0.85rem;">
-            Belum ada trip yang sedang Open PO.
+            Belum ada trip aktif.
           </div>
           <div v-for="tr in activeTrips" :key="tr.id" class="trip-quick-item" v-else>
             <div class="tq-top">
@@ -435,3 +433,4 @@ const formatRupiah = (val: number) => {
   }
 }
 </style>
+

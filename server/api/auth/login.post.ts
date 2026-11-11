@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, getRequestIP, createError } from 'h3'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../../utils/prisma'
 import { setSessionCookie } from '../../utils/session'
+import { recordAuditLog } from '../../utils/audit'
 
 // In-memory rate limiting for login protection:
 // 5 failed attempts per identifier/IP in 15 minutes triggers lockout delay
@@ -96,6 +97,20 @@ export default defineEventHandler(async (event) => {
     phone_number: user.phone_number,
     role: user.role
   })
+
+  // Log admin / staff login activity
+  if (user.role === 'admin' || user.role === 'staff') {
+    await recordAuditLog(user.id, {
+      action: 'LOGIN_ADMIN',
+      entityType: 'auth',
+      entityId: user.id,
+      detail: {
+        username: user.username,
+        role: user.role,
+        ip
+      }
+    })
+  }
 
   return {
     success: true,

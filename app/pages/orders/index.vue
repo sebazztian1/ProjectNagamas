@@ -134,10 +134,10 @@ const handleCancelOrder = async (ord: any) => {
       method: 'PATCH',
       body: { reason: 'Dibatalkan oleh customer melalui halaman Pesanan Saya.' }
     })
-    showToast('Pesanan Dibatalkan', `Pesanan #${ord.orderCode} berhasil dibatalkan.`, 'info')
+    showToast('Pesanan Dibatalkan', `#${ord.orderCode} dibatalkan.`, 'info')
     await refresh()
   } catch (err: any) {
-    showToast('Gagal Membatalkan', err?.data?.message || 'Tidak dapat membatalkan pesanan.', 'warning')
+    showToast('Gagal Membatalkan', err?.data?.message || 'Gagal membatalkan.', 'warning')
   }
 }
 

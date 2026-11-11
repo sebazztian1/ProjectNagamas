@@ -18,7 +18,7 @@
               <line x1="12" y1="8" x2="12" y2="12"></line>
               <line x1="12" y1="16" x2="12.01" y2="16"></line>
             </svg>
-            <span>Wishlist ini disimpan sementara di browser Anda. Masuk ke akun Anda agar daftar favorit tersimpan permanen.</span>
+            <span>Wishlist tersimpan sementara. Masuk agar tersimpan permanen.</span>
           </div>
           <NuxtLink to="/login" class="btn-gb-login">Masuk Akun</NuxtLink>
         </div>

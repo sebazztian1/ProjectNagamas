@@ -6,9 +6,9 @@
     </div>
 
     <div class="settings-grid">
-      <!-- Section 1: Bank Accounts & QRIS -->
+      <!-- Section 1: Bank Account -->
       <div class="settings-card">
-        <h3 class="card-head">Rekening Pembayaran & QRIS</h3>
+        <h3 class="card-head">Rekening BCA</h3>
 
         <div class="bank-config-list">
           <div v-for="b in banks" :key="b.id" class="bank-config-box">

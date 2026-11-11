@@ -8,7 +8,6 @@
           <span class="current">Kategori Produk</span>
         </div>
         <h1 class="page-title">Kelola Kategori Produk</h1>
-        <p class="page-subtitle">Tambah dan kelola kategori untuk pengelompokan produk ready stock maupun jastip.</p>
       </div>
       <div class="head-actions">
         <button class="btn-refresh" @click="fetchCategories" :disabled="pending">
@@ -128,7 +127,7 @@ definePageMeta({
 })
 
 useHead({
-  title: 'Kelola Kategori Produk | Admin dbb_luxe'
+  title: 'Kelola Kategori Produk | Admin'
 })
 
 interface CategoryItem {

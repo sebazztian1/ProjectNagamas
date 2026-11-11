@@ -16,7 +16,7 @@ export interface AdminOrder {
   customerAddress: string
   items: OrderItem[]
   totalAmount: number
-  paymentMethod: 'Transfer Bank BCA' | 'QRIS' | 'COD' | 'Kartu Kredit'
+  paymentMethod: 'Transfer Bank BCA'
   status: OrderStatus
   createdAt: string
   trackingNumber?: string

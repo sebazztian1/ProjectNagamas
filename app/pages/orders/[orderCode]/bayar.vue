@@ -17,9 +17,9 @@
 
       <!-- Lockout: If Order is Pending Approval -->
       <div v-if="order && order.orderStatus === 'pending_approval'" class="lockout-card">
-        <h2>🔒 Menunggu Persetujuan (ACC) Admin</h2>
+        <h2>Menunggu Persetujuan Admin</h2>
         <p>
-          Rekening dan instruksi pembayaran untuk pesanan #<strong>{{ orderCode }}</strong> masih ditahan hingga ketersediaan barang disetujui oleh Admin dbb_luxe.
+          Pembayaran pesanan #<strong>{{ orderCode }}</strong> dibuka setelah disetujui admin.
         </p>
         <div class="lockout-actions">
           <NuxtLink :to="`/orders/${orderCode}`" class="btn-back-detail">Detail Pesanan</NuxtLink>
@@ -45,7 +45,7 @@
           <!-- Total Amount Box + 24h Countdown -->
           <div class="total-tagihan-card">
             <div class="deadline-bar" v-if="deadlineCountdown">
-              <span>⏳ Batas Waktu Pembayaran (24 Jam):</span>
+              <span>Batas Waktu Pembayaran:</span>
               <strong>{{ deadlineCountdown }}</strong>
             </div>
 
@@ -61,15 +61,13 @@
               </button>
             </div>
             <div v-if="order.shippingCost > 0" class="kode-unik-alert">
-              ℹ️ Total tagihan pesanan (<strong>{{ formatRupiah(order.totalAmount) }}</strong>) sudah termasuk
-              Ongkos Kirim (<strong>{{ formatRupiah(order.shippingCost) }}</strong>).
-              Mohon transfer sesuai nominal di atas agar verifikasi mutasi cepat.
+              Termasuk ongkir (<strong>{{ formatRupiah(order.shippingCost) }}</strong>).
             </div>
           </div>
 
           <!-- Bank Accounts & QRIS Selection -->
           <div class="bank-list-card">
-            <h3 class="card-head-title">Rekening Resmi &amp; QRIS dbb_luxe</h3>
+            <h3 class="card-head-title">Rekening BCA</h3>
 
             <div class="bank-items">
               <div
@@ -88,10 +86,6 @@
                   <button type="button" class="btn-copy-sm" @click.stop="copyText(bank.accountNumber)">
                     Salin No. Rek
                   </button>
-                </div>
-                <div v-if="bank.qrisImageUrl" class="qris-preview">
-                  <span>Atau Scan QRIS Resmi:</span>
-                  <img :src="bank.qrisImageUrl" alt="QRIS dbb_luxe" class="qris-img" />
                 </div>
               </div>
             </div>
@@ -129,8 +123,8 @@
               </div>
 
               <div class="form-group">
-                <label>Nama Bank / E-Wallet Pengirim (Bank Anda) *</label>
-                <input v-model="form.senderBank" type="text" placeholder="Contoh: BCA / Mandiri / BNI / QRIS" required />
+                <label>Bank Pengirim *</label>
+                <input v-model="form.senderBank" type="text" placeholder="Contoh: BCA" required />
               </div>
 
               <div class="form-group">
@@ -142,7 +136,7 @@
                 <label>Nominal yang Ditransfer (Rp) *</label>
                 <input v-model.number="form.amount" type="number" required />
                 <span v-if="form.amount && Math.round(form.amount) !== Math.round(expectedTransferAmount)" class="mismatch-warning">
-                  ⚠️ Nominal harus persis {{ formatRupiah(expectedTransferAmount) }}.
+                  Nominal harus {{ formatRupiah(expectedTransferAmount) }}.
                 </span>
               </div>
 
@@ -278,7 +272,7 @@ const deadlineCountdown = computed(() => {
 
 const copyText = (txt: string) => {
   navigator.clipboard.writeText(txt)
-  showToast('Tersalin', `Teks "${txt}" berhasil disalin ke clipboard.`, 'success')
+  showToast('Tersalin', `"${txt}" disalin.`, 'success')
 }
 
 const handleFileSelect = async (e: Event) => {
@@ -302,7 +296,7 @@ const handleFileSelect = async (e: Event) => {
 
     if (uploaded?.url) {
       form.value.receiptUrl = uploaded.url
-      showToast('Struk Terunggah', 'Foto bukti transfer berhasil diunggah ke Cloud.', 'success')
+      showToast('Struk Terunggah', 'Bukti transfer terunggah.', 'success')
     }
   } catch (err: any) {
     uploadedFileName.value = ''
@@ -315,7 +309,7 @@ const handleFileSelect = async (e: Event) => {
 
 const submitReceipt = async () => {
   if (!form.value.receiptUrl) {
-    showToast('Bukti Wajib Diunggah', 'Mohon unggah foto atau screenshot bukti transfer terlebih dahulu.', 'warning')
+    showToast('Bukti Wajib Diunggah', 'Unggah bukti transfer terlebih dahulu.', 'warning')
     return
   }
 
@@ -333,15 +327,15 @@ const submitReceipt = async () => {
     })
 
     showToast(
-      'Bukti Transfer Terkirim!',
-      'Status pesanan berubah menjadi Menunggu Verifikasi Admin.',
+      'Bukti Terkirim',
+      'Menunggu verifikasi admin.',
       'success'
     )
     await router.push(`/orders/${orderCode}`)
   } catch (err: any) {
     showToast(
       'Gagal Mengirim Bukti',
-      err?.data?.message || 'Periksa kembali nominal dan data bukti transfer Anda.',
+      err?.data?.message || 'Periksa nominal dan bukti transfer.',
       'warning'
     )
   } finally {

@@ -143,7 +143,7 @@ export async function autoExpireOverdueOrders() {
           from_status: 'pending_payment',
           to_status: 'expired',
           changed_by: ord.user_id,
-          note: 'Melewati batas waktu pembayaran 24 jam. Stok/kuota otomatis dikembalikan.'
+          note: 'Batas waktu pembayaran habis. Stok/kuota dikembalikan.'
         }
       })
 
@@ -154,7 +154,7 @@ export async function autoExpireOverdueOrders() {
           user_id: ord.user_id,
           type: 'order_expired',
           title: `Pesanan #${ord.order_code} Kedaluwarsa`,
-          body: 'Batas waktu pembayaran 24 jam telah berakhir. Silakan ajukan pesanan kembali jika masih berminat.',
+          body: 'Batas waktu pembayaran habis.',
           link_url: `/orders/${ord.order_code}`
         }
       })

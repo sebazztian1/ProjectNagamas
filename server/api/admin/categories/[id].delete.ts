@@ -1,6 +1,7 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
+import { recordAuditLog } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -38,6 +39,16 @@ export default defineEventHandler(async (event) => {
   }
 
   await prisma.categories.delete({ where: { id } })
+
+  await recordAuditLog(session, {
+    action: 'DELETE_CATEGORY',
+    entityType: 'category',
+    entityId: id,
+    detail: {
+      name: existing.name,
+      slug: existing.slug
+    }
+  })
 
   return {
     success: true,

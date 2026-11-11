@@ -67,7 +67,7 @@
     <div
       id="dbb-chat-popup"
       role="dialog"
-      aria-label="Chat dengan Admin dbb_luxe"
+      aria-label="Chat dengan Admin"
       class="dbb-chat-popup"
       :class="{ 'is-open': isChatOpen }"
       :inert="!isChatOpen"
@@ -128,7 +128,7 @@
           :class="msg.sender === 'user' ? 'user-msg' : 'admin-msg'"
         >
           <div class="chat-bubble">
-            <span v-if="msg.sender === 'admin'" class="bubble-sender-label">Admin dbb_luxe</span>
+            <span v-if="msg.sender === 'admin'" class="bubble-sender-label">Admin</span>
 
             <!-- Shared Product Card (Ready Stock / Jastip Product) -->
             <NuxtLink
@@ -860,7 +860,7 @@ const handleSubmitMessage = async () => {
   inputText.value = ''
 
   await sendCustomerMessage(text, (reply) => {
-    showToast('Pesan dari Admin dbb_luxe', reply.slice(0, 70) + '...', 'info')
+    showToast('Pesan dari Admin', reply.slice(0, 70) + '...', 'info')
   })
 
   scrollToBottom()

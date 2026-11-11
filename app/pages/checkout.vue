@@ -10,7 +10,7 @@
       <div class="page-header">
         <h1 class="page-title">Checkout Pengajuan Pesanan</h1>
         <p class="page-subtitle">
-          Lengkapi alamat pengiriman dan periksa rincian barang. Instruksi transfer akan dibuka setelah pesanan di-ACC oleh Admin.
+          Lengkapi alamat dan periksa barang.
         </p>
       </div>
 
@@ -134,7 +134,7 @@
                       id="field-quick_search"
                       v-model="quickSearchQuery"
                       type="text"
-                      placeholder="Ketik min. 3 huruf, cth: Tegalsari, Pasar Baru, Lubuk Baja..."
+                      placeholder="Ketik min. 3 huruf, cth: Tegalsari"
                       autocomplete="off"
                       @input="handleQuickSearchInput"
                       @focus="quickSearchOpen = quickSearchResults.length > 0"
@@ -457,7 +457,7 @@
                     v-model="streetAddress"
                     rows="3"
                     autocomplete="street-address"
-                    placeholder="Nama jalan, nomor, RT/RW, patokan (cth: depan warung X)"
+                    placeholder="Jalan, nomor, RT/RW, patokan"
                     :aria-invalid="!!fieldErrors.street"
                     :aria-describedby="fieldErrors.street ? 'err-street' : undefined"
                     @blur="validateField('street')"
@@ -475,7 +475,7 @@
                     v-model="courierNote"
                     rows="2"
                     maxlength="200"
-                    placeholder="Contoh: Titip di pos satpam jika rumah kosong (maks. 200 karakter)"
+                    placeholder="Cth: Titip di pos satpam (maks. 200 karakter)"
                   ></textarea>
                 </div>
 
@@ -509,7 +509,7 @@
                 v-model="pickerSearch"
                 type="text"
                 class="picker-search-input"
-                placeholder="Cari produk ready stock atau jastip untuk ditambahkan..."
+                placeholder="Cari produk untuk ditambahkan..."
               />
               <div class="picker-scroll-list">
                 <div
@@ -587,8 +587,8 @@
             </div>
 
             <div v-if="isSplitOrder" class="split-order-alert">
-              ℹ️ <strong>Keranjang Campur Terdeteksi:</strong> Sistem akan otomatis memecah pesanan Anda menjadi
-              <strong>{{ splitOrderGroupsCount }} nomor pesanan terpisah</strong> (Ready Stock &amp; Jastip per Trip) agar pengiriman lebih cepat.
+              Pesanan dipecah menjadi
+              <strong>{{ splitOrderGroupsCount }} nomor pesanan</strong> (Ready Stock &amp; Jastip per Trip).
             </div>
           </div>
 
@@ -659,7 +659,7 @@
 
             <div class="transfer-notice">
               <p>
-                🔒 <strong>Rekening &amp; Instruksi Transfer Ditahan:</strong> Pembayaran baru dapat dilakukan setelah ketersediaan barang disetujui (di-ACC) oleh Admin dbb_luxe.
+                Pembayaran dibuka setelah disetujui admin.
               </p>
             </div>
 
@@ -837,7 +837,7 @@ const addProductToCheckout = (prod: ApiProduct) => {
   if (existing) {
     if (existing.qty < existing.maxQty) {
       existing.qty += 1
-      showToast('Jumlah Ditambah', `Qty ${prod.name} ditambah menjadi ${existing.qty} pcs.`, 'info')
+      showToast('Jumlah Ditambah', `${prod.name}: ${existing.qty} pcs.`, 'info')
     }
     return
   }
@@ -860,7 +860,7 @@ const addProductToCheckout = (prod: ApiProduct) => {
     variant: resolved.variant,
     combinations: resolved.combinations
   })
-  showToast('Produk Ditambahkan', `${prod.name} masuk ke daftar checkout.`, 'success')
+  showToast('Produk Ditambahkan', `${prod.name} ditambahkan.`, 'success')
 }
 
 const removeCheckoutItem = (idx: number) => {
@@ -1501,15 +1501,15 @@ const handleCreateOrder = async () => {
     if (res.orders && res.orders.length > 1) {
       const codes = res.orders.map(o => `#${o.orderCode}`).join(', ')
       showToast(
-        'Keranjang Campur Dipecah Otomatis!',
-        `Berhasil membuat ${res.orders.length} pesanan (${codes}). Menunggu ACC Admin.`,
+        'Pesanan Dibuat',
+        `${res.orders.length} pesanan (${codes}). Menunggu persetujuan admin.`,
         'success'
       )
       await router.push('/orders')
     } else if (res.primaryOrder) {
       showToast(
-        'Pesanan Berhasil Diajukan!',
-        `Kode pesanan #${res.primaryOrder.orderCode}. Menunggu persetujuan (ACC) dari Admin dbb_luxe.`,
+        'Pesanan Dibuat',
+        `#${res.primaryOrder.orderCode}. Menunggu persetujuan admin.`,
         'success'
       )
       await router.push(`/orders/${res.primaryOrder.orderCode}`)
@@ -1525,7 +1525,7 @@ const handleCreateOrder = async () => {
     }
     showToast(
       'Gagal Membuat Pesanan',
-      err?.data?.message || 'Terjadi kesalahan saat mengajukan pesanan.',
+      err?.data?.message || 'Gagal membuat pesanan.',
       'warning'
     )
   } finally {

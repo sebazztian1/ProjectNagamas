@@ -71,7 +71,7 @@
           >
             <div class="chat-bubble">
               <span class="sender-name">
-                {{ m.senderRole === 'admin' || m.senderRole === 'staff' ? 'Admin dbb_luxe' : '@' + activeRoom.customerUsername }}
+                {{ m.senderRole === 'admin' || m.senderRole === 'staff' ? 'Admin' : '@' + activeRoom.customerUsername }}
               </span>
 
               <!-- Shared Product Card -->
@@ -165,7 +165,7 @@
       </div>
 
       <div v-else class="inbox-empty-placeholder">
-        <p>Pilih percakapan pelanggan di sebelah kiri untuk mulai membalas pesan.</p>
+        <p>Pilih percakapan untuk membalas.</p>
       </div>
     </div>
   </div>

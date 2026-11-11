@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
 import { normalizeProductVariants, syncProductVariantsTable } from '../../../utils/variants'
+import { recordAuditLog } from '../../../utils/audit'
 
 function generateSlug(text: string): string {
   return text
@@ -71,6 +72,18 @@ export default defineEventHandler(async (event) => {
     ? (totalVariantStock > 0 ? 'in_stock' : 'out_of_stock')
     : (stockStatus === 'out_of_stock' ? 'out_of_stock' : 'in_stock')
 
+  const cleanedGallery: string[] = Array.from(
+    new Set(
+      [
+        ...(Array.isArray(galleryImages) ? galleryImages : []),
+        ...(imageUrl && typeof imageUrl === 'string' ? [imageUrl] : [])
+      ]
+        .map((u: any) => String(u || '').trim())
+        .filter(Boolean)
+    )
+  )
+  const primaryImageUrl = cleanedGallery[0] || (imageUrl && typeof imageUrl === 'string' ? imageUrl.trim() : null) || null
+
   // Generate unique slug
   let baseSlug = generateSlug(name)
   let uniqueSlug = baseSlug
@@ -92,7 +105,7 @@ export default defineEventHandler(async (event) => {
       original_price: originalPrice ? Number(originalPrice) : null,
       original_currency: originalCurrency || null,
       source_store: sourceStore?.trim() || null,
-      image_url: imageUrl?.trim() || null,
+      image_url: primaryImageUrl,
       stock_status: effectiveStockStatus,
       stock_quantity: productType === 'ready' ? totalVariantStock : null,
       quota: productType === 'jastip' ? totalVariantStock : null,
@@ -111,15 +124,26 @@ export default defineEventHandler(async (event) => {
   }
 
   // If gallery images provided, create product_images entries
-  if (Array.isArray(galleryImages) && galleryImages.length > 0) {
+  if (cleanedGallery.length > 0) {
     await prisma.product_images.createMany({
-      data: galleryImages.map((url: string, idx: number) => ({
+      data: cleanedGallery.map((url: string, idx: number) => ({
         product_id: createdProduct.id,
         image_url: url,
         sort_order: idx + 1
       }))
     })
   }
+
+  await recordAuditLog(session, {
+    action: 'CREATE_PRODUCT',
+    entityType: 'product',
+    entityId: createdProduct.id,
+    detail: {
+      name: createdProduct.name,
+      price: Number(createdProduct.price),
+      productType: createdProduct.product_type
+    }
+  })
 
   return {
     success: true,

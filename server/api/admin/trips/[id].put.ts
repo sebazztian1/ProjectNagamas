@@ -1,8 +1,11 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getCountryFlag } from '../../../utils/countryFlags'
+import { getSessionFromEvent } from '../../../utils/session'
+import { recordAuditLog } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
+  const session = getSessionFromEvent(event)
   const idStr = event.context.params?.id
   const id = Number(idStr)
   if (!id) {
@@ -38,6 +41,17 @@ export default defineEventHandler(async (event) => {
   const updated = await prisma.jastip_trips.update({
     where: { id },
     data: updateData
+  })
+
+  await recordAuditLog(session, {
+    action: 'UPDATE_TRIP',
+    entityType: 'trip',
+    entityId: updated.id,
+    detail: {
+      title: updated.title,
+      country: updated.country,
+      status: updated.status
+    }
   })
 
   return {

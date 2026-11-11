@@ -161,7 +161,7 @@ export default defineEventHandler(async (event) => {
         data: {
           user_id: room.customer_id,
           type: 'chat',
-          title: 'Balasan Pesan dari Admin dbb_luxe',
+          title: 'Balasan Pesan dari Admin',
           body: lastMessagePreview.slice(0, 250),
           link_url: '/chat'
         }

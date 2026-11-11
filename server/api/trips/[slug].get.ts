@@ -48,6 +48,12 @@ export default defineEventHandler(async (event) => {
 
   const products = trip.products.map(p => {
     const primaryImg = p.product_images[0]
+    const gallery = Array.from(
+      new Set([
+        ...(p.image_url ? [p.image_url] : []),
+        ...p.product_images.map((img) => img.image_url).filter(Boolean)
+      ])
+    )
     return {
       id: p.id,
       name: p.name,
@@ -59,7 +65,8 @@ export default defineEventHandler(async (event) => {
       originalPrice: p.original_price ? Number(p.original_price) : null,
       originalCurrency: p.original_currency || trip.currency,
       sourceStore: p.source_store || '',
-      image: primaryImg?.image_url || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
+      image: gallery[0] || primaryImg?.image_url || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
+      gallery,
       stockStatus: p.stock_status,
       quota: p.quota,
       maxQtyPerOrder: p.max_qty_per_order || 5,

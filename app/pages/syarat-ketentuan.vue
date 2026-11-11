@@ -20,7 +20,7 @@
 
         <section class="legal-sec">
           <h2>2. Persetujuan Admin (ACC) & Batas Waktu Pembayaran</h2>
-          <p>Setiap pesanan yang dibuat akan ditinjau terlebih dahulu oleh Admin dbb_luxe untuk memastikan kuota bagasi dan ketersediaan barang. Setelah pesanan disetujui (ACC), konsumen memiliki waktu <strong>24 jam</strong> untuk menyelesaikan transfer manual sesuai nominal tagihan.</p>
+          <p>Setiap pesanan yang dibuat akan ditinjau terlebih dahulu oleh Admin untuk memastikan kuota bagasi dan ketersediaan barang. Setelah pesanan disetujui (ACC), konsumen memiliki waktu <strong>24 jam</strong> untuk menyelesaikan transfer manual sesuai nominal tagihan.</p>
         </section>
 
         <section class="legal-sec">

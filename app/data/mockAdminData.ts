@@ -45,7 +45,7 @@ export const mockAdminOrders: AdminOrder[] = [
       }
     ],
     totalAmount: 664000,
-    paymentMethod: 'QRIS',
+    paymentMethod: 'Transfer Bank BCA',
     status: 'Baru',
     createdAt: '02 Sep 2026, 14:05',
     notes: 'Pengiriman via J&T Express kalau bisa ya min'
@@ -117,7 +117,7 @@ export const mockAdminOrders: AdminOrder[] = [
       }
     ],
     totalAmount: 434000,
-    paymentMethod: 'QRIS',
+    paymentMethod: 'Transfer Bank BCA',
     status: 'Selesai',
     createdAt: '30 Agu 2026, 09:15',
     trackingNumber: 'SICEPAT-9912044',
@@ -161,7 +161,7 @@ export const mockAdminOrders: AdminOrder[] = [
       }
     ],
     totalAmount: 219000,
-    paymentMethod: 'QRIS',
+    paymentMethod: 'Transfer Bank BCA',
     status: 'Diproses',
     createdAt: '02 Sep 2026, 12:10'
   }
@@ -188,7 +188,7 @@ export const mockCustomerChats: CustomerChat[] = [
       {
         id: 'm-101',
         sender: 'user',
-        text: 'Halo admin dbb_luxe, salam kenal!',
+        text: 'Halo admin, salam kenal!',
         timestamp: '14:10'
       },
       {
@@ -256,7 +256,7 @@ export const mockCustomerChats: CustomerChat[] = [
       {
         id: 'm-301',
         sender: 'user',
-        text: 'Selamat siang admin dbb_luxe!',
+        text: 'Selamat siang admin!',
         timestamp: '12:15'
       },
       {
@@ -354,7 +354,7 @@ export const mockStockAdjustments: StockAdjustment[] = [
     newStock: 24,
     reason: 'Penerimaan stok baru dari penjahit/workshop',
     date: '02 Sep 2026, 10:30',
-    operator: 'Admin dbb_luxe'
+    operator: 'Admin'
   },
   {
     id: 'adj-002',
@@ -378,7 +378,7 @@ export const mockStockAdjustments: StockAdjustment[] = [
     newStock: 15,
     reason: 'Restock batch kedua kulit espresso brown',
     date: '01 Sep 2026, 11:00',
-    operator: 'Admin dbb_luxe'
+    operator: 'Admin'
   },
   {
     id: 'adj-004',
@@ -390,7 +390,7 @@ export const mockStockAdjustments: StockAdjustment[] = [
     newStock: 0,
     reason: 'Penyesuaian stok opname bulanan (stok habis)',
     date: '31 Agu 2026, 17:45',
-    operator: 'Admin dbb_luxe'
+    operator: 'Admin'
   }
 ]
 

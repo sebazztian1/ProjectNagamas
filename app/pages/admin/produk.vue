@@ -2,8 +2,7 @@
   <div class="admin-products-page">
     <div class="page-head">
       <div>
-        <h1 class="page-title">Manajemen Produk (Ready Stock & Jastip)</h1>
-        <p class="page-subtitle">Kelola inventaris barang ready di toko serta katalog titip beli luar negeri per jadwal trip langsung dari database.</p>
+        <h1 class="page-title">Produk</h1>
       </div>
       <div class="head-actions">
         <button class="btn-refresh" @click="refresh()" :disabled="status === 'pending'">
@@ -36,7 +35,7 @@
     <!-- Loading State -->
     <div v-if="status === 'pending'" class="loading-state">
       <div class="spinner"></div>
-      <p>Memuat data produk dari database...</p>
+      <p>Memuat produk...</p>
     </div>
 
     <!-- Products Table -->
@@ -57,6 +56,9 @@
             <td class="col-product">
               <div class="prod-thumb">
                 <img :src="p.imageUrl || 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80'" :alt="p.name" />
+                <span v-if="p.galleryImages && p.galleryImages.length > 1" class="thumb-count-badge">
+                  {{ p.galleryImages.length }} Foto
+                </span>
               </div>
               <div class="prod-info-txt">
                 <strong>{{ p.name }}</strong>
@@ -292,7 +294,7 @@
                     <input
                       v-model="tier.draftOption"
                       type="text"
-                      placeholder="Ketik opsi variasi (pisahkan koma, cth: Hitam, Cream, Navy) lalu tekan Enter..."
+                      placeholder="Opsi (pisah koma), Enter"
                       @keydown.enter.prevent="addTierOption(tIdx)"
                     />
                     <button type="button" class="btn-add-opt" @click="addTierOption(tIdx)">
@@ -380,18 +382,64 @@
             </div>
           </div>
 
-          <!-- Image URL and File Upload -->
+          <!-- Multi-Image Gallery & File Upload -->
           <div class="f-group">
-            <label>URL Gambar Utama:</label>
+            <div class="gallery-label-row">
+              <label>Foto & Galeri Produk (Bisa Banyak Gambar):</label>
+              <span class="gallery-count-hint">{{ form.galleryImages.length }} foto ditambahkan</span>
+            </div>
             <div class="image-input-wrap">
-              <input v-model="form.imageUrl" type="text" placeholder="https://images.unsplash.com/... atau upload" />
-              <label class="btn-upload-file">
-                <span>Upload Foto</span>
-                <input type="file" accept="image/png,image/jpeg,image/webp" @change="handleFileUpload" style="display:none;" />
+              <input
+                v-model="draftImageUrl"
+                type="text"
+                placeholder="URL gambar (https://...)"
+                @keydown.enter.prevent="addImageUrl"
+              />
+              <button type="button" class="btn-add-img-url" @click="addImageUrl" :disabled="!draftImageUrl.trim()">
+                + Tambah URL
+              </button>
+              <label class="btn-upload-file" :class="{ disabled: isUploadingImages }">
+                <span>{{ isUploadingImages ? 'Mengunggah...' : 'Upload Foto (Multi)' }}</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/png,image/jpeg,image/webp"
+                  :disabled="isUploadingImages"
+                  @change="handleFileUpload"
+                  style="display:none;"
+                />
               </label>
             </div>
-            <div v-if="form.imageUrl" class="image-preview">
-              <img :src="form.imageUrl" alt="Preview Gambar" />
+            <p class="gallery-help-text">
+              Anda dapat memilih beberapa file foto sekaligus saat klik <b>Upload Foto (Multi)</b>. Foto pertama otomatis menjadi <b>Foto Utama</b>.
+            </p>
+
+            <div v-if="form.galleryImages.length > 0" class="gallery-preview-grid">
+              <div
+                v-for="(imgUrl, idx) in form.galleryImages"
+                :key="idx"
+                class="gallery-preview-card"
+                :class="{ 'is-primary': idx === 0 }"
+              >
+                <div class="gp-img-wrap">
+                  <img :src="imgUrl" :alt="`Foto produk ${idx + 1}`" />
+                  <span v-if="idx === 0" class="gp-primary-badge">Utama</span>
+                  <span v-else class="gp-index-badge">#{{ idx + 1 }}</span>
+                  <button
+                    type="button"
+                    class="gp-remove-btn"
+                    title="Hapus foto ini"
+                    @click="removeGalleryImage(idx)"
+                  >
+                    &times;
+                  </button>
+                </div>
+                <div class="gp-card-actions" v-if="idx > 0">
+                  <button type="button" class="gp-make-primary-btn" @click="setAsPrimaryImage(idx)">
+                    Jadikan Utama
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -438,6 +486,7 @@ interface AdminProduct {
   originalCurrency: string | null
   sourceStore: string | null
   imageUrl: string
+  galleryImages?: string[]
   stockStatus: 'in_stock' | 'out_of_stock'
   stockQuantity: number
   quota: number
@@ -511,8 +560,36 @@ const form = ref({
   originalCurrency: '',
   sourceStore: '',
   imageUrl: '',
+  galleryImages: [] as string[],
   description: ''
 })
+
+const draftImageUrl = ref('')
+const isUploadingImages = ref(false)
+
+const addImageUrl = () => {
+  const url = draftImageUrl.value.trim()
+  if (!url) return
+  if (!form.value.galleryImages.includes(url)) {
+    form.value.galleryImages.push(url)
+    form.value.imageUrl = form.value.galleryImages[0] || ''
+  }
+  draftImageUrl.value = ''
+}
+
+const removeGalleryImage = (index: number) => {
+  form.value.galleryImages.splice(index, 1)
+  form.value.imageUrl = form.value.galleryImages[0] || ''
+}
+
+const setAsPrimaryImage = (index: number) => {
+  if (index <= 0 || index >= form.value.galleryImages.length) return
+  const [picked] = form.value.galleryImages.splice(index, 1)
+  if (picked) {
+    form.value.galleryImages.unshift(picked)
+    form.value.imageUrl = form.value.galleryImages[0] || ''
+  }
+}
 
 interface EditableTier {
   name: string
@@ -717,8 +794,10 @@ const openCreateModal = () => {
     originalCurrency: '',
     sourceStore: '',
     imageUrl: '',
+    galleryImages: [],
     description: ''
   }
+  draftImageUrl.value = ''
   variantTiers.value = []
   variantCombinations.value = []
   bulkPrice.value = null
@@ -729,6 +808,9 @@ const openCreateModal = () => {
 const editProduct = (p: AdminProduct) => {
   isEditing.value = true
   editingId.value = p.id
+  const initialGallery = Array.isArray(p.galleryImages) && p.galleryImages.length > 0
+    ? [...p.galleryImages]
+    : (p.imageUrl ? [p.imageUrl] : [])
   form.value = {
     name: p.name,
     categoryId: p.categoryId,
@@ -741,9 +823,11 @@ const editProduct = (p: AdminProduct) => {
     originalPrice: p.originalPrice,
     originalCurrency: p.originalCurrency || '',
     sourceStore: p.sourceStore || '',
-    imageUrl: p.imageUrl || '',
+    imageUrl: initialGallery[0] || p.imageUrl || '',
+    galleryImages: initialGallery,
     description: p.description || ''
   }
+  draftImageUrl.value = ''
 
   if (p.variants && Array.isArray(p.variants.tiers) && p.variants.tiers.length > 0) {
     variantTiers.value = p.variants.tiers.map((t: any) => ({
@@ -821,23 +905,35 @@ const deleteProduct = async (p: AdminProduct) => {
 
 const handleFileUpload = async (event: Event) => {
   const target = event.target as HTMLInputElement
-  const file = target.files?.[0]
-  if (!file) return
+  const files = target.files ? Array.from(target.files) : []
+  if (files.length === 0) return
 
-  const formData = new FormData()
-  formData.append('file', file)
-  formData.append('folder', 'products')
-
+  isUploadingImages.value = true
+  let uploadedCount = 0
   try {
-    const res = await $fetch<{ success: boolean; url?: string; fileUrl?: string }>('/api/upload', {
-      method: 'POST',
-      body: formData
-    })
-    form.value.imageUrl = res.url || res.fileUrl || ''
-    showToast('Foto Diunggah', 'Gambar produk berhasil diupload ke server.', 'success')
+    for (const file of files) {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('folder', 'products')
+
+      const res = await $fetch<{ success: boolean; url?: string; fileUrl?: string }>('/api/upload', {
+        method: 'POST',
+        body: formData
+      })
+      const url = (res.url || res.fileUrl || '').trim()
+      if (url && !form.value.galleryImages.includes(url)) {
+        form.value.galleryImages.push(url)
+        uploadedCount++
+      }
+    }
+    form.value.imageUrl = form.value.galleryImages[0] || ''
+    if (uploadedCount > 0) {
+      showToast('Foto Diunggah', `${uploadedCount} foto produk berhasil diupload ke galeri.`, 'success')
+    }
   } catch (err: any) {
     showToast('Gagal Upload', err?.data?.message || 'Gagal mengupload gambar', 'warning')
   } finally {
+    isUploadingImages.value = false
     target.value = ''
   }
 }
@@ -845,6 +941,12 @@ const handleFileUpload = async (event: Event) => {
 const saveProduct = async () => {
   isSaving.value = true
   try {
+    // Flush any uncommitted draftImageUrl before saving
+    if (draftImageUrl.value.trim()) {
+      addImageUrl()
+    }
+    form.value.imageUrl = form.value.galleryImages[0] || form.value.imageUrl || ''
+
     // Flush any uncommitted draftOption text in tiers before saving
     for (let i = 0; i < variantTiers.value.length; i++) {
       if (variantTiers.value[i]?.draftOption?.trim()) {
@@ -1040,8 +1142,9 @@ const formatRupiah = (val: number) => {
 }
 
 .prod-thumb {
-  width: 44px;
-  height: 44px;
+  position: relative;
+  width: 48px;
+  height: 48px;
   border-radius: 6px;
   overflow: hidden;
   background: #F7EEDC;
@@ -1052,6 +1155,19 @@ const formatRupiah = (val: number) => {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.thumb-count-badge {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  background: rgba(43, 33, 22, 0.78);
+  color: #ffffff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  padding: 1px 4px;
+  border-radius: 4px;
+  line-height: 1.2;
 }
 
 .prod-info-txt strong {
@@ -1235,13 +1351,55 @@ const formatRupiah = (val: number) => {
   outline: none;
 }
 
+.gallery-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.gallery-count-hint {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--color-primary, #8C6D3F);
+  background: #FFFBF2;
+  border: 1px solid #E5D7BE;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
 .image-input-wrap {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .image-input-wrap input {
   flex: 1;
+  min-width: 220px;
+}
+
+.btn-add-img-url {
+  background: #ffffff;
+  color: var(--color-primary, #8C6D3F);
+  border: 1px solid var(--color-primary, #8C6D3F);
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-add-img-url:hover:not(:disabled) {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+}
+
+.btn-add-img-url:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .btn-upload-file {
@@ -1255,21 +1413,129 @@ const formatRupiah = (val: number) => {
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
+  transition: all 0.15s;
 }
 
-.image-preview {
+.btn-upload-file:hover:not(.disabled) {
+  background: #E2D1B3;
+}
+
+.btn-upload-file.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.gallery-help-text {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #7A6A55);
+  margin: 0;
+}
+
+.gallery-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
   margin-top: 6px;
-  width: 70px;
-  height: 70px;
+}
+
+.gallery-preview-card {
+  background: #FFFBF2;
+  border: 1.5px solid #E5D7BE;
+  border-radius: 8px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.gallery-preview-card.is-primary {
+  border-color: var(--color-primary, #8C6D3F);
+  box-shadow: 0 2px 8px rgba(140, 109, 63, 0.16);
+}
+
+.gp-img-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: 6px;
   overflow: hidden;
-  border: 1px solid var(--color-secondary, #EFE1C6);
+  background: #F4EBD9;
 }
 
-.image-preview img {
+.gp-img-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.gp-primary-badge {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.gp-index-badge {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  background: rgba(43, 33, 22, 0.68);
+  color: #ffffff;
+  font-size: 0.64rem;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.gp-remove-btn {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(220, 38, 38, 0.9);
+  color: #ffffff;
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.gp-remove-btn:hover {
+  background: #B91C1C;
+}
+
+.gp-card-actions {
+  display: flex;
+}
+
+.gp-make-primary-btn {
+  width: 100%;
+  background: #ffffff;
+  color: var(--color-primary, #8C6D3F);
+  border: 1px solid #DECBB0;
+  border-radius: 5px;
+  padding: 4px 6px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gp-make-primary-btn:hover {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  border-color: var(--color-primary, #8C6D3F);
 }
 
 .modal-foot {

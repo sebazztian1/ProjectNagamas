@@ -1,7 +1,10 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../../../utils/prisma'
+import { getSessionFromEvent } from '../../../../utils/session'
+import { recordAuditLog } from '../../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
+  const session = getSessionFromEvent(event)
   const idStr = event.context.params?.id
   const id = Number(idStr)
   if (!id) {
@@ -34,6 +37,17 @@ export default defineEventHandler(async (event) => {
     data: {
       status: nextStatus as any,
       updated_at: new Date()
+    }
+  })
+
+  await recordAuditLog(session, {
+    action: `UPDATE_TRIP_STATUS_${nextStatus.toUpperCase()}`,
+    entityType: 'trip',
+    entityId: updated.id,
+    detail: {
+      title: updated.title,
+      fromStatus: existing.status,
+      toStatus: nextStatus
     }
   })
 

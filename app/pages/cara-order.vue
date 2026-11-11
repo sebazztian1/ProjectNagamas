@@ -25,7 +25,7 @@
           <div class="step-num">2</div>
           <div class="step-body">
             <h3>Checkout &amp; Tunggu Persetujuan Admin (ACC)</h3>
-            <p>Setelah mengisi data alamat pengiriman dan mengajukan checkout, pesanan berstatus <em>"Menunggu Persetujuan Admin"</em>. Admin dbb_luxe akan memeriksa ketersediaan stok ready atau sisa kuota koper traveler luar negeri terlebih dahulu.</p>
+            <p>Setelah mengisi data alamat pengiriman dan mengajukan checkout, pesanan berstatus <em>"Menunggu Persetujuan Admin"</em>. Admin akan memeriksa ketersediaan stok ready atau sisa kuota koper traveler luar negeri terlebih dahulu.</p>
           </div>
         </div>
 
@@ -33,7 +33,7 @@
           <div class="step-num">3</div>
           <div class="step-body">
             <h3>Pesanan Disetujui: Transfer Manual &amp; Upload Bukti</h3>
-            <p>Setelah di-ACC oleh admin, batas waktu pembayaran 24 jam mulai berjalan. Kirimkan pembayaran sesuai nominal tagihan ke rekening resmi BCA/Mandiri atau QRIS dbb_luxe, lalu unggah foto bukti transfer di menu <em>Pesanan Saya &rarr; Bayar</em>.</p>
+            <p>Setelah di-ACC oleh admin, batas waktu pembayaran 24 jam mulai berjalan. Kirimkan pembayaran sesuai nominal tagihan ke rekening BCA, lalu unggah foto bukti transfer di menu <em>Pesanan Saya &rarr; Bayar</em>.</p>
           </div>
         </div>
 

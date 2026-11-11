@@ -1,6 +1,7 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../../utils/prisma'
 import { getSessionFromEvent } from '../../../../utils/session'
+import { recordAuditLog } from '../../../../utils/audit'
 
 function generateSlug(text: string): string {
   const base = text
@@ -110,6 +111,18 @@ export default defineEventHandler(async (event) => {
       title: 'Barang Request Anda Sudah Tersedia!',
       body: `Produk "${productName}" telah dimasukkan ke dalam katalog trip ${trip.title} dan siap Anda pesan!`,
       link_url: `/jastip/${trip.slug}/${product.slug}`
+    }
+  })
+
+  await recordAuditLog(session, {
+    action: 'CONVERT_REQUEST_TO_PRODUCT',
+    entityType: 'request',
+    entityId: id,
+    detail: {
+      productName,
+      productId: product.id,
+      tripId: trip.id,
+      tripTitle: trip.title
     }
   })
 

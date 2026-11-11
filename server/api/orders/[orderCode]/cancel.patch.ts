@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
   if (!['pending_approval', 'pending_payment'].includes(order.order_status)) {
     throw createError({
       statusCode: 400,
-      message: 'Pesanan tidak dapat dibatalkan karena pembayaran sedang/telah diverifikasi atau barang sudah dalam proses pembelian.'
+      message: 'Pesanan tidak dapat dibatalkan karena sudah diproses.'
     })
   }
 

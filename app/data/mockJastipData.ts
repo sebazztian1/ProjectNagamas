@@ -190,7 +190,7 @@ export const mockOrders: Order[] = [
         fromStatus: '',
         toStatus: 'pending_approval',
         title: 'Pesanan Diajukan',
-        note: 'Menunggu peninjauan & persetujuan (ACC) dari Admin dbb_luxe untuk ketersediaan barang dan kuota bagasi.',
+        note: 'Menunggu peninjauan & persetujuan (ACC) dari Admin untuk ketersediaan barang dan kuota bagasi.',
         createdAt: '2026-10-02 16:30'
       }
     ],
@@ -241,7 +241,7 @@ export const mockOrders: Order[] = [
         fromStatus: 'pending_approval',
         toStatus: 'pending_payment',
         title: 'Pesanan Disetujui Admin (ACC)',
-        note: 'Admin dbb_luxe menyetujui pesanan. Batas waktu pembayaran 24 jam dibuka.',
+        note: 'Admin menyetujui pesanan. Batas waktu pembayaran 24 jam dibuka.',
         createdAt: '2026-10-02 15:15'
       }
     ],
@@ -360,7 +360,7 @@ export const mockOrders: Order[] = [
         fromStatus: 'payment_uploaded',
         toStatus: 'verified',
         title: 'Pembayaran Terverifikasi',
-        note: 'Diverifikasi oleh Admin dbb_luxe. Mutasi bank cocok.',
+        note: 'Diverifikasi oleh Admin. Mutasi bank cocok.',
         createdAt: '2026-10-02 09:40'
       },
       {
@@ -503,21 +503,6 @@ export const mockBankAccounts: BankAccount[] = [
     bankName: 'BCA (Bank Central Asia)',
     accountNumber: '8830-192-888',
     accountHolder: 'DBB LUXE RETAIL INDONESIA',
-    isActive: true
-  },
-  {
-    id: 'bank-mandiri',
-    bankName: 'Bank Mandiri',
-    accountNumber: '137-00-9821-445',
-    accountHolder: 'DBB LUXE RETAIL INDONESIA',
-    isActive: true
-  },
-  {
-    id: 'qris-gopay',
-    bankName: 'QRIS Semua Pembayaran (BCA, GoPay, OVO, Dana)',
-    accountNumber: 'NMID: ID1029384756',
-    accountHolder: 'DBB LUXE STORE JASTIP',
-    qrisImageUrl: 'https://images.unsplash.com/photo-1595079672139-545c6373d575?auto=format&fit=crop&w=600&q=80',
     isActive: true
   }
 ]

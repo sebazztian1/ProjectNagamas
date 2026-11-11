@@ -125,6 +125,9 @@
               Detail Trip & Daftar Belanja &rarr;
             </NuxtLink>
             <div class="btn-sub-row">
+              <NuxtLink :to="`/admin/trip/${t.id}?add=1`" class="btn-quick-add-prod" title="Tambah produk langsung ke trip ini">
+                + Produk
+              </NuxtLink>
               <button class="btn-edit-trip" @click="openEditModal(t)">Edit</button>
               <button v-if="t.status === 'open'" class="btn-close-po" @click="changeTripStatus(t.id, 'closed')">
                 Tutup PO
@@ -308,7 +311,7 @@
 
           <div class="f-group">
             <label>Syarat & Ketentuan Khusus Trip:</label>
-            <textarea v-model="form.terms" rows="2" placeholder="Ketentuan DP, garansi refund jika kosong, regulasi bagasi..."></textarea>
+            <textarea v-model="form.terms" rows="2" placeholder="Ketentuan DP, refund, bagasi..."></textarea>
           </div>
 
           <div class="modal-foot">
@@ -922,6 +925,27 @@ const formatStatusLabel = (s: string) => {
 .btn-sub-row {
   display: flex;
   gap: 8px;
+}
+
+.btn-quick-add-prod {
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-primary, #8C6D3F);
+  color: var(--color-primary, #8C6D3F);
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.btn-quick-add-prod:hover {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
 }
 
 .btn-edit-trip {

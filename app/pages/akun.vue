@@ -17,8 +17,8 @@
         <div class="admin-access-header">
           <div>
             <div class="admin-badge">Hak Akses {{ userRoleLabel }}</div>
-            <h2 class="admin-access-title">Panel Admin dbb_luxe</h2>
-            <p class="admin-access-subtitle">Kelola katalog produk, jadwal trip jastip, pesanan masuk, verifikasi pembayaran, kategori, dan live chat.</p>
+            <h2 class="admin-access-title">Panel Admin</h2>
+            <p class="admin-access-subtitle">Kelola produk, trip, pesanan, dan pembayaran.</p>
           </div>
           <NuxtLink to="/admin" class="btn-to-admin">
             Masuk ke Panel Admin
@@ -58,13 +58,13 @@
             <div class="form-group">
               <label>Username Akun:</label>
               <input v-model="user.username" type="text" disabled class="input-disabled" />
-              <span class="field-hint">Username digunakan sebagai identitas akun Anda untuk masuk (login) dan tidak dapat diubah.</span>
+              <span class="field-hint">Username tidak dapat diubah.</span>
             </div>
 
             <div class="form-group">
               <label>Nomor WhatsApp (Aktif untuk Konfirmasi & Notifikasi):</label>
               <input v-model="user.phone" type="tel" placeholder="Contoh: 081234567890" required />
-              <span class="field-hint">Nomor ini dapat digunakan untuk masuk ke akun Anda serta menerima info status titipan jastip.</span>
+              <span class="field-hint">Untuk login dan info status titipan.</span>
             </div>
 
             <button type="submit" class="btn-save" :disabled="isSavingProfile">
@@ -369,12 +369,12 @@ const handleChangePassword = async () => {
   }
 
   if (!/[^a-zA-Z\s]/.test(p)) {
-    showToast('Kata Sandi Kurang Kuat', 'Kata sandi harus mengandung minimal 1 angka atau simbol.', 'warning')
+    showToast('Kata Sandi Kurang Kuat', 'Minimal 1 angka atau simbol.', 'warning')
     return
   }
 
   if (pass.value.current === p) {
-    showToast('Kata Sandi Sama', 'Kata sandi baru tidak boleh sama dengan kata sandi saat ini.', 'warning')
+    showToast('Kata Sandi Sama', 'Tidak boleh sama dengan kata sandi lama.', 'warning')
     return
   }
 

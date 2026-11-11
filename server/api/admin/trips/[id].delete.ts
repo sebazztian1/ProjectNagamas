@@ -1,7 +1,10 @@
 import { defineEventHandler, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
+import { getSessionFromEvent } from '../../../utils/session'
+import { recordAuditLog } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
+  const session = getSessionFromEvent(event)
   const idStr = event.context.params?.id
   const id = Number(idStr)
   if (!id) {
@@ -36,6 +39,16 @@ export default defineEventHandler(async (event) => {
   }
 
   await prisma.jastip_trips.delete({ where: { id } })
+
+  await recordAuditLog(session, {
+    action: 'DELETE_TRIP',
+    entityType: 'trip',
+    entityId: id,
+    detail: {
+      title: existing.title,
+      country: existing.country
+    }
+  })
 
   return {
     success: true,

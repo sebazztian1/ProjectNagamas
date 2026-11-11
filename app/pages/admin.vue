@@ -7,13 +7,13 @@
           <div class="brand-logo-icon">D</div>
           <div class="brand-text-group">
             <span class="brand-name">DBB_LUXE</span>
-            <span class="admin-tag">Admin Panel Jastip</span>
+            <span class="admin-tag">Admin</span>
           </div>
         </NuxtLink>
       </div>
 
       <nav class="sidebar-nav">
-        <div class="nav-section-title">NAVIGASI UTAMA</div>
+        <div class="nav-section-title">MENU</div>
 
         <!-- 1. Ringkasan -->
         <NuxtLink to="/admin" class="nav-item" exact-active-class="active">
@@ -23,7 +23,7 @@
             <rect width="7" height="9" x="14" y="12" rx="1"></rect>
             <rect width="7" height="5" x="3" y="16" rx="1"></rect>
           </svg>
-          <span>Dashboard Ringkasan</span>
+          <span>Dashboard</span>
         </NuxtLink>
 
         <!-- 2. Produk -->
@@ -31,7 +31,7 @@
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
           </svg>
-          <span>Kelola Produk (Ready & Jastip)</span>
+          <span>Produk</span>
         </NuxtLink>
 
         <!-- 2b. Kategori Produk -->
@@ -39,7 +39,7 @@
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 6h16M4 12h16M4 18h7" />
           </svg>
-          <span>Kategori Produk</span>
+          <span>Kategori</span>
         </NuxtLink>
 
         <!-- 3. Jadwal Jastip (Trip) -->
@@ -47,7 +47,7 @@
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
           </svg>
-          <span>Jadwal Jastip (Trip)</span>
+          <span>Trip</span>
           <span class="badge-count" v-if="stats?.openTripsCount">{{ stats.openTripsCount }} Trip</span>
         </NuxtLink>
 
@@ -58,7 +58,7 @@
             <circle cx="20" cy="21" r="1"></circle>
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
           </svg>
-          <span>Pesanan & Verifikasi</span>
+          <span>Pesanan</span>
           <span class="badge-count warning" v-if="stats?.pendingOrdersCount">{{ stats.pendingOrdersCount }} Baru</span>
         </NuxtLink>
 
@@ -67,7 +67,7 @@
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
-          <span>Live Chat Admin</span>
+          <span>Live Chat</span>
           <span class="badge-count warning" v-if="stats?.unreadChatCount">{{ stats.unreadChatCount > 99 ? '99+' : stats.unreadChatCount }} Baru</span>
         </NuxtLink>
 
@@ -79,11 +79,11 @@
             <line x1="12" y1="18" x2="12" y2="12"></line>
             <line x1="9" y1="15" x2="15" y2="15"></line>
           </svg>
-          <span>Request Produk & Quote</span>
+          <span>Request Produk</span>
           <span class="badge-count" v-if="stats?.pendingRequestsCount">{{ stats.pendingRequestsCount }}</span>
         </NuxtLink>
 
-        <div class="nav-section-title">PENGATURAN & AUDIT</div>
+        <div class="nav-section-title">SISTEM</div>
 
         <!-- 7. Pelanggan -->
         <NuxtLink to="/admin/customer" class="nav-item" active-class="active">
@@ -93,7 +93,7 @@
             <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
             <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
           </svg>
-          <span>Daftar Pelanggan</span>
+          <span>Pelanggan</span>
           <span class="badge-count" v-if="stats?.customersCount">{{ stats.customersCount }}</span>
         </NuxtLink>
 
@@ -103,7 +103,7 @@
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
           </svg>
-          <span>Pengaturan Toko & Rekening</span>
+          <span>Pengaturan</span>
         </NuxtLink>
 
         <!-- 9. Audit Log -->
@@ -111,7 +111,7 @@
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
           </svg>
-          <span>Audit Log Aktivitas</span>
+          <span>Audit Log</span>
         </NuxtLink>
       </nav>
 
@@ -121,7 +121,7 @@
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
           </svg>
-          <span>Buka Toko Publik</span>
+          <span>Lihat Toko</span>
         </NuxtLink>
       </div>
     </aside>

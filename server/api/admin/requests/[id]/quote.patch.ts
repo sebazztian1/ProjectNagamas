@@ -1,6 +1,7 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../../utils/prisma'
 import { getSessionFromEvent } from '../../../../utils/session'
+import { recordAuditLog } from '../../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -75,6 +76,17 @@ export default defineEventHandler(async (event) => {
       }
     })
   }
+
+  await recordAuditLog(session, {
+    action: `REQUEST_${status.toUpperCase()}`,
+    entityType: 'request',
+    entityId: updated.id,
+    detail: {
+      productName: req.product_name,
+      status,
+      quotedPrice: quotedPrice ? Number(quotedPrice) : null
+    }
+  })
 
   return {
     success: true,

@@ -16,10 +16,27 @@
         <!-- Image Area -->
         <div class="gallery-col">
           <div class="main-image">
-            <img :src="product.image" :alt="product.name" />
+            <img :src="activeImage" :alt="product.name" />
             <span class="badge-jastip-po">
               Open PO Jastip {{ product.trip?.country || '' }}
             </span>
+            <template v-if="galleryList.length > 1">
+              <button type="button" class="gallery-nav-btn prev" @click="stepGallery(-1)" title="Foto sebelumnya">&lsaquo;</button>
+              <button type="button" class="gallery-nav-btn next" @click="stepGallery(1)" title="Foto berikutnya">&rsaquo;</button>
+              <span class="gallery-counter-pill">{{ activeGalleryIndex + 1 }} / {{ galleryList.length }}</span>
+            </template>
+          </div>
+
+          <div v-if="galleryList.length > 1" class="thumbnail-row">
+            <div
+              v-for="(img, idx) in galleryList"
+              :key="idx"
+              class="thumb-box"
+              :class="{ active: activeImage === img }"
+              @click="activeImage = img"
+            >
+              <img :src="img" :alt="`${product.name} - ${idx + 1}`" />
+            </div>
           </div>
 
           <!-- Trip Reminder Box -->
@@ -200,6 +217,31 @@ const { openChat, openChatWithProduct } = useCustomerChat()
 const { isWishlisted, toggleWishlist } = useWishlist()
 
 const { data: product } = await useFetch<any>(`/api/products/${slug}`)
+
+const galleryList = computed<string[]>(() => {
+  const g = product.value?.gallery
+  if (Array.isArray(g) && g.length > 0) return g
+  return product.value?.image ? [product.value.image] : []
+})
+
+const activeImage = ref(product.value?.image || '')
+watch(product, (p) => {
+  if (p) {
+    activeImage.value = (Array.isArray(p.gallery) && p.gallery[0]) || p.image || ''
+  }
+}, { immediate: true })
+
+const activeGalleryIndex = computed(() => {
+  const idx = galleryList.value.indexOf(activeImage.value)
+  return idx >= 0 ? idx : 0
+})
+
+const stepGallery = (delta: number) => {
+  const list = galleryList.value
+  if (list.length <= 1) return
+  const nextIdx = (activeGalleryIndex.value + delta + list.length) % list.length
+  activeImage.value = list[nextIdx] || activeImage.value
+}
 
 const isTripOpen = computed(() => {
   if (!product.value?.trip) return true
@@ -425,6 +467,80 @@ const handleChatAdmin = () => {
   font-weight: 700;
   padding: 6px 12px;
   border-radius: 6px;
+}
+
+.gallery-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid rgba(239, 225, 198, 0.9);
+  background: rgba(255, 255, 255, 0.9);
+  color: #2B2116;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  transition: all 0.15s;
+}
+
+.gallery-nav-btn:hover {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.gallery-nav-btn.prev {
+  left: 12px;
+}
+
+.gallery-nav-btn.next {
+  right: 12px;
+}
+
+.gallery-counter-pill {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  background: rgba(43, 33, 22, 0.75);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.thumbnail-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.thumb-box {
+  width: 70px;
+  height: 70px;
+  border-radius: 8px;
+  border: 2px solid var(--color-secondary, #EFE1C6);
+  overflow: hidden;
+  cursor: pointer;
+  background: #ffffff;
+  transition: border-color 0.15s;
+}
+
+.thumb-box.active {
+  border-color: var(--color-primary, #8C6D3F);
+}
+
+.thumb-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .trip-reminder-box {

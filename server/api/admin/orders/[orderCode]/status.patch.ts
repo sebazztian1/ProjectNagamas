@@ -2,6 +2,7 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../../utils/prisma'
 import { getSessionFromEvent } from '../../../../utils/session'
 import { restoreOrderStock, formatOrderResponse } from '../../../../utils/orders'
+import { recordAuditLog } from '../../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -80,6 +81,18 @@ export default defineEventHandler(async (event) => {
         link_url: `/orders/${order.order_code}/bayar`
       }
     })
+
+    await recordAuditLog(session, {
+      action: 'ACC_ORDER',
+      entityType: 'order',
+      entityId: order.id,
+      detail: {
+        orderCode: order.order_code,
+        shippingCost,
+        totalAmount,
+        note: adminNote || null
+      }
+    })
   } else if (action === 'reject_order') {
     const reason = String(body?.reason || 'Stok atau kuota tidak mencukupi.').trim()
 
@@ -111,6 +124,16 @@ export default defineEventHandler(async (event) => {
         title: `Pesanan #${order.order_code} Ditolak`,
         body: `Mohon maaf, pesanan Anda belum dapat diproses. Alasan: ${reason}`,
         link_url: `/orders/${order.order_code}`
+      }
+    })
+
+    await recordAuditLog(session, {
+      action: 'REJECT_ORDER',
+      entityType: 'order',
+      entityId: order.id,
+      detail: {
+        orderCode: order.order_code,
+        reason
       }
     })
   } else if (action === 'verify_payment') {
@@ -161,6 +184,17 @@ export default defineEventHandler(async (event) => {
         link_url: `/orders/${order.order_code}`
       }
     })
+
+    await recordAuditLog(session, {
+      action: 'VERIFY_PAYMENT',
+      entityType: 'order',
+      entityId: order.id,
+      detail: {
+        orderCode: order.order_code,
+        verifiedAmount,
+        totalAmount: Number(order.total_amount)
+      }
+    })
   } else if (action === 'reject_payment') {
     const reason = String(body?.reason || 'Bukti transfer tidak sesuai dengan mutasi rekening. Mohon unggah ulang bukti yang valid.').trim()
     const latestPayment = order.payments?.[0]
@@ -202,6 +236,16 @@ export default defineEventHandler(async (event) => {
         title: `Bukti Transfer #${order.order_code} Perlu Diunggah Ulang`,
         body: reason,
         link_url: `/orders/${order.order_code}/bayar`
+      }
+    })
+
+    await recordAuditLog(session, {
+      action: 'REJECT_PAYMENT',
+      entityType: 'order',
+      entityId: order.id,
+      detail: {
+        orderCode: order.order_code,
+        reason
       }
     })
   } else if (action === 'advance_status') {
@@ -266,6 +310,19 @@ export default defineEventHandler(async (event) => {
         link_url: `/orders/${order.order_code}`
       }
     })
+
+    await recordAuditLog(session, {
+      action: `UPDATE_STATUS_${targetStatus.toUpperCase()}`,
+      entityType: 'order',
+      entityId: order.id,
+      detail: {
+        orderCode: order.order_code,
+        fromStatus: prevStatus,
+        toStatus: targetStatus,
+        note: finalNote,
+        proofImageUrl: proofImageUrl || undefined
+      }
+    })
   } else if (action === 'refund') {
     const refundNote = String(body?.reason || 'Barang out of stock di luar negeri — 100% Full Refund telah diproses manual ke rekening customer.').trim()
 
@@ -298,6 +355,16 @@ export default defineEventHandler(async (event) => {
         title: `Refund 100% Pesanan #${order.order_code}`,
         body: refundNote,
         link_url: `/orders/${order.order_code}`
+      }
+    })
+
+    await recordAuditLog(session, {
+      action: 'REFUND_ORDER',
+      entityType: 'order',
+      entityId: order.id,
+      detail: {
+        orderCode: order.order_code,
+        reason: refundNote
       }
     })
   } else {

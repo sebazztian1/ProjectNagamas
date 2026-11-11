@@ -563,7 +563,7 @@ FASE 11: DASHBOARD & OPERASIONAL ADMIN
 [ ] 11.3 Konten & Kepercayaan
     [ ] Halaman FAQ, Syarat & Ketentuan, Cara Order, kebijakan refund
     [ ] Opsional: testimoni / galeri bukti pembelian
-    [ ] Opsional: audit log & manajemen staf (owner vs staff)
+    [X] Opsional: audit log & manajemen staf (owner vs staff)
 
 --------------------------------------------------------------------------------
 FASE 12: PENGUJIAN (TESTING), KEAMANAN & OPTIMASI

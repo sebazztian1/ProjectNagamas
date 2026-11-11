@@ -140,7 +140,7 @@ export default defineEventHandler(async (event) => {
       sourceStore: p.source_store || '',
       stockStatus: p.stock_status,
       quota: p.quota,
-      image: p.product_images[0]?.image_url || ''
+      image: p.product_images[0]?.image_url || p.image_url || ''
     }))
   }
 })

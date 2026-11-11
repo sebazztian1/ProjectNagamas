@@ -43,13 +43,13 @@
               v-else-if="order.orderStatus === 'pending_approval'"
               class="btn-hero-pay locked"
             >
-              🔒 Menunggu ACC Admin
+              Menunggu Persetujuan
             </span>
             <span
               v-else-if="order.orderStatus === 'payment_uploaded'"
               class="btn-hero-pay waiting-check"
             >
-              ⏳ Menunggu Verifikasi
+              Menunggu Verifikasi
             </span>
           </div>
         </div>
@@ -58,23 +58,23 @@
       <!-- Informative Status Alerts -->
       <div v-if="order.orderStatus === 'pending_approval'" class="status-alert-banner alert-approval">
         <div class="alert-text">
-          <h4>Pesanan Sedang Ditinjau Admin (Tahap Pengajuan)</h4>
+          <h4>Menunggu persetujuan admin</h4>
           <p>
-            Admin dbb_luxe sedang memeriksa ketersediaan stok ready atau sisa kuota bagasi trip serta menghitung perkiraan ongkir. Rekening dan instruksi transfer akan terbuka otomatis setelah di-ACC.
+            Admin sedang memeriksa stok/kuota dan ongkir.
           </p>
         </div>
       </div>
 
       <div v-else-if="order.orderStatus === 'pending_payment'" class="status-alert-banner alert-approved">
         <div class="alert-text">
-          <h4>Pesanan Disetujui (ACC) — Batas Waktu Pembayaran 24 Jam Aktif</h4>
+          <h4>Pesanan disetujui</h4>
           <p>
-            Silakan transfer sesuai nominal tagihan.
+            Transfer sesuai tagihan.
             <strong v-if="deadlineCountdown">Sisa waktu bayar: {{ deadlineCountdown }}</strong>
           </p>
         </div>
         <NuxtLink :to="`/orders/${order.orderCode}/bayar`" class="btn-alert-pay">
-          Lihat Rekening &amp; Upload Bukti &rarr;
+          Bayar &amp; Unggah Bukti &rarr;
         </NuxtLink>
       </div>
 
@@ -82,7 +82,7 @@
         <div class="alert-text">
           <h4>{{ formatStatus(order.orderStatus) }}</h4>
           <p>
-            <strong>Catatan / Alasan:</strong>
+            <strong>Alasan:</strong>
             {{ order.rejectionReason || order.adminNote || 'Pesanan tidak dilanjutkan.' }}
           </p>
         </div>
@@ -92,7 +92,7 @@
         <!-- Left: Tracking Timeline & Receipt Photos -->
         <div class="tracking-col">
           <div class="box-card">
-            <h3 class="box-head">Lacak Progres Pesanan (Audit Trail)</h3>
+            <h3 class="box-head">Riwayat Pesanan</h3>
 
             <div class="timeline-stepper">
               <div v-for="(log, idx) in order.logs" :key="log.id" class="timeline-step">
@@ -108,7 +108,7 @@
 
                   <!-- Physical Store Receipt Photo Proof from Admin -->
                   <div v-if="log.proofImageUrl" class="receipt-proof-preview">
-                    <span class="proof-label">📷 Foto Bukti Pembelian / Pengiriman dari Admin:</span>
+                    <span class="proof-label">Bukti dari admin:</span>
                     <div class="proof-img-wrap">
                       <a :href="log.proofImageUrl" target="_blank" rel="noopener">
                         <img :src="log.proofImageUrl" alt="Bukti Struk Belanja" />
@@ -124,7 +124,7 @@
         <!-- Right: Items & Payment Breakdown -->
         <div class="summary-col">
           <div class="box-card">
-            <h3 class="box-head">Rincian Barang &amp; Tagihan</h3>
+            <h3 class="box-head">Barang &amp; Tagihan</h3>
 
             <div class="order-items-list">
               <div v-for="it in order.items" :key="it.id" class="order-item-row">
@@ -154,7 +154,7 @@
                 <strong>DP 50% ({{ formatRupiah(order.dpAmount) }})</strong>
               </div>
               <div v-if="order.paidAmount > 0" class="f-row">
-                <span>Sudah Dibayar (Terverifikasi):</span>
+                <span>Sudah Dibayar:</span>
                 <strong style="color: #166534">{{ formatRupiah(order.paidAmount) }}</strong>
               </div>
               <div v-if="order.remainingAmount > 0 && order.paidAmount > 0" class="f-row">
@@ -169,13 +169,13 @@
 
             <!-- Fulfillment / Shipping Address Info -->
             <div class="pickup-info-box">
-              <h4>Alamat Pengiriman Tujuan:</h4>
+              <h4>Alamat Pengiriman:</h4>
               <p>
                 <strong>{{ order.recipientName }} ({{ order.recipientPhone }})</strong><br />
-                {{ order.shippingAddress || 'Alamat dalam konfirmasi admin' }}
+                {{ order.shippingAddress || 'Alamat menunggu konfirmasi admin' }}
               </p>
               <p v-if="order.adminNote" class="admin-note-box">
-                <strong>Catatan Admin / Resi Kurir:</strong><br />
+                <strong>Catatan Admin:</strong><br />
                 {{ order.adminNote }}
               </p>
             </div>
@@ -230,10 +230,10 @@ const handleCancelOrder = async () => {
       method: 'PATCH',
       body: { reason: 'Dibatalkan oleh customer melalui halaman detail pesanan.' }
     })
-    showToast('Pesanan Dibatalkan', `Pesanan #${order.value.orderCode} telah dibatalkan.`, 'info')
+    showToast('Pesanan Dibatalkan', `#${order.value.orderCode} dibatalkan.`, 'info')
     await refresh()
   } catch (err: any) {
-    showToast('Gagal Membatalkan', err?.data?.message || 'Tidak dapat membatalkan pesanan.', 'warning')
+    showToast('Gagal Membatalkan', err?.data?.message || 'Gagal membatalkan.', 'warning')
   }
 }
 

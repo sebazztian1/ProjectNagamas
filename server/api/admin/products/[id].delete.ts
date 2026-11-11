@@ -1,6 +1,7 @@
 import { defineEventHandler, getRouterParam, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
+import { recordAuditLog } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -27,6 +28,16 @@ export default defineEventHandler(async (event) => {
     data: {
       is_active: false,
       deleted_at: new Date()
+    }
+  })
+
+  await recordAuditLog(session, {
+    action: 'DELETE_PRODUCT',
+    entityType: 'product',
+    entityId: id,
+    detail: {
+      name: existing.name,
+      slug: existing.slug
     }
   })
 

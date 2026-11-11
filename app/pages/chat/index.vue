@@ -56,7 +56,7 @@
           <!-- Message History -->
           <div ref="messagesContainer" class="messages-flow">
             <div v-if="customerMessages.length === 0" class="empty-chat">
-              <p>Belum ada percakapan. Silakan kirim pesan atau tanyakan produk kepada Admin dbb_luxe.</p>
+              <p>Belum ada percakapan. Silakan kirim pesan atau tanyakan produk kepada Admin.</p>
             </div>
 
             <div

@@ -32,7 +32,7 @@ export default defineEventHandler(async (event) => {
   if (order.order_status === 'pending_approval') {
     throw createError({
       statusCode: 400,
-      message: 'Pesanan masih menunggu persetujuan (ACC) dari admin. Pembayaran belum dapat dilakukan.'
+      message: 'Pesanan menunggu persetujuan admin.'
     })
   }
 
@@ -130,7 +130,7 @@ export default defineEventHandler(async (event) => {
       from_status: prevStatus,
       to_status: 'payment_uploaded',
       changed_by: session.userId,
-      note: `Customer mengunggah bukti transfer ${senderBank} a.n. ${senderName} sebesar Rp ${amount.toLocaleString('id-ID')}. Menunggu verifikasi admin.`
+      note: `Bukti transfer ${senderBank} a.n. ${senderName} Rp ${amount.toLocaleString('id-ID')}. Menunggu verifikasi.`
     }
   })
 
@@ -139,8 +139,8 @@ export default defineEventHandler(async (event) => {
       data: {
         user_id: order.user_id,
         type: 'payment_uploaded',
-        title: `Bukti Transfer #${order.order_code} Diterima`,
-        body: `Bukti transfer sebesar Rp ${amount.toLocaleString('id-ID')} via ${senderBank} telah kami terima dan sedang menunggu verifikasi Admin.`,
+        title: `Bukti Transfer #${order.order_code} Terkirim`,
+        body: `Rp ${amount.toLocaleString('id-ID')} via ${senderBank}. Menunggu verifikasi admin.`,
         link_url: `/orders/${order.order_code}`
       }
     })

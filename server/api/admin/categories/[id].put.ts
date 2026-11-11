@@ -2,6 +2,7 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
 import { slugifyCategory } from '../../../utils/categories'
+import { recordAuditLog } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -40,6 +41,16 @@ export default defineEventHandler(async (event) => {
   const updated = await prisma.categories.update({
     where: { id },
     data: { name, slug }
+  })
+
+  await recordAuditLog(session, {
+    action: 'UPDATE_CATEGORY',
+    entityType: 'category',
+    entityId: updated.id,
+    detail: {
+      name: updated.name,
+      slug: updated.slug
+    }
   })
 
   return {

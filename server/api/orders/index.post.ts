@@ -343,7 +343,7 @@ export default defineEventHandler(async (event) => {
             from_status: null,
             to_status: 'pending_approval',
             changed_by: session.userId,
-            note: 'Pesanan diajukan oleh customer. Menunggu peninjauan & persetujuan (ACC) dari Admin dbb_luxe.'
+            note: 'Pesanan diajukan. Menunggu persetujuan admin.'
           }
         }
       },
@@ -428,8 +428,8 @@ export default defineEventHandler(async (event) => {
         data: {
           user_id: session.userId,
           type: 'order_created',
-          title: `Pesanan #${orderCode} Berhasil Diajukan`,
-          body: 'Pesanan Anda telah diterima dan sedang ditinjau oleh Admin dbb_luxe untuk konfirmasi ketersediaan stok/kuota & ongkir.',
+          title: `Pesanan #${orderCode} Diajukan`,
+          body: 'Menunggu persetujuan admin.',
           link_url: `/orders/${orderCode}`
         }
       })

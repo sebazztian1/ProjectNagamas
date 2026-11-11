@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
 
   return {
     success: true,
-    message: 'Request titip barang berhasil diajukan! Admin dbb_luxe akan memeriksa ketersediaan produk dan mengirimkan penawaran harga.',
+    message: 'Request titip barang berhasil diajukan! Admin akan memeriksa ketersediaan produk dan mengirimkan penawaran harga.',
     data: {
       id: created.id,
       productName: created.product_name,

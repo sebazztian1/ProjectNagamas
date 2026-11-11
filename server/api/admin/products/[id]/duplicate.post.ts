@@ -1,6 +1,7 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../../utils/prisma'
 import { getSessionFromEvent } from '../../../../utils/session'
+import { recordAuditLog } from '../../../../utils/audit'
 import { normalizeProductVariants, syncProductVariantsTable } from '../../../../utils/variants'
 
 function generateSlug(text: string): string {
@@ -24,7 +25,12 @@ export default defineEventHandler(async (event) => {
   }
 
   const source = await prisma.products.findUnique({
-    where: { id }
+    where: { id },
+    include: {
+      product_images: {
+        orderBy: { sort_order: 'asc' }
+      }
+    }
   })
 
   if (!source || source.deleted_at) {
@@ -80,6 +86,27 @@ export default defineEventHandler(async (event) => {
       data: { variants: synced as any }
     })
   }
+
+  if (source.product_images && source.product_images.length > 0) {
+    await prisma.product_images.createMany({
+      data: source.product_images.map((img, idx) => ({
+        product_id: duplicated.id,
+        image_url: img.image_url,
+        sort_order: idx + 1
+      }))
+    })
+  }
+
+  await recordAuditLog(session, {
+    action: 'DUPLICATE_PRODUCT',
+    entityType: 'product',
+    entityId: duplicated.id,
+    detail: {
+      sourceProductId: source.id,
+      name: duplicated.name,
+      productType: duplicated.product_type
+    }
+  })
 
   return {
     success: true,

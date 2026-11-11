@@ -79,12 +79,6 @@ async function main() {
         account_holder: 'DBB LUXE INDONESIA',
         qris_image_url: 'https://images.unsplash.com/photo-1595079672139-545c600f5632?auto=format&fit=crop&w=600&q=80',
         is_active: true
-      },
-      {
-        bank_name: 'Bank Mandiri',
-        account_number: '1370019283912',
-        account_holder: 'DBB LUXE INDONESIA',
-        is_active: true
       }
     ]
   })

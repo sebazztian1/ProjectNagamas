@@ -220,13 +220,13 @@
                 <span class="sparkle-icon">✨</span>
                 <div>
                   <strong>Produk Telah Ditambahkan ke Katalog Trip!</strong>
-                  <p>Admin telah membuka slot titip untuk produk ini pada trip terkait. Anda dan customer lain dapat langsung memesannya.</p>
+                  <p>Slot titip sudah dibuka. Produk bisa langsung dipesan.</p>
                 </div>
               </div>
 
               <!-- Status Rejected Banner -->
               <div v-else-if="req.status === 'rejected'" class="rejected-banner">
-                <span>Penawaran ini telah ditolak. Anda dapat membuat request baru kapan saja.</span>
+                <span>Penawaran ditolak. Anda bisa membuat request baru.</span>
               </div>
             </div>
           </div>
@@ -349,10 +349,10 @@ const handleFileUpload = async (event: Event) => {
 
     if (res.success && res.url) {
       form.value.referenceImageUrl = res.url
-      showToast('Foto Terunggah', 'Foto referensi produk berhasil disimpan.', 'success')
+      showToast('Foto Terunggah', 'Foto tersimpan.', 'success')
     }
   } catch (err: any) {
-    showToast('Gagal Mengunggah', err.data?.message || 'Terjadi kesalahan saat mengunggah foto.', 'error')
+    showToast('Gagal Mengunggah', err.data?.message || 'Gagal mengunggah foto.', 'error')
   } finally {
     isUploading.value = false
     if (fileInputRef.value) fileInputRef.value.value = ''
@@ -365,7 +365,7 @@ const removeUploadedImage = () => {
 
 const submitRequest = async () => {
   if (!form.value.productName.trim()) {
-    showToast('Nama Produk Wajib', 'Mohon isi nama barang atau produk yang ingin dititip.', 'warning')
+    showToast('Nama Produk Wajib', 'Isi nama produk yang ingin dititip.', 'warning')
     return
   }
 
@@ -382,7 +382,7 @@ const submitRequest = async () => {
       }
     })
 
-    showToast('Request Berhasil Dikirim', 'Admin akan mengecek ketersediaan produk dan mengirimkan penawaran harga.', 'success')
+    showToast('Request Berhasil Dikirim', 'Admin akan mengirim penawaran harga.', 'success')
     
     // Reset form
     form.value.productName = ''
@@ -393,7 +393,7 @@ const submitRequest = async () => {
 
     await refresh()
   } catch (err: any) {
-    showToast('Gagal Mengirim Request', err.data?.message || 'Terjadi kesalahan saat mengirim pengajuan.', 'error')
+    showToast('Gagal Mengirim Request', err.data?.message || 'Gagal mengirim request.', 'error')
   } finally {
     isSubmitting.value = false
   }
@@ -407,7 +407,7 @@ const acceptQuote = async (req: RequestItem) => {
       body: { status: 'accepted' }
     })
 
-    showToast('Penawaran Diterima!', 'Mengarahkan Anda ke halaman checkout...', 'success')
+    showToast('Penawaran Diterima!', 'Menuju checkout...', 'success')
     await refresh()
 
     // Redirect to checkout with quote details
@@ -439,7 +439,7 @@ const rejectQuote = async (id: number) => {
       body: { status: 'rejected' }
     })
 
-    showToast('Penawaran Ditolak', 'Anda telah menolak penawaran harga ini.', 'info')
+    showToast('Penawaran Ditolak', 'Penawaran ditolak.', 'info')
     await refresh()
   } catch (err: any) {
     showToast('Gagal Menolak', err.data?.message || 'Gagal memproses penolakan.', 'error')

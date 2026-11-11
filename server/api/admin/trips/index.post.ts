@@ -1,8 +1,11 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getCountryFlag } from '../../../utils/countryFlags'
+import { getSessionFromEvent } from '../../../utils/session'
+import { recordAuditLog } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
+  const session = getSessionFromEvent(event)
   const body = await readBody(event)
 
   if (!body.title || !body.country || !body.closeDate || !body.estimatedArrivalDate) {
@@ -56,6 +59,18 @@ export default defineEventHandler(async (event) => {
       quota_total: body.quotaTotal ? Number(body.quotaTotal) : 50,
       status: body.status || 'open',
       created_by: createdBy
+    }
+  })
+
+  await recordAuditLog(session || createdBy, {
+    action: 'CREATE_TRIP',
+    entityType: 'trip',
+    entityId: trip.id,
+    detail: {
+      title: trip.title,
+      country: trip.country,
+      currency: trip.currency,
+      status: trip.status
     }
   })
 

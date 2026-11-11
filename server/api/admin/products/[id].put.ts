@@ -2,6 +2,7 @@ import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
 import { normalizeProductVariants, syncProductVariantsTable } from '../../../utils/variants'
+import { recordAuditLog } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -34,6 +35,7 @@ export default defineEventHandler(async (event) => {
     originalCurrency,
     sourceStore,
     imageUrl,
+    galleryImages,
     stockStatus,
     stockQuantity,
     quota,
@@ -61,7 +63,21 @@ export default defineEventHandler(async (event) => {
   if (originalPrice !== undefined) updateData.original_price = originalPrice ? Number(originalPrice) : null
   if (originalCurrency !== undefined) updateData.original_currency = originalCurrency || null
   if (sourceStore !== undefined) updateData.source_store = sourceStore?.trim() || null
-  if (imageUrl !== undefined) updateData.image_url = imageUrl?.trim() || null
+
+  let cleanedGallery: string[] | null = null
+  if (Array.isArray(galleryImages)) {
+    cleanedGallery = Array.from(
+      new Set(
+        galleryImages
+          .map((u: any) => String(u || '').trim())
+          .filter(Boolean)
+      )
+    )
+    updateData.image_url = cleanedGallery[0] || (imageUrl?.trim() || null)
+  } else if (imageUrl !== undefined) {
+    updateData.image_url = imageUrl?.trim() || null
+  }
+
   if (stockStatus) updateData.stock_status = stockStatus === 'out_of_stock' ? 'out_of_stock' : 'in_stock'
   if (stockQuantity !== undefined) updateData.stock_quantity = Number(stockQuantity) || 0
   if (quota !== undefined) updateData.quota = quota ? Number(quota) : null
@@ -102,6 +118,31 @@ export default defineEventHandler(async (event) => {
   const updated = await prisma.products.update({
     where: { id },
     data: updateData
+  })
+
+  if (cleanedGallery !== null) {
+    await prisma.product_images.deleteMany({
+      where: { product_id: id }
+    })
+    if (cleanedGallery.length > 0) {
+      await prisma.product_images.createMany({
+        data: cleanedGallery.map((url, idx) => ({
+          product_id: id,
+          image_url: url,
+          sort_order: idx + 1
+        }))
+      })
+    }
+  }
+
+  await recordAuditLog(session, {
+    action: 'UPDATE_PRODUCT',
+    entityType: 'product',
+    entityId: updated.id,
+    detail: {
+      name: updated.name,
+      price: Number(updated.price)
+    }
   })
 
   return {

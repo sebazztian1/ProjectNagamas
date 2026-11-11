@@ -254,7 +254,7 @@
             <textarea 
               v-model="quoteForm.note" 
               rows="3" 
-              placeholder="Contoh: Stok tersedia di store Tokyo Station. Harga sudah termasuk proteksi bubble wrap tebal."
+              placeholder="Catatan untuk customer"
             ></textarea>
           </div>
 
@@ -284,7 +284,7 @@
         <div class="modal-head">
           <div>
             <h3>Jadikan Produk Resmi di Trip</h3>
-            <p class="modal-subhead">Produk ini akan otomatis diterbitkan ke katalog jastip sehingga dapat dipesan oleh customer lain.</p>
+            <p class="modal-subhead">Produk akan terbit di katalog.</p>
           </div>
           <button class="close-x" @click="closeConvertModal">&times;</button>
         </div>
