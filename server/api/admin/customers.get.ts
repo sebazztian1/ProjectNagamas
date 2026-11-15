@@ -31,6 +31,14 @@ export default defineEventHandler(async (event) => {
           product_requests: true
         }
       },
+      orders: {
+        select: {
+          order_status: true,
+          total_amount: true,
+          paid_amount: true,
+          remaining_amount: true
+        }
+      },
       chat_rooms: {
         select: {
           id: true,
@@ -40,18 +48,32 @@ export default defineEventHandler(async (event) => {
     }
   })
 
-  return customers.map(u => ({
-    id: u.id,
-    username: u.username,
-    phone: u.phone_number,
-    isActive: u.is_active,
-    canOrder: u.can_order,
-    canRequest: u.can_request,
-    canChat: u.can_chat,
-    restrictionReason: u.restriction_reason || null,
-    joinedAt: u.created_at,
-    totalOrders: u._count.orders,
-    totalRequests: u._count.product_requests,
-    unreadChatCount: u.chat_rooms?.unread_admin_count || 0
-  }))
+  return customers.map(u => {
+    const validOrders = u.orders.filter(
+      o => o.order_status !== 'cancelled' && o.order_status !== 'rejected'
+    )
+    const totalOrderAmount = validOrders.reduce((sum, o) => sum + Number(o.total_amount || 0), 0)
+    const totalPaidAmount = validOrders.reduce((sum, o) => sum + Number(o.paid_amount || 0), 0)
+    const totalRemainingAmount = validOrders.reduce((sum, o) => sum + Number(o.remaining_amount || 0), 0)
+    const completedOrdersCount = u.orders.filter(o => o.order_status === 'completed').length
+
+    return {
+      id: u.id,
+      username: u.username,
+      phone: u.phone_number,
+      isActive: u.is_active,
+      canOrder: u.can_order,
+      canRequest: u.can_request,
+      canChat: u.can_chat,
+      restrictionReason: u.restriction_reason || null,
+      joinedAt: u.created_at,
+      totalOrders: u._count.orders,
+      completedOrdersCount,
+      totalOrderAmount,
+      totalPaidAmount,
+      totalRemainingAmount,
+      totalRequests: u._count.product_requests,
+      unreadChatCount: u.chat_rooms?.unread_admin_count || 0
+    }
+  })
 })

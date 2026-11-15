@@ -2,15 +2,25 @@
   <div class="admin-customers-page">
     <div class="page-head">
       <h1 class="page-title">Pelanggan</h1>
-      <button class="btn-refresh" @click="fetchCustomers" :disabled="pending">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
-          <path d="M21 2v6h-6"></path>
-          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
-          <path d="M3 22v-6h6"></path>
-          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-        </svg>
-        <span>Refresh</span>
-      </button>
+      <div class="head-actions">
+        <button type="button" class="btn-export-csv" @click="openExportModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Export CSV</span>
+        </button>
+        <button class="btn-refresh" @click="fetchCustomers" :disabled="pending">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
     </div>
 
     <div class="filter-bar">
@@ -93,6 +103,22 @@
         </tbody>
       </table>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      title="Export Data Pelanggan & Piutang (.csv)"
+      subtitle="Ekspor ringkasan akun, nilai transaksi, total pembayaran masuk, dan sisa tagihan pelanggan berdasarkan tanggal bergabung (WIB)."
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      v-model:use-active-filters="exportUseActiveFilters"
+      :active-filter-label="activeFilterToggleLabel"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
@@ -100,6 +126,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '../../../composables/useToast'
 import { useAdminStats } from '../../../composables/useAdminStats'
+import type { CsvPreviewMetric } from '../../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvTimestamp
+} from '../../../utils/csvExport'
 
 const { showToast } = useToast()
 const { fetchAdminStats } = useAdminStats()
@@ -172,6 +204,84 @@ const filteredCustomers = computed(() => {
     return matchUsername || matchPhoneRaw || matchPhoneDigits
   })
 })
+
+// --- Accounting CSV Export ---
+const showExportModal = ref(false)
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+const exportUseActiveFilters = ref(false)
+
+const openExportModal = () => {
+  exportUseActiveFilters.value = Boolean(searchQuery.value.trim())
+  showExportModal.value = true
+}
+
+const activeFilterToggleLabel = computed(() =>
+  searchQuery.value.trim() ? `Hanya ekspor hasil pencarian "${searchQuery.value.trim()}"` : ''
+)
+
+const exportSourceCustomers = computed(() =>
+  exportUseActiveFilters.value && searchQuery.value.trim() ? filteredCustomers.value : customerList.value
+)
+
+const exportPreview = computed(() =>
+  filterByDateRange(exportSourceCustomers.value, c => c.joinedAt, exportStartDate.value, exportEndDate.value)
+)
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rows = exportPreview.value.items
+  const totalOrderAmt = rows.reduce((s, c) => s + Number(c.totalOrderAmount || 0), 0)
+  const totalPaidAmt = rows.reduce((s, c) => s + Number(c.totalPaidAmount || 0), 0)
+  const totalRemaining = rows.reduce((s, c) => s + Number(c.totalRemainingAmount || 0), 0)
+  return [
+    { label: 'Akumulasi Tagihan Aktif', value: `Rp ${totalOrderAmt.toLocaleString('id-ID')}`, highlight: true },
+    { label: 'Total Sudah Dibayar', value: `Rp ${totalPaidAmt.toLocaleString('id-ID')}` },
+    { label: 'Total Sisa Piutang', value: `Rp ${totalRemaining.toLocaleString('id-ID')}` }
+  ]
+})
+
+const handleExportCsv = () => {
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  const totalOrderAmt = items.reduce((s, c) => s + Number(c.totalOrderAmount || 0), 0)
+  const totalPaidAmt = items.reduce((s, c) => s + Number(c.totalPaidAmount || 0), 0)
+  const totalRemaining = items.reduce((s, c) => s + Number(c.totalRemainingAmount || 0), 0)
+
+  const res = downloadCsvFile({
+    filenamePrefix: 'pelanggan_rekap_accounting',
+    reportTitle: 'Laporan Rekap Akun & Nilai Transaksi Pelanggan',
+    rows: items,
+    minTimestamp,
+    maxTimestamp,
+    filterStartDate: exportStartDate.value,
+    filterEndDate: exportEndDate.value,
+    summaryItems: [
+      { label: 'Akumulasi Tagihan Order Aktif (IDR)', value: totalOrderAmt },
+      { label: 'Total Dana Terbayar (IDR)', value: totalPaidAmt },
+      { label: 'Total Sisa Piutang Pelanggan (IDR)', value: totalRemaining }
+    ],
+    columns: [
+      { header: 'Timestamp Bergabung (WIB)', format: r => formatCsvTimestamp(r.joinedAt) },
+      { header: 'ID Pelanggan', key: 'id' },
+      { header: 'Username', key: 'username' },
+      { header: 'No HP / WA', key: 'phone' },
+      { header: 'Status Akun', format: r => (r.isActive ? 'Aktif' : 'Nonaktif') },
+      { header: 'Akses Order', format: r => (r.canOrder ? 'Ya' : 'Tidak') },
+      { header: 'Akses Request', format: r => (r.canRequest ? 'Ya' : 'Tidak') },
+      { header: 'Akses Chat', format: r => (r.canChat ? 'Ya' : 'Tidak') },
+      { header: 'Total Pesanan', format: r => Number(r.totalOrders || 0) },
+      { header: 'Pesanan Selesai', format: r => Number(r.completedOrdersCount || 0) },
+      { header: 'Nilai Order Aktif (IDR)', format: r => Number(r.totalOrderAmount || 0) },
+      { header: 'Sudah Dibayar (IDR)', format: r => Number(r.totalPaidAmount || 0) },
+      { header: 'Sisa Tagihan (IDR)', format: r => Number(r.totalRemainingAmount || 0) },
+      { header: 'Total Request Produk', format: r => Number(r.totalRequests || 0) },
+      { header: 'Alasan Pembatasan', format: r => r.restrictionReason || '' }
+    ]
+  })
+  showToast('CSV Berhasil Diekspor', `${res.rowCount} data pelanggan diunduh (${res.filename}).`, 'success')
+  showExportModal.value = false
+}
 </script>
 
 <style scoped>
@@ -186,6 +296,36 @@ const filteredCustomers = computed(() => {
   justify-content: space-between;
   align-items: center;
   gap: 16px;
+  flex-wrap: wrap;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-export-csv {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  background: #FAF5EC;
+  border: 1px solid #D8B978;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #6F5530;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-export-csv:hover {
+  border-color: #8C6D3F;
+  background: #F4E9D2;
+  color: #2B2116;
 }
 
 .page-title {
@@ -245,7 +385,7 @@ const filteredCustomers = computed(() => {
 .search-box {
   position: relative;
   flex: 1;
-  min-width: 240px;
+  min-width: min(100%, 220px);
   max-width: 400px;
 }
 
@@ -455,6 +595,18 @@ const filteredCustomers = computed(() => {
 }
 
 @media (max-width: 640px) {
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .head-actions {
+    width: 100%;
+  }
+  .btn-export-csv,
+  .btn-refresh {
+    flex: 1;
+    justify-content: center;
+  }
   .filter-bar {
     flex-direction: column;
     align-items: stretch;

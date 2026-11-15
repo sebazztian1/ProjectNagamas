@@ -226,6 +226,7 @@ const formatDate = (dateStr?: string | null) => {
 
 .trip-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 32px;
   border-bottom: 1px solid var(--brand-primary);
@@ -276,8 +277,8 @@ const formatDate = (dateStr?: string | null) => {
 
 .trips-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 310px), 1fr));
+  gap: 24px;
 }
 
 .trip-card {
@@ -470,5 +471,23 @@ const formatDate = (dateStr?: string | null) => {
 .btn-open-trip.btn-view-closed:hover {
   background: var(--brand-primary);
   border-color: var(--brand-secondary);
+}
+
+@media (max-width: 600px) {
+  .jastip-trips-page {
+    padding: 18px 14px 56px;
+  }
+
+  .request-banner-link {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 420px) {
+  .trip-schedule-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

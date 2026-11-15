@@ -4,15 +4,25 @@
       <div>
         <h1 class="page-title">Pesanan</h1>
       </div>
-      <button class="btn-refresh" @click="refresh()" :disabled="pending">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
-          <path d="M21 2v6h-6"></path>
-          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
-          <path d="M3 22v-6h6"></path>
-          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-        </svg>
-        <span>Refresh</span>
-      </button>
+      <div class="head-actions">
+        <button type="button" class="btn-export-csv" @click="openExportModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Export CSV</span>
+        </button>
+        <button class="btn-refresh" @click="refresh()" :disabled="pending">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
     </div>
 
     <!-- Filter Bar -->
@@ -380,6 +390,24 @@
         </div>
       </div>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      title="Export Data Pesanan & Pembayaran (.csv)"
+      subtitle="Ekspor rekap omzet pesanan, rincian SKU item terjual, atau mutasi kas masuk dengan rentang timestamp WIB."
+      :datasets="exportDatasetOptions"
+      v-model:selected-dataset="exportDataset"
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      v-model:use-active-filters="exportUseActiveFilters"
+      :active-filter-label="activeFilterToggleLabel"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
@@ -387,6 +415,12 @@
 import { ref, computed } from 'vue'
 import { useToast } from '../../composables/useToast'
 import { useAdminStats } from '../../composables/useAdminStats'
+import type { CsvDatasetOption, CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvTimestamp
+} from '../../utils/csvExport'
 
 const { showToast } = useToast()
 const { fetchAdminStats } = useAdminStats()
@@ -674,6 +708,220 @@ const formatStatus = (st: string) => {
 const formatRupiah = (val: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
+
+// --- Accounting CSV Export ---
+const showExportModal = ref(false)
+const exportDataset = ref<'orders' | 'items' | 'payments'>('orders')
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+const exportUseActiveFilters = ref(false)
+
+const exportDatasetOptions: CsvDatasetOption[] = [
+  { id: 'orders', label: 'Rekap Pesanan', description: 'Omzet, DP, ongkir & sisa tagihan per order' },
+  { id: 'items', label: 'Detail Item Terjual', description: 'Breakdown per SKU, varian & kuantitas barang' },
+  { id: 'payments', label: 'Mutasi Pembayaran', description: 'Riwayat transfer DP / pelunasan & bank tujuan' }
+]
+
+const openExportModal = () => {
+  exportUseActiveFilters.value = currentFilter.value !== 'all'
+  showExportModal.value = true
+}
+
+const activeFilterToggleLabel = computed(() => {
+  if (currentFilter.value === 'all') return ''
+  const match = statusFilters.value.find(f => f.key === currentFilter.value)
+  return `Hanya ekspor status "${match?.label || currentFilter.value}"`
+})
+
+const exportSourceOrders = computed(() =>
+  exportUseActiveFilters.value && currentFilter.value !== 'all' ? filteredOrders.value : orders.value
+)
+
+const flattenedExportItems = computed(() => {
+  const rows: any[] = []
+  for (const ord of exportSourceOrders.value) {
+    for (const item of ord.items || []) {
+      rows.push({
+        orderCreatedAt: ord.createdAtIso,
+        orderCode: ord.orderCode,
+        orderStatus: ord.orderStatus,
+        orderType: ord.orderType,
+        tripTitle: ord.tripTitle || '-',
+        customerName: ord.customerName,
+        customerUsername: ord.customerUsername,
+        productName: item.productName,
+        variant: item.variant || '-',
+        priceAtOrder: Number(item.priceAtOrder || 0),
+        quantity: Number(item.quantity || 0),
+        subtotal: Number(item.subtotal || 0)
+      })
+    }
+  }
+  return rows
+})
+
+const flattenedExportPayments = computed(() => {
+  const rows: any[] = []
+  for (const ord of exportSourceOrders.value) {
+    for (const p of ord.payments || []) {
+      rows.push({
+        ...p,
+        orderCode: ord.orderCode,
+        orderStatus: ord.orderStatus,
+        tripTitle: ord.tripTitle || '-',
+        customerName: ord.customerName,
+        customerUsername: ord.customerUsername,
+        customerPhone: ord.customerPhone
+      })
+    }
+  }
+  return rows
+})
+
+const exportPreview = computed(() => {
+  if (exportDataset.value === 'orders') {
+    return filterByDateRange(exportSourceOrders.value, o => o.createdAtIso, exportStartDate.value, exportEndDate.value)
+  }
+  if (exportDataset.value === 'items') {
+    return filterByDateRange(flattenedExportItems.value, i => i.orderCreatedAt, exportStartDate.value, exportEndDate.value)
+  }
+  return filterByDateRange(flattenedExportPayments.value, p => p.createdAt, exportStartDate.value, exportEndDate.value)
+})
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rows = exportPreview.value.items
+  if (exportDataset.value === 'orders') {
+    const valid = rows.filter(o => !['cancelled', 'rejected', 'expired'].includes(o.orderStatus))
+    return [
+      { label: 'Total Tagihan Aktif', value: formatRupiah(valid.reduce((s, o) => s + Number(o.totalAmount || 0), 0)), highlight: true },
+      { label: 'Sudah Dibayar', value: formatRupiah(valid.reduce((s, o) => s + Number(o.paidAmount || 0), 0)) },
+      { label: 'Sisa Tagihan', value: formatRupiah(valid.reduce((s, o) => s + Number(o.remainingAmount || 0), 0)) }
+    ]
+  }
+  if (exportDataset.value === 'items') {
+    const totalQty = rows.reduce((s, i) => s + Number(i.quantity || 0), 0)
+    const totalVal = rows
+      .filter(i => !['cancelled', 'rejected', 'expired'].includes(i.orderStatus))
+      .reduce((s, i) => s + Number(i.subtotal || 0), 0)
+    return [
+      { label: 'Nilai Subtotal Item Aktif', value: formatRupiah(totalVal), highlight: true },
+      { label: 'Total Unit Terjual', value: `${totalQty} pcs` }
+    ]
+  }
+  const verifiedTotal = rows.filter(p => p.status === 'verified').reduce((s, p) => s + Number(p.amount || 0), 0)
+  const pendingTotal = rows.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount || 0), 0)
+  return [
+    { label: 'Kas Masuk Terverifikasi', value: formatRupiah(verifiedTotal), highlight: true },
+    { label: 'Pending Cek Admin', value: formatRupiah(pendingTotal) }
+  ]
+})
+
+const handleExportCsv = () => {
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  if (exportDataset.value === 'orders') {
+    const valid = items.filter(o => !['cancelled', 'rejected', 'expired'].includes(o.orderStatus))
+    const res = downloadCsvFile({
+      filenamePrefix: 'pesanan_rekap',
+      reportTitle: 'Rekap Pesanan Pelanggan (Accounting)',
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [
+        { label: 'Total Tagihan Aktif (IDR)', value: valid.reduce((s, o) => s + Number(o.totalAmount || 0), 0) },
+        { label: 'Total Dibayar (IDR)', value: valid.reduce((s, o) => s + Number(o.paidAmount || 0), 0) },
+        { label: 'Total Sisa Piutang (IDR)', value: valid.reduce((s, o) => s + Number(o.remainingAmount || 0), 0) }
+      ],
+      columns: [
+        { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAtIso) },
+        { header: 'Kode Order', key: 'orderCode' },
+        { header: 'Status', format: r => formatStatus(r.orderStatus) },
+        { header: 'Kode Status Sistem', key: 'orderStatus' },
+        { header: 'Tipe', format: r => (r.orderType === 'ready' ? 'Ready Stock' : 'Pre-Order Jastip') },
+        { header: 'Trip', format: r => r.tripTitle || '-' },
+        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'Username', key: 'customerUsername' },
+        { header: 'No HP', key: 'customerPhone' },
+        { header: 'Skema Bayar', format: r => (r.paymentType === 'dp' ? 'DP 50%' : 'Full 100%') },
+        { header: 'Jumlah Item', format: r => (r.items || []).reduce((s: number, i: any) => s + Number(i.quantity || 0), 0) },
+        { header: 'Subtotal Barang (IDR)', format: r => Number(r.subtotal || 0) },
+        { header: 'Ongkir (IDR)', format: r => Number(r.shippingCost || 0) },
+        { header: 'Kode Unik (IDR)', format: r => Number(r.uniqueCode || 0) },
+        { header: 'Total Tagihan (IDR)', format: r => Number(r.totalAmount || 0) },
+        { header: 'Nominal DP (IDR)', format: r => Number(r.dpAmount || 0) },
+        { header: 'Sudah Dibayar (IDR)', format: r => Number(r.paidAmount || 0) },
+        { header: 'Sisa Tagihan (IDR)', format: r => Number(r.remainingAmount || 0) },
+        { header: 'Metode Kirim', key: 'fulfillmentMethod' },
+        { header: 'Timestamp ACC (WIB)', format: r => formatCsvTimestamp(r.approvedAt) },
+        { header: 'Catatan Admin', format: r => r.adminNote || '' }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} rekap pesanan diunduh (${res.filename}).`, 'success')
+  } else if (exportDataset.value === 'items') {
+    const validSum = items
+      .filter(i => !['cancelled', 'rejected', 'expired'].includes(i.orderStatus))
+      .reduce((s, i) => s + Number(i.subtotal || 0), 0)
+    const res = downloadCsvFile({
+      filenamePrefix: 'pesanan_detail_item',
+      reportTitle: 'Detail Item Terjual per Pesanan',
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [
+        { label: 'Total Unit', value: items.reduce((s, i) => s + Number(i.quantity || 0), 0) },
+        { label: 'Total Subtotal Barang Aktif (IDR)', value: validSum }
+      ],
+      columns: [
+        { header: 'Timestamp Order (WIB)', format: r => formatCsvTimestamp(r.orderCreatedAt) },
+        { header: 'Kode Order', key: 'orderCode' },
+        { header: 'Status Order', format: r => formatStatus(r.orderStatus) },
+        { header: 'Trip', key: 'tripTitle' },
+        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'Nama Produk', key: 'productName' },
+        { header: 'Varian', key: 'variant' },
+        { header: 'Harga Satuan (IDR)', format: r => Number(r.priceAtOrder || 0) },
+        { header: 'Qty', format: r => Number(r.quantity || 0) },
+        { header: 'Subtotal Item (IDR)', format: r => Number(r.subtotal || 0) }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} baris item diunduh (${res.filename}).`, 'success')
+  } else {
+    const verifiedTotal = items.filter(p => p.status === 'verified').reduce((s, p) => s + Number(p.amount || 0), 0)
+    const res = downloadCsvFile({
+      filenamePrefix: 'mutasi_pembayaran',
+      reportTitle: 'Laporan Mutasi Pembayaran Masuk',
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [{ label: 'Total Kas Masuk Terverifikasi (IDR)', value: verifiedTotal }],
+      columns: [
+        { header: 'Timestamp Upload (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+        { header: 'Timestamp Verifikasi (WIB)', format: r => formatCsvTimestamp(r.verifiedAt) },
+        { header: 'ID Pembayaran', key: 'id' },
+        { header: 'Kode Order', key: 'orderCode' },
+        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'Trip', key: 'tripTitle' },
+        { header: 'Jenis Bayar', format: r => (r.paymentKind === 'dp' ? 'DP' : r.paymentKind === 'final' ? 'Pelunasan' : 'Full') },
+        { header: 'Bank Tujuan', key: 'bankName' },
+        { header: 'Nama Pengirim', key: 'senderName' },
+        { header: 'Bank Pengirim', key: 'senderBank' },
+        { header: 'Nominal Transfer (IDR)', format: r => Number(r.amount || 0) },
+        { header: 'Status Pembayaran', key: 'status' },
+        { header: 'Catatan Admin', format: r => r.adminNote || '' }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} mutasi pembayaran diunduh (${res.filename}).`, 'success')
+  }
+
+  showExportModal.value = false
+}
 </script>
 
 <style scoped>
@@ -688,6 +936,35 @@ const formatRupiah = (val: number) => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-export-csv {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #FAF5EC;
+  border: 1px solid #D8B978;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6F5530;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-export-csv:hover {
+  background: #F4E9D2;
+  border-color: var(--color-primary, #8C6D3F);
+  color: #2B2116;
 }
 
 .btn-refresh {
@@ -981,7 +1258,9 @@ const formatRupiah = (val: number) => {
   border-radius: 14px;
   max-width: 760px;
   width: 100%;
-  overflow: hidden;
+  max-height: 92dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid var(--color-secondary, #EFE1C6);
 }
 
@@ -995,11 +1274,14 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
 }
 
 .modal-head h3 {
   margin: 0;
   font-size: 1rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .close-btn {
@@ -1011,7 +1293,7 @@ const formatRupiah = (val: number) => {
 
 .modal-body-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 20px;
   padding: 20px;
 }
@@ -1028,6 +1310,7 @@ const formatRupiah = (val: number) => {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .box-stat {
@@ -1141,10 +1424,33 @@ const formatRupiah = (val: number) => {
 }
 
 @media (max-width: 680px) {
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .head-actions {
+    width: 100%;
+  }
+  .btn-export-csv,
+  .btn-refresh {
+    flex: 1;
+    justify-content: center;
+  }
+  .modal-backdrop {
+    padding: 12px;
+  }
   .modal-body-grid {
     grid-template-columns: 1fr;
     padding: 16px;
     gap: 16px;
+  }
+  .box-stat,
+  .modal-actions-row {
+    flex-wrap: wrap;
+  }
+  .form-select,
+  .form-textarea {
+    font-size: 1rem;
   }
   .proof-image-side img {
     max-height: 260px;

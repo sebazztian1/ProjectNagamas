@@ -183,4 +183,32 @@ const faqs = [
   padding: 10px 20px;
   border-radius: 8px;
 }
+
+@media (max-width: 600px) {
+  .static-page {
+    padding: 20px 14px 48px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+  }
+
+  .faq-card {
+    padding: 16px;
+  }
+
+  .contact-box {
+    padding: 20px 16px;
+  }
+
+  .btn-chat,
+  .btn-wa {
+    flex: 1 1 180px;
+    text-align: center;
+  }
+}
 </style>

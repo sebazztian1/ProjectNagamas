@@ -831,6 +831,7 @@ const handleAdminImageUpload = async (e: Event) => {
 
 .admin-input-bar input[type="text"] {
   flex: 1;
+  min-width: 0;
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
@@ -862,13 +863,14 @@ const handleAdminImageUpload = async (e: Event) => {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 @media (max-width: 768px) {
   .chat-inbox-card {
     grid-template-columns: 1fr;
-    height: calc(100vh - 170px);
-    min-height: 520px;
+    height: calc(100dvh - 150px);
+    min-height: 440px;
   }
 
   .chat-inbox-card.has-active-room .inbox-sidebar {
@@ -889,6 +891,16 @@ const handleAdminImageUpload = async (e: Event) => {
     padding: 6px;
     color: var(--color-primary, #8C6D3F);
     cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  .admin-input-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .admin-input-bar input[type="text"] {
+    font-size: 1rem;
   }
 }
 </style>

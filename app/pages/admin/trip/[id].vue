@@ -26,7 +26,7 @@
           </svg>
           <span>Refresh</span>
         </button>
-        <button class="btn-export-csv" @click="exportCSV">
+        <button class="btn-export-csv" @click="openExportModal">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
@@ -476,12 +476,35 @@
         </form>
       </div>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      :title="`Export Laporan Trip: ${trip.title}`"
+      subtitle="Ekspor daftar belanja (valas & konversi IDR), pesanan masuk, atau katalog margin produk trip ini."
+      :datasets="exportDatasetOptions"
+      v-model:selected-dataset="exportDataset"
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted } from 'vue'
 import { useToast } from '../../../composables/useToast'
+import type { CsvDatasetOption, CsvPreviewMetric } from '../../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvDateOnly,
+  formatCsvTimestamp
+} from '../../../utils/csvExport'
 
 definePageMeta({
   middleware: 'admin'
@@ -837,23 +860,176 @@ const deleteProduct = async (p: any) => {
   }
 }
 
-const exportCSV = () => {
-  if (!trip.value) return
-  const headers = 'Nama Barang,Varian,Toko Sumber,Qty,Harga Asli,Status\n'
-  const rows = shoppingList.value.map(i => `"${i.name}","${i.variant}","${i.store}",${i.totalQty},"${i.currency} ${i.originalPrice}",${i.bought ? 'Sudah Dibeli' : 'Belum'}`).join('\n')
-  
-  const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `daftar_belanja_${trip.value.slug || tripId}.csv`
-  a.click()
-
-  showToast('CSV Berhasil Diekspor', 'File daftar belanja trip telah diunduh.', 'success')
-}
-
 const formatRupiah = (val: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
+}
+
+// --- Accounting CSV Export ---
+const showExportModal = ref(false)
+const exportDataset = ref<'shopping' | 'orders' | 'products'>('orders')
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+
+const exportDatasetOptions: CsvDatasetOption[] = [
+  { id: 'orders', label: 'Pesanan Masuk Trip', description: 'Omzet, dana masuk & piutang per order (by timestamp)' },
+  { id: 'shopping', label: 'Daftar Belanja & Kurs', description: 'Kebutuhan qty, harga valas & estimasi modal IDR' },
+  { id: 'products', label: 'Katalog & Margin Produk', description: 'Perbandingan harga valas vs harga jual IDR' }
+]
+
+const openExportModal = () => {
+  exportDataset.value = currentTab.value === 'shopping'
+    ? 'shopping'
+    : currentTab.value === 'products'
+      ? 'products'
+      : 'orders'
+  showExportModal.value = true
+}
+
+const exportPreview = computed(() => {
+  if (exportDataset.value === 'orders') {
+    return filterByDateRange(tripOrders.value, o => o.createdAt, exportStartDate.value, exportEndDate.value)
+  }
+  const fallbackIso = trip.value?.openDate ? `${trip.value.openDate}T00:00:00+07:00` : null
+  if (exportDataset.value === 'shopping') {
+    return filterByDateRange(shoppingList.value, () => fallbackIso, exportStartDate.value, exportEndDate.value)
+  }
+  return filterByDateRange(tripProducts.value, () => fallbackIso, exportStartDate.value, exportEndDate.value)
+})
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rate = Number(trip.value?.exchangeRate || 1)
+  const curr = trip.value?.currency || 'IDR'
+  if (exportDataset.value === 'orders') {
+    const rows = exportPreview.value.items
+    const totalAmt = rows.reduce((s, o) => s + Number(o.totalAmount || 0), 0)
+    const paidAmt = rows.reduce((s, o) => s + Number(o.paidAmount || 0), 0)
+    return [
+      { label: 'Total Nilai Pesanan', value: formatRupiah(totalAmt), highlight: true },
+      { label: 'Total Dana Masuk', value: formatRupiah(paidAmt) }
+    ]
+  }
+  if (exportDataset.value === 'shopping') {
+    const rows = exportPreview.value.items
+    const totalForeign = rows.reduce((s, i) => s + Number(i.originalPrice || 0) * Number(i.totalQty || 0), 0)
+    const totalEstIdr = Math.round(totalForeign * rate)
+    return [
+      { label: `Total Modal (${curr})`, value: `${curr} ${totalForeign.toLocaleString('id-ID')}` },
+      { label: 'Estimasi Modal (IDR)', value: formatRupiah(totalEstIdr), highlight: true }
+    ]
+  }
+  const rows = exportPreview.value.items
+  return [
+    { label: 'Kurs Trip Saat Ini', value: `1 ${curr} = ${formatRupiah(rate)}` },
+    { label: 'Jumlah SKU Trip', value: `${rows.length} produk`, highlight: true }
+  ]
+})
+
+const handleExportCsv = () => {
+  if (!trip.value) return
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  const slug = trip.value.slug || `trip_${tripId}`
+  const rate = Number(trip.value.exchangeRate || 1)
+  const curr = trip.value.currency || 'IDR'
+
+  if (exportDataset.value === 'orders') {
+    const totalAmt = items.reduce((s, o) => s + Number(o.totalAmount || 0), 0)
+    const paidAmt = items.reduce((s, o) => s + Number(o.paidAmount || 0), 0)
+    const remAmt = items.reduce((s, o) => s + Number(o.remainingAmount || 0), 0)
+    const res = downloadCsvFile({
+      filenamePrefix: `trip_${slug}_pesanan`,
+      reportTitle: `Pesanan Trip ${trip.value.title}`,
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [
+        { label: 'Total Tagihan Trip (IDR)', value: totalAmt },
+        { label: 'Total Sudah Dibayar (IDR)', value: paidAmt },
+        { label: 'Total Sisa Piutang (IDR)', value: remAmt }
+      ],
+      columns: [
+        { header: 'Timestamp Order (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+        { header: 'Kode Order', key: 'orderCode' },
+        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'No HP', key: 'customerPhone' },
+        { header: 'Status Order', key: 'status' },
+        { header: 'Status Bayar', key: 'paymentStatus' },
+        { header: 'Skema Bayar', format: r => (r.paymentType === 'dp' ? 'DP 50%' : 'Full 100%') },
+        { header: 'Total Item', format: r => Number(r.itemsCount || 0) },
+        { header: 'Total Tagihan (IDR)', format: r => Number(r.totalAmount || 0) },
+        { header: 'Sudah Dibayar (IDR)', format: r => Number(r.paidAmount || 0) },
+        { header: 'Sisa Tagihan (IDR)', format: r => Number(r.remainingAmount || 0) }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} pesanan trip diunduh (${res.filename}).`, 'success')
+  } else if (exportDataset.value === 'shopping') {
+    const totalForeign = items.reduce((s, i) => s + Number(i.originalPrice || 0) * Number(i.totalQty || 0), 0)
+    const totalEstIdr = Math.round(totalForeign * rate)
+    const res = downloadCsvFile({
+      filenamePrefix: `trip_${slug}_daftar_belanja`,
+      reportTitle: `Daftar Belanja & Estimasi Modal Trip ${trip.value.title}`,
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [
+        { label: `Kurs Konversi (${curr} -> IDR)`, value: rate },
+        { label: `Total Modal Belanja (${curr})`, value: totalForeign },
+        { label: 'Total Estimasi Modal (IDR)', value: totalEstIdr }
+      ],
+      columns: [
+        { header: 'Tanggal Buka Trip', format: () => formatCsvDateOnly(trip.value?.openDate) },
+        { header: 'Nama Barang', key: 'name' },
+        { header: 'Varian', key: 'variant' },
+        { header: 'Toko Sumber', key: 'store' },
+        { header: 'Qty Dibutuhkan', format: r => Number(r.totalQty || 0) },
+        { header: 'Mata Uang', format: r => r.currency || curr },
+        { header: 'Harga Satuan Valas', format: r => Number(r.originalPrice || 0) },
+        { header: 'Subtotal Valas', format: r => Number(r.originalPrice || 0) * Number(r.totalQty || 0) },
+        { header: 'Kurs IDR', format: () => rate },
+        { header: 'Estimasi Modal IDR', format: r => Math.round(Number(r.originalPrice || 0) * Number(r.totalQty || 0) * rate) },
+        { header: 'Status Belanja', format: r => (r.bought ? 'Sudah Dibeli' : 'Belum') }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} item daftar belanja diunduh (${res.filename}).`, 'success')
+  } else {
+    const res = downloadCsvFile({
+      filenamePrefix: `trip_${slug}_katalog_margin`,
+      reportTitle: `Katalog & Margin Produk Trip ${trip.value.title}`,
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [
+        { label: `Kurs Konversi (${curr} -> IDR)`, value: rate }
+      ],
+      columns: [
+        { header: 'Tanggal Buka Trip', format: () => formatCsvDateOnly(trip.value?.openDate) },
+        { header: 'ID Produk', key: 'id' },
+        { header: 'Nama Produk', key: 'name' },
+        { header: 'Kategori', key: 'categoryName' },
+        { header: 'Toko Sumber', key: 'sourceStore' },
+        { header: 'Mata Uang Asli', format: () => curr },
+        { header: 'Harga Beli Valas', format: r => (r.originalPrice !== null ? Number(r.originalPrice) : '') },
+        { header: 'Estimasi Modal IDR', format: r => (r.originalPrice !== null ? Math.round(Number(r.originalPrice) * rate) : '') },
+        { header: 'Harga Jual IDR', format: r => Number(r.price || 0) },
+        {
+          header: 'Estimasi Margin IDR',
+          format: r => (r.originalPrice !== null ? Number(r.price || 0) - Math.round(Number(r.originalPrice) * rate) : '')
+        },
+        { header: 'Kuota', format: r => Number(r.quota || 0) },
+        { header: 'Status Stok', key: 'stockStatus' }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} produk katalog diunduh (${res.filename}).`, 'success')
+  }
+
+  showExportModal.value = false
 }
 </script>
 
@@ -987,6 +1163,7 @@ const formatRupiah = (val: number) => {
 
 .trip-subtabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   border-bottom: 1px solid var(--color-secondary, #EFE1C6);
   padding-bottom: 10px;
@@ -1257,8 +1434,9 @@ const formatRupiah = (val: number) => {
   width: 100%;
   max-width: 720px;
   padding: 24px;
-  max-height: 90vh;
+  max-height: 92dvh;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .modal-head {
@@ -1299,7 +1477,7 @@ const formatRupiah = (val: number) => {
 
 .form-row-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -1307,6 +1485,7 @@ const formatRupiah = (val: number) => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .f-group label {
@@ -1321,6 +1500,8 @@ const formatRupiah = (val: number) => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
   outline: none;
+  width: 100%;
+  min-width: 0;
 }
 
 /* Calc assist card */
@@ -1433,6 +1614,8 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .gallery-count-hint {
@@ -1448,8 +1631,9 @@ const formatRupiah = (val: number) => {
 }
 
 .image-input-wrap input {
-  flex: 1;
-  min-width: 220px;
+  flex: 1 1 200px;
+  min-width: 0;
+  width: 100%;
 }
 
 .btn-add-img-url {
@@ -1868,17 +2052,36 @@ const formatRupiah = (val: number) => {
     align-items: flex-start;
     gap: 14px;
   }
+  .trip-title {
+    font-size: 1.35rem;
+  }
   .head-actions {
     width: 100%;
     flex-wrap: wrap;
   }
   .btn-add-product, .btn-export-csv, .btn-refresh {
-    flex: 1;
+    flex: 1 1 140px;
     text-align: center;
     justify-content: center;
   }
+  .modal-overlay {
+    padding: 10px;
+  }
+  .modal-box {
+    padding: 16px;
+  }
   .form-row-2 {
     grid-template-columns: 1fr !important;
+  }
+  .ca-head,
+  .gallery-label-row {
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .f-group input,
+  .f-group select,
+  .f-group textarea {
+    font-size: 1rem;
   }
 }
 </style>

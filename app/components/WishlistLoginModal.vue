@@ -192,4 +192,19 @@ const { showLoginPrompt } = useWishlist()
   50% { transform: scale(1.08); }
   100% { transform: scale(1); }
 }
+
+@media (max-width: 480px) {
+  .modal-backdrop {
+    padding: 12px;
+  }
+
+  .wishlist-modal-box {
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+
+  .modal-body {
+    padding: 24px 18px 20px;
+  }
+}
 </style>

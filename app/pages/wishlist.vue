@@ -453,7 +453,7 @@ const formatRupiah = (val: number) => {
 /* Wishlist Grid */
 .wishlist-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
   gap: 22px;
 }
 
@@ -823,9 +823,30 @@ const formatRupiah = (val: number) => {
 }
 
 @media (max-width: 600px) {
+  .wishlist-page {
+    padding: 18px 12px 52px;
+  }
+
+  .wishlist-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+    gap: 14px;
+  }
+
   .guest-banner {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .btn-gb-login {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 380px) {
+  .action-sub-row {
+    grid-template-columns: 1fr;
   }
 }
 </style>

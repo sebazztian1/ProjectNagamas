@@ -168,4 +168,19 @@ const removeToast = (id: string) => {
   opacity: 0;
   transform: translateX(40px) scale(0.95);
 }
+
+.toast-content {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 480px) {
+  .toast-container {
+    left: 12px;
+    right: 12px;
+    bottom: 14px;
+    width: auto;
+    max-width: none;
+  }
+}
 </style>

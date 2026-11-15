@@ -4,15 +4,25 @@
       <h1 class="page-title">Request Produk</h1>
 
       <!-- Quick Action / Refresh -->
-      <button class="btn-refresh" @click="refreshRequests" :disabled="pending">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
-          <path d="M21 2v6h-6"></path>
-          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
-          <path d="M3 22v-6h6"></path>
-          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-        </svg>
-        <span>Refresh</span>
-      </button>
+      <div class="head-actions">
+        <button type="button" class="btn-export-csv" @click="openExportModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Export CSV</span>
+        </button>
+        <button class="btn-refresh" @click="refreshRequests" :disabled="pending">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
     </div>
 
     <!-- Filter & Search Bar -->
@@ -365,6 +375,23 @@
         <img :src="activeModalImage" alt="Preview Gambar Referensi" class="full-img" />
       </div>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      title="Export Request & Penawaran Harga (.csv)"
+      subtitle="Ekspor pipeline permintaan jastip custom, nilai penawaran (quote), dan batas kedaluwarsa berdasarkan rentang timestamp WIB."
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      v-model:use-active-filters="exportUseActiveFilters"
+      :active-filter-label="activeFilterToggleLabel"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      :loading="isExportLoading"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
@@ -372,6 +399,12 @@
 import { ref, computed, onMounted } from 'vue'
 import { useToast } from '../../composables/useToast'
 import { useAdminStats } from '../../composables/useAdminStats'
+import type { CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvTimestamp
+} from '../../utils/csvExport'
 
 definePageMeta({
   middleware: 'admin'
@@ -657,6 +690,101 @@ const formatDate = (dateStr: string) => {
     year: 'numeric'
   })
 }
+
+// --- Accounting CSV Export ---
+const showExportModal = ref(false)
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+const exportUseActiveFilters = ref(false)
+const isExportLoading = ref(false)
+const allRequestsSource = ref<AdminRequestItem[]>([])
+
+const hasRequestActiveFilter = computed(() => currentStatus.value !== 'all' || searchQuery.value.trim() !== '')
+
+const activeFilterToggleLabel = computed(() => {
+  if (!hasRequestActiveFilter.value) return ''
+  const parts: string[] = []
+  if (currentStatus.value !== 'all') {
+    const tab = statusTabs.find(t => t.value === currentStatus.value)
+    parts.push(`Status: ${tab?.label || currentStatus.value}`)
+  }
+  if (searchQuery.value.trim()) {
+    parts.push(`Cari: "${searchQuery.value.trim()}"`)
+  }
+  return `Terapkan filter aktif (${parts.join(' • ')})`
+})
+
+const openExportModal = async () => {
+  exportUseActiveFilters.value = hasRequestActiveFilter.value
+  showExportModal.value = true
+  isExportLoading.value = true
+  try {
+    allRequestsSource.value = await $fetch<AdminRequestItem[]>('/api/admin/requests')
+  } catch (err: any) {
+    allRequestsSource.value = rawRequests.value
+    showToast('Catatan', err?.data?.message || 'Menggunakan data request yang sedang tampil.', 'warning')
+  } finally {
+    isExportLoading.value = false
+  }
+}
+
+const exportSourceRequests = computed(() => {
+  if (exportUseActiveFilters.value && hasRequestActiveFilter.value) {
+    return filteredRequests.value
+  }
+  return allRequestsSource.value.length > 0 ? allRequestsSource.value : rawRequests.value
+})
+
+const exportPreview = computed(() =>
+  filterByDateRange(exportSourceRequests.value, r => r.createdAt, exportStartDate.value, exportEndDate.value)
+)
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rows = exportPreview.value.items
+  const quotedItems = rows.filter(r => r.quotedPrice !== null && r.quotedPrice > 0)
+  const totalQuoted = quotedItems.reduce((s, r) => s + Number(r.quotedPrice || 0), 0)
+  const acceptedCount = rows.filter(r => ['accepted', 'available'].includes(r.status)).length
+  return [
+    { label: 'Total Nilai Quote Terbuka', value: formatRupiah(totalQuoted), highlight: true },
+    { label: 'Disetujui / Masuk Katalog', value: `${acceptedCount} dari ${rows.length} request` }
+  ]
+})
+
+const handleExportCsv = () => {
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  const totalQuoted = items.reduce((s, r) => s + Number(r.quotedPrice || 0), 0)
+  const res = downloadCsvFile({
+    filenamePrefix: 'request_produk_pipeline',
+    reportTitle: 'Laporan Request Produk Custom & Penawaran',
+    rows: items,
+    minTimestamp,
+    maxTimestamp,
+    filterStartDate: exportStartDate.value,
+    filterEndDate: exportEndDate.value,
+    summaryItems: [
+      { label: 'Total Nilai Harga Penawaran (IDR)', value: totalQuoted }
+    ],
+    columns: [
+      { header: 'Timestamp Request (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+      { header: 'ID Request', key: 'id' },
+      { header: 'Pelanggan', key: 'userName' },
+      { header: 'No HP / WA', key: 'customerPhone' },
+      { header: 'Produk Diminta', key: 'productName' },
+      { header: 'Trip Tujuan', key: 'tripTitle' },
+      { header: 'Negara', key: 'targetCountry' },
+      { header: 'Status', format: r => formatStatus(r.status) },
+      { header: 'Harga Penawaran (IDR)', format: r => (r.quotedPrice !== null ? Number(r.quotedPrice) : '') },
+      { header: 'Catatan Penawaran', format: r => r.quoteNote || '' },
+      { header: 'Batas Berlaku Quote (WIB)', format: r => formatCsvTimestamp(r.quoteExpiresAt) },
+      { header: 'Link Referensi', format: r => r.referenceLink || '' },
+      { header: 'Catatan Admin', format: r => r.adminNote || '' }
+    ]
+  })
+  showToast('CSV Berhasil Diekspor', `${res.rowCount} data request diunduh (${res.filename}).`, 'success')
+  showExportModal.value = false
+}
 </script>
 
 <style scoped>
@@ -671,6 +799,36 @@ const formatDate = (dateStr: string) => {
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+  flex-wrap: wrap;
+}
+
+.head-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-export-csv {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #FAF5EC;
+  border: 1px solid #D8B978;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #6F5530;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-export-csv:hover {
+  background: #F4E9D2;
+  border-color: var(--color-primary, #8C6D3F);
+  color: #2B2116;
 }
 
 .page-title {
@@ -782,7 +940,9 @@ const formatDate = (dateStr: string) => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
   padding: 7px 12px;
-  min-width: 280px;
+  flex: 1 1 240px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .search-icon {
@@ -1230,8 +1390,9 @@ const formatDate = (dateStr: string) => {
   border-radius: 14px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   width: 100%;
-  max-height: 90vh;
+  max-height: 92dvh;
   overflow-y: auto;
+  overflow-x: hidden;
   border: 1px solid var(--color-secondary, #EFE1C6);
 }
 
@@ -1484,8 +1645,8 @@ const formatDate = (dateStr: string) => {
 
 .close-img-btn {
   position: absolute;
-  top: -40px;
-  right: -10px;
+  top: -36px;
+  right: 0;
   background: none;
   border: none;
   color: #ffffff;
@@ -1500,6 +1661,40 @@ const formatDate = (dateStr: string) => {
   }
   .search-box {
     width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .head-actions {
+    width: 100%;
+  }
+  .btn-export-csv,
+  .btn-refresh {
+    flex: 1;
+    justify-content: center;
+  }
+  .modal-backdrop {
+    padding: 12px;
+  }
+  .modal-head {
+    padding: 16px;
+  }
+  .modal-form {
+    padding: 16px;
+  }
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .request-summary-snippet,
+  .preview-img-row,
+  .modal-foot {
+    flex-wrap: wrap;
+  }
+  .f-group input,
+  .f-group select,
+  .f-group textarea {
+    font-size: 1rem;
   }
 }
 </style>

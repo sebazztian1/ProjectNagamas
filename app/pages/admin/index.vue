@@ -3,6 +3,14 @@
     <div class="dash-header">
       <h1 class="dash-title">Dashboard</h1>
       <div class="dash-header-actions">
+        <button type="button" class="btn-export-csv" @click="openExportModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Export Laporan (.csv)</span>
+        </button>
         <button class="btn-refresh" @click="fetchAdminStats(false)" :disabled="pending">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
             <path d="M21 2v6h-6"></path>
@@ -109,14 +117,42 @@
         </div>
       </div>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      title="Export Laporan Akuntansi (.csv)"
+      subtitle="Pilih dataset keuangan dan rentang timestamp (Tanggal Minimal -> Tanggal Maksimal) untuk audit pembukuan."
+      :datasets="exportDatasetOptions"
+      v-model:selected-dataset="exportDataset"
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      :loading="isExportLoading"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useAdminStats } from '../../composables/useAdminStats'
+import { useToast } from '../../composables/useToast'
+import type { CsvDatasetOption, CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvDateOnly,
+  formatCsvTimestamp,
+  isValidDateRange,
+  type CsvSummaryItem
+} from '../../utils/csvExport'
 
 const { stats, pending, fetchAdminStats } = useAdminStats()
+const { showToast } = useToast()
 
 onMounted(() => {
   fetchAdminStats(true)
@@ -133,6 +169,325 @@ const pendingOrders = computed(() => stats.value?.pendingOrders || [])
 
 const formatRupiah = (val: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
+}
+
+// --- Accounting CSV Export ---
+const showExportModal = ref(false)
+const exportDataset = ref<'orders' | 'payments' | 'trips' | 'products' | 'logs'>('orders')
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+const isExportLoading = ref(false)
+
+const cachedOrders = ref<any[] | null>(null)
+const cachedTrips = ref<any[] | null>(null)
+const cachedProducts = ref<any[] | null>(null)
+const cachedLogs = ref<any[]>([])
+
+const exportDatasetOptions: CsvDatasetOption[] = [
+  { id: 'orders', label: 'Rekap Pesanan', description: 'Omzet, DP, sisa tagihan & ongkir per order' },
+  { id: 'payments', label: 'Mutasi Pembayaran', description: 'Arus kas masuk DP & pelunasan terverifikasi' },
+  { id: 'trips', label: 'Batch Trip & Kurs', description: 'Kurs valas, kuota & nilai pesanan per trip' },
+  { id: 'products', label: 'Valuasi Stok', description: 'Stok produk Ready/Pre-order & nilai estimasi' },
+  { id: 'logs', label: 'Audit Log', description: 'Riwayat aktivitas sistem & perubahan data' }
+]
+
+const loadDatasetSource = async (dataset: string) => {
+  isExportLoading.value = true
+  try {
+    if ((dataset === 'orders' || dataset === 'payments') && cachedOrders.value === null) {
+      cachedOrders.value = await $fetch<any[]>('/api/admin/orders')
+    } else if (dataset === 'trips' && cachedTrips.value === null) {
+      cachedTrips.value = await $fetch<any[]>('/api/admin/trips')
+    } else if (dataset === 'products' && cachedProducts.value === null) {
+      const res = await $fetch<{ products: any[] }>('/api/admin/products')
+      cachedProducts.value = res.products || []
+    } else if (dataset === 'logs') {
+      if (!isValidDateRange(exportStartDate.value, exportEndDate.value)) {
+        cachedLogs.value = []
+        return
+      }
+      const res = await $fetch<{ logs: any[] }>('/api/admin/logs', {
+        query: {
+          exportAll: 'true',
+          startDate: exportStartDate.value || undefined,
+          endDate: exportEndDate.value || undefined
+        }
+      })
+      cachedLogs.value = res.logs || []
+    }
+  } catch (err: any) {
+    showToast('Gagal Memuat Data Export', err?.data?.message || 'Tidak dapat mengambil data dari server.', 'warning')
+  } finally {
+    isExportLoading.value = false
+  }
+}
+
+const openExportModal = async () => {
+  showExportModal.value = true
+  cachedOrders.value = null
+  cachedTrips.value = null
+  cachedProducts.value = null
+  await loadDatasetSource(exportDataset.value)
+}
+
+watch(exportDataset, async (next) => {
+  if (!showExportModal.value) return
+  await loadDatasetSource(next)
+})
+
+watch([exportStartDate, exportEndDate], async () => {
+  if (!showExportModal.value || exportDataset.value !== 'logs') return
+  await loadDatasetSource('logs')
+})
+
+const flattenedPayments = computed(() => {
+  const rows: any[] = []
+  for (const ord of cachedOrders.value || []) {
+    for (const p of ord.payments || []) {
+      rows.push({
+        ...p,
+        orderCode: ord.orderCode,
+        orderStatus: ord.orderStatus,
+        orderType: ord.orderType,
+        customerName: ord.customerName,
+        customerUsername: ord.customerUsername,
+        customerPhone: ord.customerPhone,
+        tripTitle: ord.tripTitle || '-'
+      })
+    }
+  }
+  return rows
+})
+
+const exportPreview = computed(() => {
+  if (exportDataset.value === 'orders') {
+    return filterByDateRange(cachedOrders.value || [], o => o.createdAtIso, exportStartDate.value, exportEndDate.value)
+  }
+  if (exportDataset.value === 'payments') {
+    return filterByDateRange(flattenedPayments.value, p => p.createdAt, exportStartDate.value, exportEndDate.value)
+  }
+  if (exportDataset.value === 'trips') {
+    return filterByDateRange(cachedTrips.value || [], t => t.createdAt, exportStartDate.value, exportEndDate.value)
+  }
+  if (exportDataset.value === 'products') {
+    return filterByDateRange(cachedProducts.value || [], p => p.createdAt, exportStartDate.value, exportEndDate.value)
+  }
+  return filterByDateRange(cachedLogs.value || [], l => l.createdAt, exportStartDate.value, exportEndDate.value)
+})
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rows = exportPreview.value.items
+  if (exportDataset.value === 'orders') {
+    const valid = rows.filter(o => !['cancelled', 'rejected', 'expired'].includes(o.orderStatus))
+    const totalOmzet = valid.reduce((s, o) => s + Number(o.totalAmount || 0), 0)
+    const totalPaid = valid.reduce((s, o) => s + Number(o.paidAmount || 0), 0)
+    const totalRemaining = valid.reduce((s, o) => s + Number(o.remainingAmount || 0), 0)
+    return [
+      { label: 'Total Tagihan Aktif', value: formatRupiah(totalOmzet), highlight: true },
+      { label: 'Total Sudah Dibayar', value: formatRupiah(totalPaid) },
+      { label: 'Sisa Piutang / Pelunasan', value: formatRupiah(totalRemaining) }
+    ]
+  }
+  if (exportDataset.value === 'payments') {
+    const verifiedSum = rows.filter(p => p.status === 'verified').reduce((s, p) => s + Number(p.amount || 0), 0)
+    const pendingSum = rows.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount || 0), 0)
+    return [
+      { label: 'Terverifikasi (Kas Masuk)', value: formatRupiah(verifiedSum), highlight: true },
+      { label: 'Menunggu Verifikasi', value: formatRupiah(pendingSum) }
+    ]
+  }
+  if (exportDataset.value === 'trips') {
+    const totalValue = rows.reduce((s, t) => s + Number(t.totalOrdersAmount || 0), 0)
+    const totalOrders = rows.reduce((s, t) => s + Number(t.ordersCount || 0), 0)
+    return [
+      { label: 'Total Nilai Pesanan Trip', value: formatRupiah(totalValue), highlight: true },
+      { label: 'Jumlah Pesanan Aktif', value: `${totalOrders} pesanan` }
+    ]
+  }
+  if (exportDataset.value === 'products') {
+    const activeCount = rows.filter(p => p.isActive).length
+    const totalAsset = rows.reduce((s, p) => {
+      const units = p.productType === 'ready' ? Number(p.stockQuantity || 0) : Number(p.quota || 0)
+      return s + Number(p.price || 0) * units
+    }, 0)
+    return [
+      { label: 'Potensi Nilai Stok/Kuota', value: formatRupiah(totalAsset), highlight: true },
+      { label: 'Produk Aktif', value: `${activeCount} / ${rows.length} SKU` }
+    ]
+  }
+  return [{ label: 'Total Entri Audit Log', value: `${rows.length} catatan`, highlight: true }]
+})
+
+const handleExportCsv = () => {
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  if (exportDataset.value === 'orders') {
+    const valid = items.filter(o => !['cancelled', 'rejected', 'expired'].includes(o.orderStatus))
+    const summaryItems: CsvSummaryItem[] = [
+      { label: 'Total Nilai Order Aktif (IDR)', value: valid.reduce((s, o) => s + Number(o.totalAmount || 0), 0) },
+      { label: 'Total Dana Masuk / Dibayar (IDR)', value: valid.reduce((s, o) => s + Number(o.paidAmount || 0), 0) },
+      { label: 'Total Sisa Tagihan (IDR)', value: valid.reduce((s, o) => s + Number(o.remainingAmount || 0), 0) }
+    ]
+    const res = downloadCsvFile({
+      filenamePrefix: 'nagamas_rekap_pesanan',
+      reportTitle: 'Laporan Rekap Pesanan (Dashboard Accounting)',
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems,
+      columns: [
+        { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAtIso) },
+        { header: 'Kode Order', key: 'orderCode' },
+        { header: 'Tipe Order', format: r => (r.orderType === 'ready' ? 'Ready Stock' : 'Pre-Order Jastip') },
+        { header: 'Trip', format: r => r.tripTitle || '-' },
+        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'Username', key: 'customerUsername' },
+        { header: 'No HP / WA', key: 'customerPhone' },
+        { header: 'Status Order', key: 'orderStatus' },
+        { header: 'Tipe Pembayaran', format: r => (r.paymentType === 'dp' ? 'DP 50%' : 'Full 100%') },
+        { header: 'Subtotal Produk (IDR)', format: r => Number(r.subtotal || 0) },
+        { header: 'Ongkir (IDR)', format: r => Number(r.shippingCost || 0) },
+        { header: 'Kode Unik (IDR)', format: r => Number(r.uniqueCode || 0) },
+        { header: 'Total Tagihan (IDR)', format: r => Number(r.totalAmount || 0) },
+        { header: 'Sudah Dibayar (IDR)', format: r => Number(r.paidAmount || 0) },
+        { header: 'Sisa Tagihan (IDR)', format: r => Number(r.remainingAmount || 0) },
+        { header: 'Timestamp ACC (WIB)', format: r => formatCsvTimestamp(r.approvedAt) }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} data pesanan diunduh (${res.filename}).`, 'success')
+  } else if (exportDataset.value === 'payments') {
+    const verifiedSum = items.filter(p => p.status === 'verified').reduce((s, p) => s + Number(p.amount || 0), 0)
+    const pendingSum = items.filter(p => p.status === 'pending').reduce((s, p) => s + Number(p.amount || 0), 0)
+    const res = downloadCsvFile({
+      filenamePrefix: 'nagamas_mutasi_pembayaran',
+      reportTitle: 'Laporan Mutasi Pembayaran Masuk (Dashboard Accounting)',
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [
+        { label: 'Total Mutasi Terverifikasi (IDR)', value: verifiedSum },
+        { label: 'Total Mutasi Menunggu Verifikasi (IDR)', value: pendingSum }
+      ],
+      columns: [
+        { header: 'Timestamp Upload (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+        { header: 'Timestamp Verifikasi (WIB)', format: r => formatCsvTimestamp(r.verifiedAt) },
+        { header: 'ID Pembayaran', key: 'id' },
+        { header: 'Kode Order', key: 'orderCode' },
+        { header: 'Jenis Bayar', format: r => (r.paymentKind === 'dp' ? 'DP' : r.paymentKind === 'final' ? 'Pelunasan' : 'Full') },
+        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'Bank Tujuan', key: 'bankName' },
+        { header: 'Nama Pengirim', key: 'senderName' },
+        { header: 'Bank Pengirim', key: 'senderBank' },
+        { header: 'Nominal (IDR)', format: r => Number(r.amount || 0) },
+        { header: 'Status Verifikasi', key: 'status' },
+        { header: 'Catatan Admin', key: 'adminNote' }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} mutasi pembayaran diunduh (${res.filename}).`, 'success')
+  } else if (exportDataset.value === 'trips') {
+    const res = downloadCsvFile({
+      filenamePrefix: 'nagamas_laporan_trip',
+      reportTitle: 'Laporan Batch Trip & Valas (Dashboard Accounting)',
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [
+        { label: 'Total Nilai Pesanan Trip (IDR)', value: items.reduce((s, t) => s + Number(t.totalOrdersAmount || 0), 0) }
+      ],
+      columns: [
+        { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+        { header: 'ID Trip', key: 'id' },
+        { header: 'Nama Trip', key: 'title' },
+        { header: 'Negara / Kota', format: r => `${r.country}${r.cityOrArea ? ' - ' + r.cityOrArea : ''}` },
+        { header: 'Status Trip', key: 'status' },
+        { header: 'Mata Uang', key: 'currency' },
+        { header: 'Kurs IDR', format: r => Number(r.exchangeRate || 0) },
+        { header: 'Tipe Fee', key: 'feeType' },
+        { header: 'Nilai Fee', format: r => Number(r.feeValue || 0) },
+        { header: 'Kuota Terisi', format: r => Number(r.quotaFilled || 0) },
+        { header: 'Kuota Total', format: r => Number(r.quotaTotal || 0) },
+        { header: 'Jumlah Pesanan', format: r => Number(r.ordersCount || 0) },
+        { header: 'Total Nilai Order (IDR)', format: r => Number(tOrZero(r.totalOrdersAmount)) },
+        { header: 'Tgl Buka PO', format: r => formatCsvDateOnly(r.openDate) },
+        { header: 'Tgl Tutup PO', format: r => formatCsvDateOnly(r.closeDate) },
+        { header: 'Tgl Berangkat', format: r => formatCsvDateOnly(r.departureDate) },
+        { header: 'Estimasi Tiba', format: r => formatCsvDateOnly(r.estimatedArrivalDate) }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} data trip diunduh (${res.filename}).`, 'success')
+  } else if (exportDataset.value === 'products') {
+    const totalAsset = items.reduce((s, p) => {
+      const units = p.productType === 'ready' ? Number(p.stockQuantity || 0) : Number(p.quota || 0)
+      return s + Number(p.price || 0) * units
+    }, 0)
+    const res = downloadCsvFile({
+      filenamePrefix: 'nagamas_valuasi_produk',
+      reportTitle: 'Laporan Valuasi Produk & Stok (Dashboard Accounting)',
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [{ label: 'Total Potensi Nilai Stok/Kuota (IDR)', value: totalAsset }],
+      columns: [
+        { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+        { header: 'Timestamp Update (WIB)', format: r => formatCsvTimestamp(r.updatedAt) },
+        { header: 'ID Produk', key: 'id' },
+        { header: 'Nama Produk', key: 'name' },
+        { header: 'Tipe', format: r => (r.productType === 'ready' ? 'Ready Stock' : 'Pre-Order Jastip') },
+        { header: 'Kategori', key: 'categoryName' },
+        { header: 'Trip', format: r => r.tripTitle || '-' },
+        { header: 'Mata Uang Asli', format: r => r.originalCurrency || 'IDR' },
+        { header: 'Harga Asli Valas', format: r => (r.originalPrice !== null && r.originalPrice !== undefined ? Number(r.originalPrice) : '') },
+        { header: 'Harga Jual (IDR)', format: r => Number(pPriceOrZero(r.price)) },
+        { header: 'Stok / Kuota', format: r => (r.productType === 'ready' ? Number(r.stockQuantity || 0) : Number(r.quota || 0)) },
+        { header: 'Nilai Stok Potensial (IDR)', format: r => Number(r.price || 0) * (r.productType === 'ready' ? Number(r.stockQuantity || 0) : Number(r.quota || 0)) },
+        { header: 'Status Stok', key: 'stockStatus' },
+        { header: 'Status Aktif', format: r => (r.isActive ? 'Aktif' : 'Nonaktif') }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} SKU produk diunduh (${res.filename}).`, 'success')
+  } else {
+    const res = downloadCsvFile({
+      filenamePrefix: 'nagamas_audit_log',
+      reportTitle: 'Laporan Audit Log Sistem (Dashboard Accounting)',
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      columns: [
+        { header: 'Timestamp (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+        { header: 'ID Log', key: 'id' },
+        { header: 'Aktor / Admin', key: 'user' },
+        { header: 'Role', key: 'userRole' },
+        { header: 'Aksi', key: 'action' },
+        { header: 'Entitas', key: 'entityType' },
+        { header: 'ID Entitas', key: 'entityId' },
+        { header: 'Detail JSON', format: r => (r.detail ? JSON.stringify(r.detail) : '-') }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} log audit diunduh (${res.filename}).`, 'success')
+  }
+
+  showExportModal.value = false
+}
+
+const tOrZero = (val: unknown) => {
+  const num = Number(val)
+  return Number.isFinite(num) ? num : 0
+}
+
+const pPriceOrZero = (val: unknown) => {
+  const num = Number(val)
+  return Number.isFinite(num) ? num : 0
 }
 </script>
 
@@ -167,6 +522,29 @@ const formatRupiah = (val: number) => {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-export-csv {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #FAF5EC;
+  border: 1px solid #D8B978;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #6F5530;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.btn-export-csv:hover {
+  background: #F4E9D2;
+  border-color: #8C6D3F;
+  color: #2B2116;
 }
 
 .btn-refresh {
@@ -221,7 +599,7 @@ const formatRupiah = (val: number) => {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 16px;
 }
 
@@ -291,7 +669,7 @@ const formatRupiah = (val: number) => {
 
 .dash-two-col {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
   gap: 24px;
 }
 
@@ -300,6 +678,7 @@ const formatRupiah = (val: number) => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px;
+  min-width: 0;
 }
 
 .panel-head {
@@ -430,6 +809,45 @@ const formatRupiah = (val: number) => {
 @media (max-width: 900px) {
   .dash-two-col {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .dash-title {
+    font-size: 1.35rem;
+  }
+
+  .dash-header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .dash-header-actions .btn-export-csv,
+  .dash-header-actions .btn-refresh,
+  .dash-header-actions .btn-new-trip {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+    gap: 12px;
+  }
+
+  .kpi-card,
+  .panel-box {
+    padding: 16px;
+  }
+
+  .kpi-val {
+    font-size: 1.35rem;
+  }
+
+  .tq-meta,
+  .panel-head {
+    flex-wrap: wrap;
+    gap: 6px;
   }
 }
 </style>

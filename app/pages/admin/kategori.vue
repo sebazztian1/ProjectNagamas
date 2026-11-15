@@ -345,8 +345,15 @@ const confirmDelete = async (cat: CategoryItem) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  flex-wrap: wrap;
+  gap: 12px 16px;
   margin-bottom: 20px;
+}
+
+.search-input-box {
+  flex: 1 1 240px;
+  min-width: 0;
+  max-width: 340px;
 }
 
 .search-input-box input {
@@ -354,7 +361,8 @@ const confirmDelete = async (cat: CategoryItem) => {
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.88rem;
-  min-width: 260px;
+  width: 100%;
+  min-width: 0;
   outline: none;
 }
 
@@ -372,7 +380,7 @@ const confirmDelete = async (cat: CategoryItem) => {
   background: #ffffff;
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
-  overflow: hidden;
+  overflow-x: auto;
 }
 
 .admin-table {
@@ -625,6 +633,24 @@ const confirmDelete = async (cat: CategoryItem) => {
   .btn-add-category {
     width: 100%;
     text-align: center;
+  }
+  .search-input-box {
+    max-width: none;
+    width: 100%;
+  }
+  .modal-backdrop {
+    padding: 12px;
+  }
+  .modal-box {
+    max-height: 92dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+  .form-group input {
+    font-size: 1rem;
+  }
+  .modal-actions {
+    flex-wrap: wrap;
   }
 }
 </style>

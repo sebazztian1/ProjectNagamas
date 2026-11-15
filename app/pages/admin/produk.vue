@@ -5,6 +5,14 @@
         <h1 class="page-title">Produk</h1>
       </div>
       <div class="head-actions">
+        <button type="button" class="btn-export-csv" @click="openExportModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Export CSV</span>
+        </button>
         <button class="btn-refresh" @click="refresh()" :disabled="status === 'pending'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': status === 'pending' }">
             <path d="M21 2v6h-6"></path>
@@ -478,12 +486,34 @@
         </form>
       </div>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      title="Export Katalog & Valuasi Produk (.csv)"
+      subtitle="Ekspor daftar SKU produk, harga valas vs IDR, sisa stok/kuota, dan estimasi nilai aset persediaan berdasarkan timestamp pembuatan."
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      v-model:use-active-filters="exportUseActiveFilters"
+      :active-filter-label="activeFilterToggleLabel"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useToast } from '../../composables/useToast'
+import type { CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvTimestamp
+} from '../../utils/csvExport'
 
 definePageMeta({
   middleware: 'admin'
@@ -1082,6 +1112,118 @@ const saveProduct = async () => {
 const formatRupiah = (val: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
+
+// --- Accounting CSV Export ---
+const showExportModal = ref(false)
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+const exportUseActiveFilters = ref(false)
+
+const openExportModal = () => {
+  exportUseActiveFilters.value = hasActiveFilters.value
+  showExportModal.value = true
+}
+
+const activeFilterToggleLabel = computed(() => {
+  if (!hasActiveFilters.value) return ''
+  const parts: string[] = []
+  if (typeFilter.value !== 'all') {
+    parts.push(typeFilter.value === 'ready' ? 'Ready Stock' : 'Jastip PO')
+  }
+  if (categoryFilter.value !== 'all') {
+    const cat = categories.value.find(c => c.id === categoryFilter.value)
+    if (cat) parts.push(`Kategori: ${cat.name}`)
+  }
+  if (searchQuery.value.trim()) {
+    parts.push(`Cari: "${searchQuery.value.trim()}"`)
+  }
+  return `Terapkan filter aktif (${parts.join(' • ')})`
+})
+
+const exportSourceProducts = computed(() =>
+  exportUseActiveFilters.value && hasActiveFilters.value ? filteredProducts.value : products.value
+)
+
+const exportPreview = computed(() =>
+  filterByDateRange(exportSourceProducts.value, p => p.createdAt, exportStartDate.value, exportEndDate.value)
+)
+
+const getProductAvailableUnits = (p: AdminProduct) => {
+  const combos = p.variants?.combinations
+  if (Array.isArray(combos) && combos.length > 0) {
+    return combos.reduce((s: number, c: any) => s + Number(c.stock || 0), 0)
+  }
+  return p.productType === 'ready' ? Number(p.stockQuantity || 0) : Number(p.quota || 0)
+}
+
+const getProductAssetValuation = (p: AdminProduct) => {
+  const combos = p.variants?.combinations
+  if (Array.isArray(combos) && combos.length > 0) {
+    return combos.reduce((s: number, c: any) => s + Number(c.price || p.price || 0) * Number(c.stock || 0), 0)
+  }
+  return Number(p.price || 0) * getProductAvailableUnits(p)
+}
+
+const getVariantsCsvText = (p: AdminProduct) => {
+  const combos = p.variants?.combinations
+  if (!Array.isArray(combos) || combos.length === 0) return '-'
+  return combos.map((c: any) => `${c.label}: Rp${Number(c.price || p.price || 0)} (${Number(c.stock || 0)} unit)`).join('; ')
+}
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rows = exportPreview.value.items
+  const totalAsset = rows.reduce((s, p) => s + getProductAssetValuation(p), 0)
+  const totalUnits = rows.reduce((s, p) => s + getProductAvailableUnits(p), 0)
+  return [
+    { label: 'Potensi Nilai Persediaan/Kuota', value: formatRupiah(totalAsset), highlight: true },
+    { label: 'Total Unit Stok & Slot', value: `${totalUnits} unit` }
+  ]
+})
+
+const handleExportCsv = () => {
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  const totalAsset = items.reduce((s, p) => s + getProductAssetValuation(p), 0)
+  const totalUnits = items.reduce((s, p) => s + getProductAvailableUnits(p), 0)
+
+  const res = downloadCsvFile({
+    filenamePrefix: 'produk_valuasi_stok',
+    reportTitle: 'Laporan Katalog & Valuasi Stok Produk',
+    rows: items,
+    minTimestamp,
+    maxTimestamp,
+    filterStartDate: exportStartDate.value,
+    filterEndDate: exportEndDate.value,
+    summaryItems: [
+      { label: 'Total Unit Stok / Kuota Tersisa', value: totalUnits },
+      { label: 'Total Potensi Nilai Aset (IDR)', value: totalAsset }
+    ],
+    columns: [
+      { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+      { header: 'Timestamp Update (WIB)', format: r => formatCsvTimestamp(r.updatedAt) },
+      { header: 'ID SKU', key: 'id' },
+      { header: 'Nama Produk', key: 'name' },
+      { header: 'Slug', key: 'slug' },
+      { header: 'Kategori', key: 'categoryName' },
+      { header: 'Tipe Produk', format: r => (r.productType === 'ready' ? 'Ready Stock' : 'Jastip PO') },
+      { header: 'Trip Terkait', format: r => r.tripTitle || '-' },
+      { header: 'Negara Asal', format: r => r.tripCountry || '-' },
+      { header: 'Toko Sumber', format: r => r.sourceStore || '-' },
+      { header: 'Mata Uang Asli', format: r => r.originalCurrency || 'IDR' },
+      { header: 'Harga Beli Valas', format: r => (r.originalPrice !== null ? Number(r.originalPrice) : '') },
+      { header: 'Harga Jual Utama (IDR)', format: r => Number(r.price || 0) },
+      { header: 'Stok / Kuota Tersedia', format: r => getProductAvailableUnits(r) },
+      { header: 'Potensi Nilai Stok (IDR)', format: r => getProductAssetValuation(r) },
+      { header: 'Status Stok', format: r => (r.stockStatus === 'in_stock' ? 'Tersedia' : 'Habis') },
+      { header: 'Max Qty/Order', format: r => Number(r.maxQtyPerOrder || 0) },
+      { header: 'Rincian Variasi', format: r => getVariantsCsvText(r) },
+      { header: 'Status Aktif', format: r => (r.isActive ? 'Aktif' : 'Nonaktif') }
+    ]
+  })
+  showToast('CSV Berhasil Diekspor', `${res.rowCount} SKU produk diunduh (${res.filename}).`, 'success')
+  showExportModal.value = false
+}
 </script>
 
 <style scoped>
@@ -1174,7 +1316,8 @@ const formatRupiah = (val: number) => {
   color: var(--color-text, #2B2116);
   font-size: 0.85rem;
   font-weight: 600;
-  min-width: 190px;
+  min-width: min(100%, 190px);
+  max-width: 100%;
   min-height: 38px;
   outline: none;
   cursor: pointer;
@@ -1186,12 +1329,18 @@ const formatRupiah = (val: number) => {
   box-shadow: 0 0 0 3px rgba(216, 185, 120, 0.25);
 }
 
+.search-input-box {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .search-input-box input {
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
   width: 240px;
+  max-width: 100%;
   min-height: 38px;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
@@ -1433,8 +1582,9 @@ const formatRupiah = (val: number) => {
   width: 100%;
   max-width: 760px;
   padding: 24px;
-  max-height: 90vh;
+  max-height: 92dvh;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .modal-head {
@@ -1462,7 +1612,7 @@ const formatRupiah = (val: number) => {
 
 .form-row-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
 }
 
@@ -1470,6 +1620,7 @@ const formatRupiah = (val: number) => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .f-group label {
@@ -1484,12 +1635,15 @@ const formatRupiah = (val: number) => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
   outline: none;
+  width: 100%;
+  min-width: 0;
 }
 
 .gallery-label-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -1510,8 +1664,9 @@ const formatRupiah = (val: number) => {
 }
 
 .image-input-wrap input {
-  flex: 1;
-  min-width: 220px;
+  flex: 1 1 200px;
+  min-width: 0;
+  width: 100%;
 }
 
 .btn-add-img-url {
@@ -1711,6 +1866,29 @@ const formatRupiah = (val: number) => {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-export-csv {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #FAF5EC;
+  border: 1px solid #D8B978;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6F5530;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-export-csv:hover {
+  background: #F4E9D2;
+  border-color: var(--color-primary, #8C6D3F);
+  color: #2B2116;
 }
 
 .btn-refresh {
@@ -2217,12 +2395,39 @@ const formatRupiah = (val: number) => {
 }
 
 @media (max-width: 640px) {
+  .head-actions {
+    width: 100%;
+  }
+  .btn-export-csv,
+  .btn-refresh,
+  .btn-manage-cat {
+    flex: 1;
+    justify-content: center;
+    text-align: center;
+  }
+  .btn-add-product {
+    width: 100%;
+    text-align: center;
+  }
   .form-row-2 {
     grid-template-columns: 1fr;
     gap: 10px;
   }
+  .modal-overlay {
+    padding: 10px;
+  }
   .modal-box {
     padding: 16px;
+  }
+  .f-group input,
+  .f-group select,
+  .f-group textarea {
+    font-size: 1rem;
+  }
+  .stock-num-input,
+  .sku-txt-input {
+    width: 100%;
+    min-width: 72px;
   }
   .type-filter-bar {
     flex-direction: column;

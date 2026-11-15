@@ -539,7 +539,8 @@ const handleClearRead = async () => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 8px 12px;
   margin-bottom: 6px;
 }
 
@@ -676,5 +677,26 @@ const handleClearRead = async () => {
   font-size: 0.86rem;
   max-width: 420px;
   margin: 0 auto;
+}
+
+.notif-title,
+.notif-text {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .notifications-page {
+    padding: 18px 12px 48px;
+  }
+
+  .notif-item {
+    padding: 14px 12px;
+    gap: 12px;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
 </style>

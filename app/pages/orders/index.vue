@@ -340,6 +340,8 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .item-details h4 {
@@ -398,6 +400,7 @@ const formatRupiah = (val: number) => {
 .btn-actions {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 10px;
 }
 
@@ -452,5 +455,20 @@ const formatRupiah = (val: number) => {
   border-radius: 8px;
   font-size: 0.85rem;
   font-weight: 700;
+}
+
+@media (max-width: 600px) {
+  .orders-page {
+    padding: 18px 12px 48px;
+  }
+
+  .order-card {
+    padding: 14px;
+  }
+
+  .btn-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
 }
 </style>

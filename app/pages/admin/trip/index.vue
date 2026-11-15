@@ -3,6 +3,14 @@
     <div class="page-head">
       <h1 class="page-title">Trip Jastip</h1>
       <div class="head-actions">
+        <button type="button" class="btn-export-csv" @click="openExportModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Export CSV</span>
+        </button>
         <button class="btn-refresh" @click="refresh()" :disabled="pending">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
             <path d="M21 2v6h-6"></path>
@@ -140,118 +148,153 @@
     </div>
 
     <!-- Modal Form Create / Edit Trip -->
-    <div v-if="showModal" class="modal-backdrop" @click.self="showModal = false">
+    <div
+      v-if="showModal"
+      class="modal-backdrop"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="trip-modal-title"
+      @click.self="closeModal"
+    >
       <div class="modal-box">
         <div class="modal-head">
-          <h3>{{ isEditing ? 'Edit Jadwal Trip Jastip' : 'Buat Jadwal Trip Jastip Baru' }}</h3>
-          <button class="close-x" @click="showModal = false">&times;</button>
+          <h3 id="trip-modal-title">{{ isEditing ? 'Edit Jadwal Trip Jastip' : 'Buat Jadwal Trip Jastip Baru' }}</h3>
+          <button type="button" class="close-x" aria-label="Tutup modal" @click="closeModal">&times;</button>
         </div>
 
         <form @submit.prevent="saveTrip" class="trip-form">
           <div class="f-group">
-            <label>Judul Trip:</label>
-            <input v-model="form.title" type="text" placeholder="Contoh: Bangkok Mega Fashion & Snack Batch 5" required />
+            <label for="trip-title">Judul Trip <span class="req-mark">*</span></label>
+            <input
+              id="trip-title"
+              ref="tripTitleInputRef"
+              v-model="form.title"
+              type="text"
+              placeholder="Contoh: Bangkok Mega Fashion & Snack Batch 5"
+              required
+            />
           </div>
 
           <!-- Country with typeable dropdown & flag preview -->
           <div class="f-row-2">
             <div class="f-group" ref="countryDropdownRef">
-              <label>
-                Negara Tujuan: 
-                <span class="flag-preview-badge" v-if="autoFlag">{{ autoFlag }}</span>
+              <label for="trip-country">
+                <span>Negara Tujuan <span class="req-mark">*</span></span>
+                <span class="flag-preview-badge" v-if="autoFlag" aria-hidden="true">{{ autoFlag }}</span>
               </label>
 
               <div class="country-combobox-wrap">
                 <div class="combobox-input-inner">
-                  <span class="combobox-flag-prefix">{{ autoFlag || '🌐' }}</span>
-                  <input 
-                    v-model="form.country" 
-                    type="text" 
-                    placeholder="Pilih atau ketik negara..." 
-                    required 
+                  <span class="combobox-flag-prefix" aria-hidden="true">{{ autoFlag || '🌐' }}</span>
+                  <input
+                    id="trip-country"
+                    v-model="form.country"
+                    type="text"
+                    role="combobox"
+                    :aria-expanded="isCountryDropdownOpen ? 'true' : 'false'"
+                    aria-controls="trip-country-listbox"
+                    aria-autocomplete="list"
+                    placeholder="Pilih atau ketik negara..."
+                    required
                     @focus="isCountryDropdownOpen = true"
                     @input="handleCountryInput"
                     @keydown.down.prevent="navigateDropdown(1)"
                     @keydown.up.prevent="navigateDropdown(-1)"
                     @keydown.enter.prevent="selectHighlightedCountry"
-                    @keydown.esc="isCountryDropdownOpen = false"
+                    @keydown.esc.stop="isCountryDropdownOpen = false"
                     autocomplete="off"
                   />
-                  <button 
-                    type="button" 
+                  <button
+                    type="button"
                     class="combobox-toggle-btn"
-                    @click.stop="isCountryDropdownOpen = !isCountryDropdownOpen"
-                    tabindex="-1"
+                    :aria-expanded="isCountryDropdownOpen ? 'true' : 'false'"
+                    aria-controls="trip-country-listbox"
+                    aria-label="Buka pilihan negara"
                     title="Buka pilihan negara"
+                    @click.stop="isCountryDropdownOpen = !isCountryDropdownOpen"
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                       <polyline points="6 9 12 15 18 9"></polyline>
                     </svg>
                   </button>
                 </div>
 
                 <!-- Floating Dropdown List with World Grouping -->
-                <div v-if="isCountryDropdownOpen" class="country-dropdown-menu">
+                <div v-if="isCountryDropdownOpen" id="trip-country-listbox" role="listbox" aria-label="Daftar negara tujuan" class="country-dropdown-menu">
                   <!-- Search Results Mode -->
                   <template v-if="isSearching">
                     <div v-if="searchResults.length > 0" class="dropdown-group-title">
                       Hasil Pencarian ({{ searchResults.length }} negara)
                     </div>
-                    <div 
-                      v-for="(c, idx) in searchResults" 
-                      :key="'res-' + c.name" 
+                    <button
+                      v-for="(c, idx) in searchResults"
+                      :key="'res-' + c.name"
+                      type="button"
+                      role="option"
+                      :aria-selected="form.country.toLowerCase() === c.name.toLowerCase() ? 'true' : 'false'"
                       class="country-dropdown-item"
                       :class="{ 'is-selected': form.country.toLowerCase() === c.name.toLowerCase(), 'is-highlighted': highlightedIndex === idx }"
                       @click="chooseCountryFromDropdown(c)"
                     >
-                      <span class="item-flag">{{ c.flag }}</span>
+                      <span class="item-flag" aria-hidden="true">{{ c.flag }}</span>
                       <span class="item-name">{{ c.name }}</span>
                       <span class="item-curr">{{ c.currency }}</span>
-                    </div>
+                    </button>
 
-                    <div v-if="searchResults.length === 0" class="country-dropdown-custom" @click="isCountryDropdownOpen = false">
+                    <button
+                      v-if="searchResults.length === 0"
+                      type="button"
+                      class="country-dropdown-custom"
+                      @click="isCountryDropdownOpen = false"
+                    >
                       <span>Gunakan <strong>"{{ form.country.trim() }}"</strong> (Negara Kustom)</span>
-                      <span class="item-flag">{{ autoFlag }}</span>
-                    </div>
+                      <span class="item-flag" aria-hidden="true">{{ autoFlag }}</span>
+                    </button>
                   </template>
 
                   <!-- Default Grouped Mode (Not searching) -->
                   <template v-else>
                     <div class="dropdown-group-title">⭐ Destinasi Populer Jastip</div>
-                    <div 
-                      v-for="(c, idx) in POPULAR_JASTIP_COUNTRIES" 
-                      :key="'pop-' + c.name" 
+                    <button
+                      v-for="(c, idx) in POPULAR_JASTIP_COUNTRIES"
+                      :key="'pop-' + c.name"
+                      type="button"
+                      role="option"
+                      :aria-selected="form.country.toLowerCase() === c.name.toLowerCase() ? 'true' : 'false'"
                       class="country-dropdown-item"
                       :class="{ 'is-selected': form.country.toLowerCase() === c.name.toLowerCase(), 'is-highlighted': highlightedIndex === idx }"
                       @click="chooseCountryFromDropdown(c)"
                     >
-                      <span class="item-flag">{{ c.flag }}</span>
+                      <span class="item-flag" aria-hidden="true">{{ c.flag }}</span>
                       <span class="item-name">{{ c.name }}</span>
                       <span class="item-curr">{{ c.currency }}</span>
-                    </div>
+                    </button>
 
                     <div class="dropdown-group-title">🌍 Seluruh Negara Dunia (A - Z)</div>
-                    <div 
-                      v-for="c in ALL_WORLD_COUNTRIES" 
-                      :key="'world-' + c.name" 
+                    <button
+                      v-for="c in ALL_WORLD_COUNTRIES"
+                      :key="'world-' + c.name"
+                      type="button"
+                      role="option"
+                      :aria-selected="form.country.toLowerCase() === c.name.toLowerCase() ? 'true' : 'false'"
                       class="country-dropdown-item"
                       :class="{ 'is-selected': form.country.toLowerCase() === c.name.toLowerCase() }"
                       @click="chooseCountryFromDropdown(c)"
                     >
-                      <span class="item-flag">{{ c.flag }}</span>
+                      <span class="item-flag" aria-hidden="true">{{ c.flag }}</span>
                       <span class="item-name">{{ c.name }}</span>
                       <span class="item-curr">{{ c.currency }}</span>
-                    </div>
+                    </button>
                   </template>
                 </div>
               </div>
 
               <div class="country-quick-chips">
                 <span class="chips-label">Populer:</span>
-                <button 
-                  type="button" 
-                  v-for="c in quickCountries" 
-                  :key="c.name" 
+                <button
+                  type="button"
+                  v-for="c in quickCountries"
+                  :key="c.name"
                   class="chip-btn"
                   @click="chooseCountryFromDropdown(c)"
                 >
@@ -261,61 +304,60 @@
             </div>
 
             <div class="f-group">
-              <label>Kota / Area Belanja Utama:</label>
-              <input v-model="form.cityOrArea" type="text" placeholder="Tokyo (Ginza, Donki, Shinjuku)" required />
+              <label for="trip-city">Kota / Area Belanja Utama <span class="req-mark">*</span></label>
+              <input id="trip-city" v-model="form.cityOrArea" type="text" placeholder="Tokyo (Ginza, Donki, Shinjuku)" required />
             </div>
           </div>
 
           <div class="f-row-2">
             <div class="f-group">
-              <label>Tanggal Tutup PO (Cut-off):</label>
-              <input v-model="form.closeDate" type="date" required />
+              <label for="trip-close-date">Tanggal Tutup PO (Cut-off) <span class="req-mark">*</span></label>
+              <input id="trip-close-date" v-model="form.closeDate" type="date" required />
             </div>
             <div class="f-group">
-              <label>Estimasi Barang Tiba di Indonesia:</label>
-              <input v-model="form.estimatedArrivalDate" type="date" required />
+              <label for="trip-arrival-date">Estimasi Barang Tiba di Indonesia <span class="req-mark">*</span></label>
+              <input id="trip-arrival-date" v-model="form.estimatedArrivalDate" type="date" required />
             </div>
           </div>
 
           <div class="f-row-2">
             <div class="f-group">
-              <label>Tanggal Keberangkatan (Opsional):</label>
-              <input v-model="form.departureDate" type="date" />
+              <label for="trip-departure-date">Tanggal Keberangkatan (Opsional)</label>
+              <input id="trip-departure-date" v-model="form.departureDate" type="date" />
             </div>
             <div class="f-group">
-              <label>Total Slot Kuota Koper (pcs/slot):</label>
-              <input v-model.number="form.quotaTotal" type="number" min="1" placeholder="50" required />
+              <label for="trip-quota">Total Slot Kuota Koper (pcs/slot) <span class="req-mark">*</span></label>
+              <input id="trip-quota" v-model.number="form.quotaTotal" type="number" min="1" inputmode="numeric" placeholder="50" required />
             </div>
           </div>
 
           <div class="f-row-3">
             <div class="f-group">
-              <label>Mata Uang:</label>
-              <input v-model="form.currency" type="text" placeholder="JPY / KRW / THB" maxlength="3" required />
+              <label for="trip-currency">Mata Uang <span class="req-mark">*</span></label>
+              <input id="trip-currency" v-model="form.currency" type="text" placeholder="JPY / KRW / THB" maxlength="3" required />
             </div>
             <div class="f-group">
-              <label>Kurs Valuta ke IDR:</label>
-              <input v-model.number="form.exchangeRate" type="number" placeholder="108" required />
+              <label for="trip-rate">Kurs Valuta ke IDR <span class="req-mark">*</span></label>
+              <input id="trip-rate" v-model.number="form.exchangeRate" type="number" min="1" inputmode="numeric" placeholder="108" required />
             </div>
             <div class="f-group">
-              <label>Default Fee Jastip (Rp):</label>
-              <input v-model.number="form.feeValue" type="number" placeholder="35000" required />
+              <label for="trip-fee">Default Fee Jastip (Rp) <span class="req-mark">*</span></label>
+              <input id="trip-fee" v-model.number="form.feeValue" type="number" min="0" inputmode="numeric" placeholder="35000" required />
             </div>
           </div>
 
-
           <div class="f-group">
-            <label>Deskripsi & Ringkasan Trip:</label>
-            <textarea v-model="form.description" rows="2" placeholder="Barang incaran, toko tujuan, catatan belanja..."></textarea>
+            <label for="trip-desc">Deskripsi &amp; Ringkasan Trip</label>
+            <textarea id="trip-desc" v-model="form.description" rows="3" placeholder="Barang incaran, toko tujuan, catatan belanja..."></textarea>
           </div>
 
           <div class="f-group">
-            <label>Syarat & Ketentuan Khusus Trip:</label>
-            <textarea v-model="form.terms" rows="2" placeholder="Ketentuan DP, refund, bagasi..."></textarea>
+            <label for="trip-terms">Syarat &amp; Ketentuan Khusus Trip</label>
+            <textarea id="trip-terms" v-model="form.terms" rows="3" placeholder="Ketentuan DP, refund, bagasi..."></textarea>
           </div>
 
           <div class="modal-foot">
-            <button type="button" class="btn-cancel" @click="showModal = false">Batal</button>
+            <button type="button" class="btn-cancel" @click="closeModal">Batal</button>
             <button type="submit" class="btn-save" :disabled="isSaving">
               {{ isSaving ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan Trip' : 'Simpan & Buka PO') }}
             </button>
@@ -323,13 +365,36 @@
         </form>
       </div>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      title="Export Daftar Trip & Kurs (.csv)"
+      subtitle="Ekspor laporan batch trip, kurs valas, kuota terisi, dan nilai pesanan berdasarkan rentang timestamp pembuatan trip."
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      v-model:use-active-filters="exportUseActiveFilters"
+      :active-filter-label="activeFilterToggleLabel"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useToast } from '../../../composables/useToast'
 import type { ApiTrip } from '../../../composables/useTrips'
+import type { CsvPreviewMetric } from '../../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvDateOnly,
+  formatCsvTimestamp
+} from '../../../utils/csvExport'
 import { getCountryFlag, getCountryCurrency, getCountryDefaultRate, POPULAR_JASTIP_COUNTRIES, ALL_WORLD_COUNTRIES } from '../../../utils/countryFlags'
 
 definePageMeta({
@@ -356,6 +421,7 @@ const showModal = ref(false)
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
 const isSaving = ref(false)
+const tripTitleInputRef = ref<HTMLInputElement | null>(null)
 
 // Country Combobox State
 const isCountryDropdownOpen = ref(false)
@@ -445,15 +511,44 @@ const handleDocumentClick = (e: MouseEvent) => {
   }
 }
 
+const closeModal = () => {
+  isCountryDropdownOpen.value = false
+  showModal.value = false
+}
+
+const handleGlobalKeydown = (e: KeyboardEvent) => {
+  if (e.key === 'Escape' && showModal.value) {
+    if (isCountryDropdownOpen.value) {
+      isCountryDropdownOpen.value = false
+    } else {
+      closeModal()
+    }
+  }
+}
+
+watch(showModal, (open) => {
+  if (typeof document !== 'undefined') {
+    document.body.style.overflow = open ? 'hidden' : ''
+  }
+  if (open) {
+    nextTick(() => {
+      tripTitleInputRef.value?.focus()
+    })
+  }
+})
+
 onMounted(() => {
   if (typeof document !== 'undefined') {
     document.addEventListener('click', handleDocumentClick)
+    document.addEventListener('keydown', handleGlobalKeydown)
   }
 })
 
 onBeforeUnmount(() => {
   if (typeof document !== 'undefined') {
     document.removeEventListener('click', handleDocumentClick)
+    document.removeEventListener('keydown', handleGlobalKeydown)
+    document.body.style.overflow = ''
   }
 })
 
@@ -574,6 +669,81 @@ const formatStatusLabel = (s: string) => {
   }
   return map[s] || s
 }
+
+// --- Accounting CSV Export ---
+const showExportModal = ref(false)
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+const exportUseActiveFilters = ref(false)
+
+const openExportModal = () => {
+  exportUseActiveFilters.value = activeStatus.value !== 'all'
+  showExportModal.value = true
+}
+
+const activeFilterToggleLabel = computed(() =>
+  activeStatus.value !== 'all' ? `Hanya ekspor status "${formatStatusLabel(activeStatus.value)}"` : ''
+)
+
+const exportSourceTrips = computed(() =>
+  exportUseActiveFilters.value && activeStatus.value !== 'all' ? filteredTrips.value : allTrips.value
+)
+
+const exportPreview = computed(() =>
+  filterByDateRange(exportSourceTrips.value, t => t.createdAt, exportStartDate.value, exportEndDate.value)
+)
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rows = exportPreview.value.items
+  const totalOrdersAmt = rows.reduce((s, t) => s + Number(t.totalOrdersAmount || 0), 0)
+  const totalFilled = rows.reduce((s, t) => s + Number(t.quotaFilled || 0), 0)
+  return [
+    { label: 'Akumulasi Nilai Pesanan', value: `Rp ${totalOrdersAmt.toLocaleString('id-ID')}`, highlight: true },
+    { label: 'Total Kuota Terisi', value: `${totalFilled} pcs` }
+  ]
+})
+
+const handleExportCsv = () => {
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  const totalOrdersAmt = items.reduce((s, t) => s + Number(t.totalOrdersAmount || 0), 0)
+  const res = downloadCsvFile({
+    filenamePrefix: 'trip_jastip_nagamas',
+    reportTitle: 'Laporan Batch Trip Jastip & Kurs',
+    rows: items,
+    minTimestamp,
+    maxTimestamp,
+    filterStartDate: exportStartDate.value,
+    filterEndDate: exportEndDate.value,
+    summaryItems: [
+      { label: 'Total Nilai Pesanan Trip (IDR)', value: totalOrdersAmt }
+    ],
+    columns: [
+      { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+      { header: 'ID Trip', key: 'id' },
+      { header: 'Nama Trip', key: 'title' },
+      { header: 'Negara', key: 'country' },
+      { header: 'Kota / Area', format: r => r.cityOrArea || '-' },
+      { header: 'Status', format: r => formatStatusLabel(r.status) },
+      { header: 'Mata Uang', key: 'currency' },
+      { header: 'Kurs IDR', format: r => Number(r.exchangeRate || 0) },
+      { header: 'Tipe Fee', key: 'feeType' },
+      { header: 'Nilai Fee (IDR)', format: r => Number(r.feeValue || 0) },
+      { header: 'Kuota Terisi', format: r => Number(r.quotaFilled || 0) },
+      { header: 'Kuota Total', format: r => Number(r.quotaTotal || 0) },
+      { header: 'Jumlah Produk', format: r => Number(r.productsCount || 0) },
+      { header: 'Jumlah Pesanan', format: r => Number(r.ordersCount || 0) },
+      { header: 'Total Nilai Order (IDR)', format: r => Number(r.totalOrdersAmount || 0) },
+      { header: 'Tgl Buka PO', format: r => formatCsvDateOnly(r.openDate) },
+      { header: 'Tgl Tutup PO', format: r => formatCsvDateOnly(r.closeDate) },
+      { header: 'Tgl Berangkat', format: r => formatCsvDateOnly(r.departureDate) },
+      { header: 'Estimasi Tiba', format: r => formatCsvDateOnly(r.estimatedArrivalDate) }
+    ]
+  })
+  showToast('CSV Berhasil Diekspor', `${res.rowCount} data trip diunduh (${res.filename}).`, 'success')
+  showExportModal.value = false
+}
 </script>
 
 <style scoped>
@@ -581,6 +751,15 @@ const formatStatusLabel = (s: string) => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  max-width: 100%;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.admin-trips-page *,
+.admin-trips-page *::before,
+.admin-trips-page *::after {
+  box-sizing: border-box;
 }
 
 .page-head {
@@ -610,6 +789,7 @@ const formatStatusLabel = (s: string) => {
   font-size: 0.85rem;
   font-weight: 700;
   padding: 10px 18px;
+  min-height: 40px;
   border-radius: 8px;
   cursor: pointer;
   transition: background 0.2s;
@@ -623,6 +803,30 @@ const formatStatusLabel = (s: string) => {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-export-csv {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #FAF5EC;
+  border: 1px solid #D8B978;
+  border-radius: 8px;
+  padding: 9px 14px;
+  min-height: 40px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6F5530;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-export-csv:hover {
+  background: #F4E9D2;
+  border-color: var(--color-primary, #8C6D3F);
+  color: #2B2116;
 }
 
 .btn-refresh {
@@ -633,6 +837,7 @@ const formatStatusLabel = (s: string) => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 8px;
   padding: 9px 14px;
+  min-height: 40px;
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--color-primary, #8C6D3F);
@@ -664,14 +869,15 @@ const formatStatusLabel = (s: string) => {
   gap: 8px;
   border-bottom: 1px solid rgba(43, 33, 22, 0.1);
   padding-bottom: 12px;
-  overflow-x: auto;
+  flex-wrap: wrap;
 }
 
 .tab-btn {
   background: transparent;
   border: 1px solid rgba(43, 33, 22, 0.15);
   border-radius: 20px;
-  padding: 6px 16px;
+  padding: 7px 16px;
+  min-height: 36px;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--color-text-muted, #7A6A55);
@@ -696,7 +902,7 @@ const formatStatusLabel = (s: string) => {
 
 .trip-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
   gap: 22px;
 }
 
@@ -925,6 +1131,7 @@ const formatStatusLabel = (s: string) => {
 .btn-sub-row {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .btn-quick-add-prod {
@@ -1003,12 +1210,13 @@ const formatStatusLabel = (s: string) => {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(24, 18, 12, 0.56);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: 16px;
+  overscroll-behavior: contain;
 }
 
 .modal-box {
@@ -1016,17 +1224,23 @@ const formatStatusLabel = (s: string) => {
   border-radius: 14px;
   width: 100%;
   max-width: 650px;
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  max-height: 90dvh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, 0.24);
+  overscroll-behavior: contain;
 }
 
 .modal-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 12px;
   padding: 16px 20px;
-  border-bottom: 1px solid rgba(43, 33, 22, 0.1);
+  border-bottom: 1px solid rgba(43, 33, 22, 0.12);
+  background: #ffffff;
+  flex-shrink: 0;
 }
 
 .modal-head h3 {
@@ -1034,77 +1248,132 @@ const formatStatusLabel = (s: string) => {
   font-weight: 800;
   margin: 0;
   color: var(--color-text, #2B2116);
+  line-height: 1.3;
 }
 
 .close-x {
-  background: transparent;
-  border: none;
-  font-size: 1.5rem;
+  background: #FAF8F4;
+  border: 1px solid rgba(43, 33, 22, 0.14);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1.45rem;
+  line-height: 1;
   cursor: pointer;
-  color: var(--color-text-muted, #7A6A55);
+  color: #5C4930;
+  transition: background 0.15s, color 0.15s;
+}
+
+.close-x:hover {
+  background: #EFE1C6;
+  color: #2B2116;
 }
 
 .trip-form {
-  padding: 20px;
+  flex: 1;
+  min-height: 0;
+  padding: 18px 20px 20px;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .f-group {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+  width: 100%;
 }
 
 .f-group label {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 700;
   color: var(--color-text, #2B2116);
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-wrap: wrap;
+}
+
+.req-mark {
+  color: #B91C1C;
+  font-weight: 800;
 }
 
 .flag-preview-badge {
   font-size: 1.1rem;
 }
 
-.f-group input, .f-group textarea, .f-group select {
-  padding: 9px 12px;
-  border: 1px solid rgba(43, 33, 22, 0.2);
+.f-group input,
+.f-group textarea,
+.f-group select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(43, 33, 22, 0.24);
   border-radius: 8px;
-  font-size: 0.86rem;
+  font-size: 0.94rem;
   font-family: inherit;
   color: var(--color-text, #2B2116);
+  background: #ffffff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.f-group textarea {
+  min-height: 84px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.f-group input:focus,
+.f-group textarea:focus,
+.f-group select:focus {
+  outline: none;
+  border-color: #8C6D3F;
+  box-shadow: 0 0 0 3px rgba(140, 109, 63, 0.18);
 }
 
 .f-row-2 {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 12px;
+  min-width: 0;
 }
 
 .f-row-3 {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
+  min-width: 0;
 }
 
 .country-combobox-wrap {
   position: relative;
   width: 100%;
+  min-width: 0;
 }
 
 .combobox-input-inner {
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .combobox-flag-prefix {
   position: absolute;
-  left: 10px;
+  left: 12px;
   font-size: 1.15rem;
   pointer-events: none;
   z-index: 2;
@@ -1113,30 +1382,32 @@ const formatStatusLabel = (s: string) => {
 
 .combobox-input-inner input {
   width: 100%;
-  padding-left: 38px !important;
-  padding-right: 36px !important;
+  padding-left: 40px !important;
+  padding-right: 44px !important;
 }
 
 .combobox-toggle-btn {
   position: absolute;
-  right: 6px;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
   border: none;
-  color: #7A6A55;
+  color: #5C4930;
   cursor: pointer;
+  min-width: 36px;
+  min-height: 36px;
   padding: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
+  border-radius: 6px;
   transition: all 0.15s;
 }
 
 .combobox-toggle-btn:hover {
   color: #2B2116;
-  background: rgba(43, 33, 22, 0.06);
+  background: rgba(43, 33, 22, 0.08);
 }
 
 .country-dropdown-menu {
@@ -1144,22 +1415,25 @@ const formatStatusLabel = (s: string) => {
   top: calc(100% + 4px);
   left: 0;
   right: 0;
+  max-width: 100%;
   background: #ffffff;
-  border: 1px solid rgba(43, 33, 22, 0.15);
+  border: 1px solid rgba(43, 33, 22, 0.18);
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(43, 33, 22, 0.15);
+  box-shadow: 0 10px 25px rgba(43, 33, 22, 0.18);
   max-height: 240px;
   overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
   z-index: 100;
   padding: 4px;
 }
 
 .dropdown-group-title {
   padding: 6px 10px 4px;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.4px;
   color: #8C6D3F;
   background: #FAF8F4;
   border-radius: 5px;
@@ -1171,13 +1445,19 @@ const formatStatusLabel = (s: string) => {
 }
 
 .country-dropdown-item {
+  width: 100%;
+  background: transparent;
+  border: none;
+  font-family: inherit;
+  text-align: left;
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 9px 12px;
+  min-height: 40px;
   border-radius: 6px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   color: #2B2116;
   transition: background 0.12s;
 }
@@ -1189,7 +1469,7 @@ const formatStatusLabel = (s: string) => {
 }
 
 .country-dropdown-item.is-selected {
-  background: rgba(140, 109, 63, 0.1);
+  background: rgba(140, 109, 63, 0.12);
   font-weight: 700;
   color: #8C6D3F;
 }
@@ -1197,31 +1477,42 @@ const formatStatusLabel = (s: string) => {
 .item-flag {
   font-size: 1.2rem;
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .item-name {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-weight: 600;
 }
 
 .item-curr {
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 700;
-  background: rgba(43, 33, 22, 0.06);
+  background: rgba(43, 33, 22, 0.08);
   padding: 2px 6px;
   border-radius: 4px;
-  color: #7A6A55;
+  color: #5C4930;
+  flex-shrink: 0;
 }
 
 .country-dropdown-custom {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-top: 1px dashed rgba(43, 33, 22, 0.12);
+  font-family: inherit;
+  text-align: left;
   padding: 10px 12px;
-  border-top: 1px dashed rgba(43, 33, 22, 0.1);
+  min-height: 44px;
   margin-top: 4px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.8rem;
-  color: #7A6A55;
+  gap: 8px;
+  font-size: 0.84rem;
+  color: #5C4930;
   cursor: pointer;
   border-radius: 6px;
 }
@@ -1232,9 +1523,9 @@ const formatStatusLabel = (s: string) => {
 }
 
 .chips-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #7A6A55;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #5C4930;
   align-self: center;
 }
 
@@ -1242,15 +1533,17 @@ const formatStatusLabel = (s: string) => {
   display: flex;
   gap: 6px;
   flex-wrap: wrap;
-  margin-top: 4px;
+  margin-top: 6px;
 }
 
 .chip-btn {
   background: var(--color-surface, #FBF9F5);
-  border: 1px solid rgba(43, 33, 22, 0.15);
-  padding: 3px 8px;
-  border-radius: 12px;
-  font-size: 0.74rem;
+  border: 1px solid rgba(43, 33, 22, 0.2);
+  color: #2B2116;
+  padding: 6px 11px;
+  min-height: 36px;
+  border-radius: 999px;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
@@ -1258,43 +1551,129 @@ const formatStatusLabel = (s: string) => {
 
 .chip-btn:hover {
   background: var(--color-primary, #8C6D3F);
+  border-color: var(--color-primary, #8C6D3F);
   color: #ffffff;
 }
-
 
 .modal-foot {
   display: flex;
   justify-content: flex-end;
   gap: 10px;
-  margin-top: 10px;
+  margin-top: 4px;
   padding-top: 14px;
   border-top: 1px solid rgba(43, 33, 22, 0.1);
+  background: #ffffff;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .btn-cancel {
-  background: transparent;
-  border: 1px solid rgba(43, 33, 22, 0.2);
-  padding: 8px 16px;
+  background: #ffffff;
+  border: 1px solid rgba(43, 33, 22, 0.25);
+  color: #2B2116;
+  padding: 10px 18px;
+  min-height: 44px;
   border-radius: 8px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 700;
   cursor: pointer;
+}
+
+.btn-cancel:hover {
+  background: #FAF8F4;
 }
 
 .btn-save {
   background: var(--color-primary, #8C6D3F);
   color: #ffffff;
   border: none;
-  padding: 8px 18px;
+  padding: 10px 20px;
+  min-height: 44px;
   border-radius: 8px;
-  font-size: 0.85rem;
+  font-size: 0.88rem;
   font-weight: 700;
   cursor: pointer;
 }
 
-@media (max-width: 600px) {
-  .f-row-2, .f-row-3 {
+.btn-save:hover:not(:disabled) {
+  background: #6F5530;
+}
+
+.btn-save:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-create-trip:focus-visible,
+.btn-refresh:focus-visible,
+.tab-btn:focus-visible,
+.close-x:focus-visible,
+.combobox-toggle-btn:focus-visible,
+.country-dropdown-item:focus-visible,
+.country-dropdown-custom:focus-visible,
+.chip-btn:focus-visible,
+.btn-cancel:focus-visible,
+.btn-save:focus-visible,
+.btn-detail-trip:focus-visible,
+.btn-quick-add-prod:focus-visible,
+.btn-edit-trip:focus-visible,
+.btn-close-po:focus-visible,
+.btn-delete-trip:focus-visible {
+  outline: 2px solid #8C6D3F;
+  outline-offset: 2px;
+}
+
+@media (max-width: 720px) {
+  .f-row-2,
+  .f-row-3 {
     grid-template-columns: 1fr;
+  }
+
+  .f-group input,
+  .f-group textarea,
+  .f-group select {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .modal-backdrop {
+    padding: 8px;
+  }
+
+  .modal-box {
+    max-height: 92dvh;
+    border-radius: 12px;
+  }
+
+  .modal-head {
+    padding: 12px 14px;
+  }
+
+  .modal-head h3 {
+    font-size: 1.02rem;
+  }
+
+  .trip-form {
+    padding: 14px;
+    gap: 14px;
+  }
+
+  .modal-foot {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .modal-foot .btn-cancel,
+  .modal-foot .btn-save {
+    width: 100%;
+  }
+}
+
+@media (max-height: 540px) {
+  .modal-foot {
+    position: static;
   }
 }
 </style>

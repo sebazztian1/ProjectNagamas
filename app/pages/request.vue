@@ -1235,8 +1235,8 @@ const formatDate = (dateStr: string) => {
 
 .image-modal-close {
   position: absolute;
-  top: -40px;
-  right: -10px;
+  top: -36px;
+  right: 0;
   background: none;
   border: none;
   color: #ffffff;
@@ -1245,9 +1245,40 @@ const formatDate = (dateStr: string) => {
   line-height: 1;
 }
 
+.req-details {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.link-ref {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 860px) {
   .request-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .request-page {
+    padding: 18px 12px 48px;
+  }
+  .req-item {
+    padding: 14px;
+  }
+  .req-item-top,
+  .req-content,
+  .quote-header,
+  .quote-actions,
+  .accepted-banner,
+  .uploaded-preview,
+  .btn-group-preview {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .quote-actions button {
+    width: 100%;
   }
 }
 </style>

@@ -194,8 +194,13 @@ const formatPrice = (val: number) => {
 
 .item-info {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
+}
+
+.item-name {
+  overflow-wrap: anywhere;
 }
 
 .item-top {

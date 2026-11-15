@@ -1868,6 +1868,7 @@ onBeforeUnmount(() => {
   bottom: calc(100% + 8px);
   left: 14px;
   width: 268px;
+  max-width: calc(100% - 28px);
   background: #ffffff;
   border: 1px solid var(--line);
   border-radius: 14px;

@@ -214,6 +214,7 @@ const formatPrice = (value: number) => {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-width: 0;
 }
 
 .category-name {
@@ -235,6 +236,7 @@ const formatPrice = (value: number) => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  overflow-wrap: anywhere;
   transition: color 0.15s ease;
 }
 
@@ -247,6 +249,7 @@ const formatPrice = (value: number) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   padding-top: 10px;
   border-top: 1px solid var(--brand-primary, #EFE1C6);
   gap: 8px;
@@ -255,6 +258,7 @@ const formatPrice = (value: number) => {
 .price-box {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .price-value {
@@ -277,6 +281,7 @@ const formatPrice = (value: number) => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  max-width: 100%;
 }
 
 .wa-btn:hover {
@@ -287,5 +292,30 @@ const formatPrice = (value: number) => {
 
 .wa-icon {
   flex-shrink: 0;
+}
+
+@media (max-width: 480px) {
+  .card-info {
+    padding: 10px 10px 12px;
+  }
+
+  .product-title {
+    font-size: 0.82rem;
+    margin-bottom: 6px;
+  }
+
+  .card-bottom {
+    padding-top: 8px;
+    gap: 6px;
+  }
+
+  .price-value {
+    font-size: 0.92rem;
+  }
+
+  .wa-btn {
+    padding: 4px 7px;
+    font-size: 0.7rem;
+  }
 }
 </style>

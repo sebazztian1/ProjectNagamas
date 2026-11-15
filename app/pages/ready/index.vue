@@ -204,7 +204,9 @@ const resetFilter = () => {
   border: 1px solid var(--brand-primary);
   padding: 9px 14px;
   border-radius: var(--radius-full);
-  min-width: 250px;
+  flex: 1 1 250px;
+  min-width: 0;
+  max-width: 100%;
   color: var(--color-text-muted);
 }
 
@@ -348,9 +350,29 @@ const resetFilter = () => {
 }
 
 @media (max-width: 600px) {
-  .products-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .ready-catalog-page {
+    padding: 18px 12px 56px;
+  }
+
+  .filter-bar {
+    padding: 12px;
     gap: 10px;
+  }
+
+  .filter-dropdowns {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .products-grid {
+    grid-template-columns: 1fr;
   }
 }
 

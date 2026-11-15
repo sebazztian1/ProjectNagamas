@@ -9,15 +9,26 @@
         <span>Kembali ke Pelanggan</span>
       </NuxtLink>
 
-      <button type="button" class="btn-refresh" :disabled="pending" @click="fetchDetail">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }" aria-hidden="true">
-          <path d="M21 2v6h-6"></path>
-          <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
-          <path d="M3 22v-6h6"></path>
-          <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
-        </svg>
-        <span>Refresh</span>
-      </button>
+      <div class="top-actions">
+        <button type="button" class="btn-export-csv" :disabled="!detail" @click="openExportModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Export CSV</span>
+        </button>
+
+        <button type="button" class="btn-refresh" :disabled="pending" @click="fetchDetail">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }" aria-hidden="true">
+            <path d="M21 2v6h-6"></path>
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+            <path d="M3 22v-6h6"></path>
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+          </svg>
+          <span>Refresh</span>
+        </button>
+      </div>
     </div>
 
     <!-- Loading / Error -->
@@ -479,6 +490,22 @@
         </form>
       </div>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      :title="`Export Transaksi @${detail?.customer?.username || 'pelanggan'}`"
+      subtitle="Ekspor riwayat pesanan atau request produk pelanggan ini beserta rincian pembayaran dan timestamp WIB."
+      :datasets="exportDatasetOptions"
+      v-model:selected-dataset="exportDataset"
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
@@ -486,6 +513,12 @@
 import { ref, reactive, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
 import { useToast } from '../../../composables/useToast'
+import type { CsvDatasetOption, CsvPreviewMetric } from '../../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvTimestamp
+} from '../../../utils/csvExport'
 
 const route = useRoute()
 const { showToast } = useToast()
@@ -742,6 +775,113 @@ const formatRequestStatus = (status: string) => {
   }
   return map[status] || status
 }
+
+// --- Accounting CSV Export ---
+const showExportModal = ref(false)
+const exportDataset = ref<'orders' | 'requests'>('orders')
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+
+const exportDatasetOptions: CsvDatasetOption[] = [
+  { id: 'orders', label: 'Riwayat Pesanan', description: 'Tagihan, pembayaran masuk & sisa piutang customer' },
+  { id: 'requests', label: 'Riwayat Request Produk', description: 'Permintaan titip custom & penawaran harga' }
+]
+
+const openExportModal = () => {
+  if (!detail.value) return
+  exportDataset.value = activeTab.value === 'requests' ? 'requests' : 'orders'
+  showExportModal.value = true
+}
+
+const exportPreview = computed(() => {
+  if (exportDataset.value === 'orders') {
+    return filterByDateRange(detail.value?.orders || [], o => o.createdAtIso, exportStartDate.value, exportEndDate.value)
+  }
+  return filterByDateRange(detail.value?.requests || [], r => r.createdAt, exportStartDate.value, exportEndDate.value)
+})
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rows = exportPreview.value.items
+  if (exportDataset.value === 'orders') {
+    const valid = rows.filter(o => !['cancelled', 'rejected', 'expired'].includes(o.orderStatus))
+    return [
+      { label: 'Total Tagihan Aktif', value: formatRupiah(valid.reduce((s, o) => s + Number(o.totalAmount || 0), 0)), highlight: true },
+      { label: 'Total Dibayar', value: formatRupiah(valid.reduce((s, o) => s + Number(o.paidAmount || 0), 0)) },
+      { label: 'Sisa Piutang', value: formatRupiah(valid.reduce((s, o) => s + Number(o.remainingAmount || 0), 0)) }
+    ]
+  }
+  const quotedSum = rows.reduce((s, r) => s + Number(r.quotedPrice || 0), 0)
+  return [
+    { label: 'Akumulasi Quote', value: formatRupiah(quotedSum), highlight: true },
+    { label: 'Jumlah Request', value: `${rows.length} request` }
+  ]
+})
+
+const handleExportCsv = () => {
+  if (!detail.value) return
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  const uname = detail.value.customer?.username || `id_${customerId.value}`
+  if (exportDataset.value === 'orders') {
+    const valid = items.filter(o => !['cancelled', 'rejected', 'expired'].includes(o.orderStatus))
+    const res = downloadCsvFile({
+      filenamePrefix: `pelanggan_${uname}_pesanan`,
+      reportTitle: `Riwayat Pesanan Pelanggan @${uname}`,
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [
+        { label: 'Total Tagihan Aktif (IDR)', value: valid.reduce((s, o) => s + Number(o.totalAmount || 0), 0) },
+        { label: 'Total Dibayar (IDR)', value: valid.reduce((s, o) => s + Number(o.paidAmount || 0), 0) },
+        { label: 'Total Sisa Piutang (IDR)', value: valid.reduce((s, o) => s + Number(o.remainingAmount || 0), 0) }
+      ],
+      columns: [
+        { header: 'Timestamp Order (WIB)', format: r => formatCsvTimestamp(r.createdAtIso) },
+        { header: 'Kode Order', key: 'orderCode' },
+        { header: 'Tipe', format: r => (r.orderType === 'ready' ? 'Ready Stock' : 'Jastip') },
+        { header: 'Trip', format: r => r.tripTitle || '-' },
+        { header: 'Status Order', format: r => formatOrderStatus(r.orderStatus) },
+        { header: 'Skema Bayar', format: r => (r.paymentType === 'dp' ? 'DP 50%' : 'Full 100%') },
+        { header: 'Subtotal Barang (IDR)', format: r => Number(r.subtotal || 0) },
+        { header: 'Ongkir (IDR)', format: r => Number(r.shippingCost || 0) },
+        { header: 'Kode Unik (IDR)', format: r => Number(r.uniqueCode || 0) },
+        { header: 'Total Tagihan (IDR)', format: r => Number(r.totalAmount || 0) },
+        { header: 'Sudah Dibayar (IDR)', format: r => Number(r.paidAmount || 0) },
+        { header: 'Sisa Tagihan (IDR)', format: r => Number(r.remainingAmount || 0) },
+        { header: 'Rincian Item', format: r => (r.items || []).map((it: any) => `${it.productName} x${it.quantity}`).join('; ') }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} pesanan pelanggan diunduh (${res.filename}).`, 'success')
+  } else {
+    const quotedSum = items.reduce((s, r) => s + Number(r.quotedPrice || 0), 0)
+    const res = downloadCsvFile({
+      filenamePrefix: `pelanggan_${uname}_request`,
+      reportTitle: `Riwayat Request Produk Pelanggan @${uname}`,
+      rows: items,
+      minTimestamp,
+      maxTimestamp,
+      filterStartDate: exportStartDate.value,
+      filterEndDate: exportEndDate.value,
+      summaryItems: [{ label: 'Akumulasi Harga Quote (IDR)', value: quotedSum }],
+      columns: [
+        { header: 'Timestamp Request (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+        { header: 'ID Request', key: 'id' },
+        { header: 'Produk Diminta', key: 'productName' },
+        { header: 'Trip Tujuan', key: 'tripTitle' },
+        { header: 'Negara', key: 'targetCountry' },
+        { header: 'Status', format: r => formatRequestStatus(r.status) },
+        { header: 'Harga Penawaran (IDR)', format: r => (r.quotedPrice !== null ? Number(r.quotedPrice) : '') },
+        { header: 'Catatan Quote', format: r => r.quoteNote || '' },
+        { header: 'Batas Berlaku Quote (WIB)', format: r => formatCsvTimestamp(r.quoteExpiresAt) }
+      ]
+    })
+    showToast('CSV Berhasil Diekspor', `${res.rowCount} request pelanggan diunduh (${res.filename}).`, 'success')
+  }
+  showExportModal.value = false
+}
 </script>
 
 <style scoped>
@@ -757,6 +897,40 @@ const formatRequestStatus = (status: string) => {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-export-csv {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 14px;
+  min-height: 40px;
+  background: #FAF5EC;
+  border: 1px solid #D8B978;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #6F5530;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-export-csv:hover:not(:disabled) {
+  background: #F4E9D2;
+  border-color: #8C6D3F;
+  color: #2B2116;
+}
+
+.btn-export-csv:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-back,
@@ -861,7 +1035,8 @@ const formatRequestStatus = (status: string) => {
   flex-direction: column;
   gap: 6px;
   flex: 1;
-  min-width: 220px;
+  min-width: min(100%, 220px);
+  overflow-wrap: anywhere;
 }
 
 .profile-title-row {
@@ -1677,6 +1852,14 @@ const formatRequestStatus = (status: string) => {
 }
 
 @media (max-width: 560px) {
+  .top-actions {
+    width: 100%;
+  }
+  .top-actions .btn-export-csv,
+  .top-actions .btn-refresh {
+    flex: 1;
+    justify-content: center;
+  }
   .profile-card,
   .admin-actions-card,
   .history-card {

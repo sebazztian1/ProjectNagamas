@@ -168,6 +168,7 @@ body {
   color: var(--color-text);
   font-size: 15px;
   line-height: 1.65;
+  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -259,6 +260,8 @@ a:focus-visible {
 
 .app-root {
   min-height: 100vh;
+  min-width: 0;
+  overflow-x: clip;
   display: flex;
   flex-direction: column;
   transition: padding-right 350ms cubic-bezier(0.2, 0.8, 0.2, 1);

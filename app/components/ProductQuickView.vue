@@ -164,8 +164,9 @@ const handleChatWhatsApp = () => {
   border-radius: 16px;
   max-width: 780px;
   width: 100%;
-  max-height: 90vh;
+  max-height: 92dvh;
   overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
 }
@@ -422,10 +423,52 @@ const handleChatWhatsApp = () => {
   border-color: #25d366;
 }
 
+.modal-info,
+.modal-gallery {
+  min-width: 0;
+}
+
+.thumb-row {
+  flex-wrap: wrap;
+}
+
+.primary-action-row {
+  flex-wrap: wrap;
+}
+
 @media (max-width: 640px) {
+  .modal-backdrop {
+    padding: 12px;
+  }
+
   .modal-content-grid {
     grid-template-columns: 1fr;
-    padding: 20px;
+    gap: 18px;
+    padding: 16px;
+  }
+
+  .modal-title {
+    font-size: 1.15rem;
+  }
+
+  .price-tag {
+    font-size: 1.2rem;
+  }
+
+  .spec-item {
+    flex-wrap: wrap;
+    gap: 4px 10px;
+  }
+
+  .primary-action-row {
+    flex-direction: column;
+  }
+
+  .btn-quick-buy,
+  .chat-main-btn,
+  .wa-secondary-btn,
+  .quickview-wishlist-btn {
+    width: 100%;
   }
 }
 </style>

@@ -401,4 +401,41 @@ const formatDate = (dateStr?: string | null) => {
   border-radius: 6px;
   text-decoration: none;
 }
+
+@media (max-width: 600px) {
+  .trip-detail-page {
+    padding: 18px 14px 48px;
+  }
+
+  .trip-hero {
+    padding: 22px 16px;
+    border-radius: 12px;
+  }
+
+  .hero-title {
+    font-size: clamp(1.45rem, 6vw, 2rem);
+  }
+
+  .hero-stats-row {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
+    gap: 10px;
+  }
+
+  .products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .btn-request-trip {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 360px) {
+  .products-grid {
+    grid-template-columns: 1fr;
+  }
+}
 </style>

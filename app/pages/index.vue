@@ -1312,7 +1312,7 @@ const formatDate = (dateStr: string) => {
 /* ===== 3. Open trips ===== */
 .open-trips-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr));
   gap: 20px;
 }
 
@@ -1958,9 +1958,18 @@ const formatDate = (dateStr: string) => {
 }
 
 @media (max-width: 600px) {
+  .category-row-box {
+    padding: 14px 12px;
+  }
   .products-grid {
-    grid-template-columns: repeat(2, 1fr);
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
+  }
+}
+
+@media (max-width: 360px) {
+  .products-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2006,8 +2015,8 @@ const formatDate = (dateStr: string) => {
 }
 
 .request-content {
-  flex: 1;
-  min-width: 280px;
+  flex: 1 1 260px;
+  min-width: 0;
 }
 
 .request-tag {
@@ -2044,7 +2053,8 @@ const formatDate = (dateStr: string) => {
   font-weight: 600;
   padding: 13px 26px;
   border-radius: var(--radius-full);
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
   transition: all 0.2s ease;
   border: 1px solid var(--brand-secondary);
 }
@@ -2056,11 +2066,28 @@ const formatDate = (dateStr: string) => {
 }
 
 @media (max-width: 768px) {
+  .carousel-slide,
   .trip-banner {
-    padding: 32px 24px;
+    height: auto;
+    min-height: 420px;
+  }
+  .slide-card,
+  .trip-banner-grid {
+    grid-template-rows: 180px auto;
+  }
+  .slide-media,
+  .trip-banner-media {
+    height: 180px;
+  }
+  .slide-content,
+  .trip-banner-main {
+    padding: 18px 16px;
+  }
+  .trip-banner {
+    padding: 0;
   }
   .trip-title {
-    font-size: 1.8rem !important;
+    font-size: 1.5rem !important;
   }
   .countdown-card {
     flex-direction: column;
@@ -2070,7 +2097,12 @@ const formatDate = (dateStr: string) => {
     justify-content: center;
   }
   .request-cta-banner {
-    padding: 28px 24px;
+    margin-top: 44px;
+    padding: 24px 18px;
+    gap: 20px;
+  }
+  .request-btn {
+    width: 100%;
   }
 }
 </style>

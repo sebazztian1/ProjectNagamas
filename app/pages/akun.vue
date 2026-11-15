@@ -546,6 +546,7 @@ const handleChangePassword = async () => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 24px;
+  min-width: 0;
 }
 
 .card-title {
@@ -791,6 +792,31 @@ const handleChangePassword = async () => {
 @media (max-width: 800px) {
   .account-layout {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .account-page {
+    padding: 18px 14px 48px;
+  }
+
+  .page-header {
+    margin-bottom: 20px;
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+  }
+
+  .admin-access-box,
+  .card-box {
+    padding: 16px;
+  }
+
+  .btn-to-admin {
+    width: 100%;
+    justify-content: center;
+    white-space: normal;
   }
 }
 </style>

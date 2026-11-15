@@ -5,6 +5,14 @@
         <h1 class="page-title">Audit Log</h1>
       </div>
       <div class="head-actions">
+        <button type="button" class="btn-export-csv" @click="openExportModal">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          <span>Export CSV</span>
+        </button>
         <button class="btn-refresh" @click="refresh()" :disabled="status === 'pending'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': status === 'pending' }">
             <path d="M21 2v6h-6"></path>
@@ -168,11 +176,36 @@
         </div>
       </div>
     </div>
+
+    <AdminCsvExportModal
+      :show="showExportModal"
+      title="Export Audit Log (.csv)"
+      subtitle="Ekspor jejak audit aktivitas admin & transaksi berdasarkan tanggal minimal hingga tanggal maksimal (WIB)."
+      v-model:start-date="exportStartDate"
+      v-model:end-date="exportEndDate"
+      v-model:use-active-filters="exportUseActiveFilters"
+      :active-filter-label="activeFilterToggleLabel"
+      :preview-count="exportPreview.items.length"
+      :min-timestamp="exportPreview.minTimestamp"
+      :max-timestamp="exportPreview.maxTimestamp"
+      :summary-metrics="exportMetrics"
+      :loading="isExportLoading"
+      @close="showExportModal = false"
+      @export="handleExportCsv"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
+import { useToast } from '../../composables/useToast'
+import type { CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
+import {
+  downloadCsvFile,
+  filterByDateRange,
+  formatCsvTimestamp,
+  isValidDateRange
+} from '../../utils/csvExport'
 
 definePageMeta({
   middleware: 'admin'
@@ -374,6 +407,103 @@ const getDetailSummary = (l: AuditLogItem) => {
   }
   return JSON.stringify(d).substring(0, 70)
 }
+
+// --- Accounting CSV Export ---
+const { showToast } = useToast()
+const showExportModal = ref(false)
+const exportStartDate = ref('')
+const exportEndDate = ref('')
+const exportUseActiveFilters = ref(false)
+const isExportLoading = ref(false)
+const exportLogsSource = ref<AuditLogItem[]>([])
+
+const activeFilterToggleLabel = computed(() => {
+  const parts: string[] = []
+  if (currentEntityType.value !== 'all') {
+    parts.push(`Entitas: ${formatEntityType(currentEntityType.value)}`)
+  }
+  if (searchQuery.value) {
+    parts.push(`Pencarian: "${searchQuery.value}"`)
+  }
+  return parts.length ? `Terapkan filter aktif (${parts.join(', ')})` : ''
+})
+
+const fetchExportLogs = async () => {
+  if (!isValidDateRange(exportStartDate.value, exportEndDate.value)) {
+    exportLogsSource.value = []
+    return
+  }
+  isExportLoading.value = true
+  try {
+    const res = await $fetch<LogsApiResponse>('/api/admin/logs', {
+      query: {
+        exportAll: 'true',
+        entityType: exportUseActiveFilters.value ? currentEntityType.value : 'all',
+        search: exportUseActiveFilters.value && searchQuery.value ? searchQuery.value : undefined,
+        startDate: exportStartDate.value || undefined,
+        endDate: exportEndDate.value || undefined
+      }
+    })
+    exportLogsSource.value = res.logs || []
+  } catch (err: any) {
+    showToast('Gagal Memuat Audit Log', err?.data?.message || 'Tidak dapat memuat data export audit log.', 'warning')
+  } finally {
+    isExportLoading.value = false
+  }
+}
+
+const openExportModal = async () => {
+  exportUseActiveFilters.value = Boolean(currentEntityType.value !== 'all' || searchQuery.value)
+  showExportModal.value = true
+  await fetchExportLogs()
+}
+
+watch([exportStartDate, exportEndDate, exportUseActiveFilters], async () => {
+  if (!showExportModal.value) return
+  await fetchExportLogs()
+})
+
+const exportPreview = computed(() =>
+  filterByDateRange(exportLogsSource.value, l => l.createdAt, exportStartDate.value, exportEndDate.value)
+)
+
+const exportMetrics = computed<CsvPreviewMetric[]>(() => {
+  const rows = exportPreview.value.items
+  const orderLogs = rows.filter(r => r.entityType === 'order').length
+  return [
+    { label: 'Total Catatan Log', value: `${rows.length} baris`, highlight: true },
+    { label: 'Aktivitas Terkait Pesanan', value: `${orderLogs} catatan` }
+  ]
+})
+
+const handleExportCsv = () => {
+  const { items, minTimestamp, maxTimestamp } = exportPreview.value
+  if (!items.length) return
+
+  const res = downloadCsvFile({
+    filenamePrefix: 'audit_log_nagamas',
+    reportTitle: 'Laporan Audit Log Aktivitas Admin',
+    rows: items,
+    minTimestamp,
+    maxTimestamp,
+    filterStartDate: exportStartDate.value,
+    filterEndDate: exportEndDate.value,
+    columns: [
+      { header: 'Timestamp (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+      { header: 'ID Log', key: 'id' },
+      { header: 'Aktor / User', key: 'user' },
+      { header: 'Role', key: 'userRole' },
+      { header: 'Kategori Entitas', format: r => formatEntityType(r.entityType) },
+      { header: 'Kode Aksi', key: 'action' },
+      { header: 'Label Aksi', format: r => formatActionName(r.action) },
+      { header: 'Target', format: r => getTargetDisplay(r) },
+      { header: 'Ringkasan Detail', format: r => getDetailSummary(r) },
+      { header: 'Detail JSON', format: r => (r.detail ? JSON.stringify(r.detail) : '-') }
+    ]
+  })
+  showToast('CSV Berhasil Diekspor', `${res.rowCount} catatan audit diunduh (${res.filename}).`, 'success')
+  showExportModal.value = false
+}
 </script>
 
 <style scoped>
@@ -402,6 +532,29 @@ const getDetailSummary = (l: AuditLogItem) => {
   display: flex;
   align-items: center;
   gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn-export-csv {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: #FAF5EC;
+  border: 1px solid #D8B978;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #6F5530;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.btn-export-csv:hover {
+  background: #F4E9D2;
+  border-color: var(--color-primary, #8C6D3F);
+  color: #2B2116;
 }
 
 .btn-refresh {
@@ -470,12 +623,19 @@ const getDetailSummary = (l: AuditLogItem) => {
   border-color: var(--color-primary, #8C6D3F);
 }
 
+.search-input-box {
+  flex: 1 1 220px;
+  min-width: 0;
+  max-width: 300px;
+}
+
 .search-input-box input {
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
-  width: 260px;
+  width: 100%;
+  min-width: 0;
   outline: none;
   background: #ffffff;
 }
@@ -714,8 +874,9 @@ const getDetailSummary = (l: AuditLogItem) => {
   width: 100%;
   max-width: 580px;
   padding: 24px;
-  max-height: 90vh;
+  max-height: 92dvh;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .modal-head {
@@ -823,15 +984,33 @@ const getDetailSummary = (l: AuditLogItem) => {
   .admin-logs-page {
     padding: 16px 12px 40px;
   }
+  .head-actions {
+    width: 100%;
+  }
+  .btn-export-csv,
+  .btn-refresh {
+    flex: 1;
+    justify-content: center;
+  }
   .filter-row {
     flex-direction: column;
     align-items: stretch;
   }
-  .search-box {
+  .search-input-box {
+    max-width: none;
     width: 100%;
+  }
+  .modal-backdrop {
+    padding: 12px;
   }
   .modal-box {
     padding: 16px;
+    max-height: 92dvh;
+    overflow-x: hidden;
+  }
+  .meta-row {
+    flex-wrap: wrap;
+    gap: 4px 10px;
   }
 }
 </style>

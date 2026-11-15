@@ -145,4 +145,30 @@
   color: var(--color-text-muted, #7A6A55);
   line-height: 1.5;
 }
+
+@media (max-width: 600px) {
+  .static-page {
+    padding: 20px 14px 48px;
+  }
+
+  .page-header {
+    margin-bottom: 24px;
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+  }
+
+  .step-card {
+    padding: 16px;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  .step-card {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
 </style>

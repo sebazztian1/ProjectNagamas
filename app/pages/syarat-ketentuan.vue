@@ -104,5 +104,21 @@
   font-size: 0.9rem;
   color: var(--color-text-muted, #7A6A55);
   line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .static-page {
+    padding: 20px 14px 48px;
+  }
+
+  .page-title {
+    font-size: 1.45rem;
+  }
+
+  .legal-card {
+    padding: 18px 16px;
+    gap: 18px;
+  }
 }
 </style>

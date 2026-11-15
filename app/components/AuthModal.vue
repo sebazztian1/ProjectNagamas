@@ -302,9 +302,11 @@ const forgotPassword = () => {
   border: 1px solid var(--brand-primary, #EFE1C6);
   max-width: 440px;
   width: 100%;
+  max-height: 92dvh;
+  overflow-y: auto;
+  overflow-x: hidden;
   position: relative;
   box-shadow: var(--shadow-lg, 0 20px 48px rgba(43, 33, 22, 0.18));
-  overflow: hidden;
   animation: scaleUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -526,5 +528,22 @@ const forgotPassword = () => {
 @keyframes scaleUp {
   from { transform: scale(0.96); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .auth-backdrop {
+    padding: 12px;
+    align-items: flex-end;
+  }
+
+  .auth-body {
+    padding: 20px 16px 18px;
+  }
+
+  .auth-body input,
+  .auth-body select,
+  .auth-body textarea {
+    font-size: 1rem;
+  }
 }
 </style>

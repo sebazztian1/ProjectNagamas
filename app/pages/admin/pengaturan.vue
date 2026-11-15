@@ -143,6 +143,7 @@ const saveSettings = () => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   padding: 22px;
+  min-width: 0;
 }
 
 .card-head {
@@ -220,6 +221,33 @@ const saveSettings = () => {
 @media (max-width: 860px) {
   .settings-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-head {
+    align-items: stretch;
+  }
+
+  .btn-save-all {
+    width: 100%;
+    text-align: center;
+  }
+
+  .settings-card {
+    padding: 16px;
+  }
+
+  .b-head {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .f-group input,
+  .f-group select {
+    width: 100%;
+    min-width: 0;
+    font-size: 1rem;
   }
 }
 </style>

@@ -1261,6 +1261,7 @@ const handleFileSelect = async (e: Event) => {
 
 .chat-input-bar input[type="text"] {
   flex: 1;
+  min-width: 0;
   padding: 10px 14px;
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
@@ -1293,19 +1294,52 @@ const handleFileSelect = async (e: Event) => {
   cursor: not-allowed;
 }
 
+.attached-info {
+  min-width: 0;
+}
+
+.bubble {
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 600px) {
   .chat-page {
     padding: 12px 8px 30px;
   }
+  .chat-box-card {
+    height: calc(100dvh - 135px);
+    min-height: 440px;
+  }
   .bubble {
     max-width: 88%;
+  }
+  .msg-img {
+    max-width: 100%;
+    height: auto;
   }
   .chat-conv-header {
     padding: 12px 14px;
   }
+  .attached-banner {
+    flex-wrap: wrap;
+    padding: 10px 12px;
+  }
+  .plus-action-menu {
+    left: 10px;
+    right: 10px;
+    width: auto;
+    max-width: calc(100% - 20px);
+  }
+  .picker-search {
+    min-width: 0;
+    width: 100%;
+  }
   .chat-input-bar {
     padding: 10px 12px;
     gap: 8px;
+  }
+  .chat-input-bar input[type="text"] {
+    font-size: 1rem;
   }
   .messages-flow {
     padding: 14px 12px;
