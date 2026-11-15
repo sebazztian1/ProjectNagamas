@@ -19,16 +19,34 @@
       </div>
     </div>
 
-    <!-- Filter Tabs (Ready vs Jastip) & Search -->
+    <!-- Filter Tabs (Ready vs Jastip), Category & Search -->
     <div class="type-filter-bar">
       <div class="tabs">
-        <button class="t-btn" :class="{ active: typeFilter === 'all' }" @click="typeFilter = 'all'">Semua ({{ products.length }})</button>
+        <button class="t-btn" :class="{ active: typeFilter === 'all' }" @click="typeFilter = 'all'">Semua ({{ categoryScopedProducts.length }})</button>
         <button class="t-btn" :class="{ active: typeFilter === 'ready' }" @click="typeFilter = 'ready'">Ready Stock ({{ readyCount }})</button>
         <button class="t-btn" :class="{ active: typeFilter === 'jastip' }" @click="typeFilter = 'jastip'">Jastip PO ({{ jastipCount }})</button>
       </div>
 
-      <div class="search-input-box">
-        <input v-model="searchQuery" type="text" placeholder="Cari nama produk..." />
+      <div class="filter-right-controls">
+        <div class="category-filter-box">
+          <label for="admin-category-filter" class="sr-only">Filter berdasarkan kategori</label>
+          <select
+            id="admin-category-filter"
+            v-model="categoryFilter"
+            class="category-select"
+            aria-label="Filter berdasarkan kategori"
+          >
+            <option value="all">Semua Kategori ({{ typeScopedProducts.length }})</option>
+            <option v-for="cat in categoriesWithCount" :key="cat.id" :value="cat.id">
+              {{ cat.name }} ({{ cat.count }})
+            </option>
+          </select>
+        </div>
+
+        <div class="search-input-box">
+          <label for="admin-product-search" class="sr-only">Cari nama produk</label>
+          <input id="admin-product-search" v-model="searchQuery" type="text" placeholder="Cari nama produk..." />
+        </div>
       </div>
     </div>
 
@@ -104,14 +122,17 @@
             <td class="col-actions">
               <button class="btn-action edit" @click="editProduct(p)" title="Edit rincian produk">Edit</button>
               <button class="btn-action duplicate" @click="duplicateProduct(p)" title="Duplikasi produk">Salin</button>
-              <button class="btn-action delete" @click="deleteProduct(p)" title="Hapus produk (soft delete)">Hapus</button>
+              <button class="btn-action delete" @click="deleteProduct(p)" title="Hapus produk">Hapus</button>
             </td>
           </tr>
         </tbody>
         <tbody v-else>
           <tr>
             <td colspan="6" class="empty-cell">
-              Tidak ada produk yang cocok dengan filter atau pencarian.
+              <p>Tidak ada produk yang cocok dengan filter atau pencarian.</p>
+              <button v-if="hasActiveFilters" type="button" class="btn-reset-filter" @click="resetFilters">
+                Reset Filter
+              </button>
             </td>
           </tr>
         </tbody>
@@ -461,13 +482,14 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useToast } from '../../composables/useToast'
 
 definePageMeta({
   middleware: 'admin'
 })
 
+const route = useRoute()
 const { showToast } = useToast()
 
 interface AdminProduct {
@@ -507,11 +529,52 @@ const products = computed(() => adminData.value?.products || [])
 const categories = computed(() => adminData.value?.categories || [])
 const trips = computed(() => adminData.value?.trips || [])
 
-const readyCount = computed(() => products.value.filter(p => p.productType === 'ready').length)
-const jastipCount = computed(() => products.value.filter(p => p.productType === 'jastip').length)
-
 const typeFilter = ref<'all' | 'ready' | 'jastip'>('all')
+const initialCatQuery = Number(route.query.categoryId)
+const categoryFilter = ref<number | 'all'>(
+  initialCatQuery && !isNaN(initialCatQuery) ? initialCatQuery : 'all'
+)
 const searchQuery = ref('')
+
+const categoryScopedProducts = computed(() => {
+  if (categoryFilter.value === 'all') return products.value
+  return products.value.filter(p => p.categoryId === categoryFilter.value)
+})
+
+const readyCount = computed(() => categoryScopedProducts.value.filter(p => p.productType === 'ready').length)
+const jastipCount = computed(() => categoryScopedProducts.value.filter(p => p.productType === 'jastip').length)
+
+const typeScopedProducts = computed(() => {
+  if (typeFilter.value === 'all') return products.value
+  return products.value.filter(p => p.productType === typeFilter.value)
+})
+
+const categoriesWithCount = computed(() => {
+  const counts = new Map<number, number>()
+  for (const p of typeScopedProducts.value) {
+    counts.set(p.categoryId, (counts.get(p.categoryId) || 0) + 1)
+  }
+  return categories.value.map(cat => ({
+    ...cat,
+    count: counts.get(cat.id) || 0
+  }))
+})
+
+watch(categories, (list) => {
+  if (list.length > 0 && categoryFilter.value !== 'all' && !list.some(c => c.id === categoryFilter.value)) {
+    categoryFilter.value = 'all'
+  }
+})
+
+const hasActiveFilters = computed(() => {
+  return typeFilter.value !== 'all' || categoryFilter.value !== 'all' || searchQuery.value.trim() !== ''
+})
+
+const resetFilters = () => {
+  typeFilter.value = 'all'
+  categoryFilter.value = 'all'
+  searchQuery.value = ''
+}
 const showModal = ref(false)
 const isEditing = ref(false)
 const editingId = ref<number | null>(null)
@@ -771,9 +834,17 @@ const filteredProducts = computed(() => {
   if (typeFilter.value !== 'all') {
     list = list.filter(p => p.productType === typeFilter.value)
   }
+  if (categoryFilter.value !== 'all') {
+    list = list.filter(p => p.categoryId === categoryFilter.value)
+  }
   if (searchQuery.value.trim()) {
     const q = searchQuery.value.toLowerCase()
-    list = list.filter(p => p.name.toLowerCase().includes(q) || p.description.toLowerCase().includes(q))
+    list = list.filter(
+      p =>
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        p.categoryName.toLowerCase().includes(q)
+    )
   }
   return list
 })
@@ -783,8 +854,8 @@ const openCreateModal = () => {
   editingId.value = null
   form.value = {
     name: '',
-    categoryId: categories.value[0]?.id || 1,
-    productType: 'ready',
+    categoryId: categoryFilter.value !== 'all' ? categoryFilter.value : (categories.value[0]?.id || 1),
+    productType: typeFilter.value !== 'all' ? typeFilter.value : 'ready',
     tripId: trips.value[0]?.id || null,
     price: 150000,
     stockStatus: 'in_stock',
@@ -1060,13 +1131,14 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   flex-wrap: wrap;
 }
 
 .tabs {
   display: flex;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .t-btn {
@@ -1087,13 +1159,76 @@ const formatRupiah = (val: number) => {
   border-color: var(--color-primary, #8C6D3F);
 }
 
+.filter-right-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.category-select {
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  background: #ffffff;
+  color: var(--color-text, #2B2116);
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-width: 190px;
+  min-height: 38px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.category-select:focus {
+  border-color: var(--color-primary, #8C6D3F);
+  box-shadow: 0 0 0 3px rgba(216, 185, 120, 0.25);
+}
+
 .search-input-box input {
   padding: 8px 12px;
   border-radius: 8px;
   border: 1px solid var(--color-secondary, #EFE1C6);
   font-size: 0.85rem;
   width: 240px;
+  min-height: 38px;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.search-input-box input:focus {
+  border-color: var(--color-primary, #8C6D3F);
+  box-shadow: 0 0 0 3px rgba(216, 185, 120, 0.25);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.btn-reset-filter {
+  margin-top: 10px;
+  background: var(--color-canvas, #FFFBF2);
+  color: var(--color-primary, #8C6D3F);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-reset-filter:hover {
+  background: var(--color-secondary, #EFE1C6);
 }
 
 .loading-state {
@@ -2079,5 +2214,30 @@ const formatRupiah = (val: number) => {
   padding: 6px 8px;
   border: 1px solid #EFE1C6;
   border-radius: 6px;
+}
+
+@media (max-width: 640px) {
+  .form-row-2 {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+  .modal-box {
+    padding: 16px;
+  }
+  .type-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .filter-right-controls {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+  .category-filter-box,
+  .category-select,
+  .search-input-box,
+  .search-input-box input {
+    width: 100%;
+  }
 }
 </style>

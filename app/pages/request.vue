@@ -19,6 +19,12 @@
             <h3>Form Pengajuan</h3>
           </div>
 
+          <div v-if="isRequestDisabled" class="access-blocked-banner" role="alert">
+            <strong>Fitur Request Produk Dinonaktifkan</strong>
+            <p v-if="currentUser?.restriction_reason">Alasan: {{ currentUser.restriction_reason }}</p>
+            <p v-else>Akses pengajuan request produk pada akun Anda sedang dibatasi oleh admin.</p>
+          </div>
+
           <form @submit.prevent="submitRequest" class="req-form">
             <div class="form-group">
               <label>Nama Produk <span class="required">*</span></label>
@@ -26,13 +32,14 @@
                 v-model="form.productName" 
                 type="text" 
                 placeholder="Contoh: Starbucks Japan Sakura Tumbler 2026" 
+                :disabled="isRequestDisabled"
                 required 
               />
             </div>
 
             <div class="form-group">
               <label>Trip Tujuan</label>
-              <select v-model="form.tripId">
+              <select v-model="form.tripId" :disabled="isRequestDisabled">
                 <option :value="null">Bebas / Belum Tentu</option>
                 <option v-for="trip in openTrips" :key="trip.id" :value="trip.id">
                   {{ trip.flag }} {{ trip.title }} ({{ trip.country }})
@@ -46,6 +53,7 @@
                 v-model="form.referenceLink" 
                 type="url" 
                 placeholder="https://..." 
+                :disabled="isRequestDisabled"
               />
             </div>
 
@@ -95,11 +103,13 @@
                 v-model="form.description" 
                 rows="3" 
                 placeholder="Varian, ukuran, warna..."
+                :disabled="isRequestDisabled"
               ></textarea>
             </div>
 
-            <button type="submit" class="btn-submit-req" :disabled="isSubmitting || isUploading">
+            <button type="submit" class="btn-submit-req" :disabled="isSubmitting || isUploading || isRequestDisabled">
               <span v-if="isSubmitting">Mengirim...</span>
+              <span v-else-if="isRequestDisabled">Request Dinonaktifkan</span>
               <span v-else>Kirim Request</span>
             </button>
           </form>
@@ -185,7 +195,7 @@
                 <div v-if="!req.isExpired" class="quote-actions">
                   <button 
                     class="btn-accept-quote" 
-                    :disabled="actionLoading === req.id"
+                    :disabled="actionLoading === req.id || isRequestDisabled"
                     @click="acceptQuote(req)"
                   >
                     Setujui & Buat Pesanan
@@ -256,7 +266,8 @@ definePageMeta({
 
 const router = useRouter()
 const { showToast } = useToast()
-const { token } = useAuth()
+const { currentUser } = useAuth()
+const isRequestDisabled = computed(() => currentUser.value?.can_request === false)
 
 interface RequestItem {
   id: number
@@ -364,6 +375,10 @@ const removeUploadedImage = () => {
 }
 
 const submitRequest = async () => {
+  if (isRequestDisabled.value) {
+    showToast('Akses Dibatasi', 'Fitur request produk pada akun Anda dinonaktifkan oleh admin.', 'warning')
+    return
+  }
   if (!form.value.productName.trim()) {
     showToast('Nama Produk Wajib', 'Isi nama produk yang ingin dititip.', 'warning')
     return
@@ -400,6 +415,10 @@ const submitRequest = async () => {
 }
 
 const acceptQuote = async (req: RequestItem) => {
+  if (isRequestDisabled.value) {
+    showToast('Akses Dibatasi', 'Fitur request produk pada akun Anda dinonaktifkan oleh admin.', 'warning')
+    return
+  }
   actionLoading.value = req.id
   try {
     await $fetch(`/api/requests/${req.id}/status`, {
@@ -734,6 +753,26 @@ const formatDate = (dateStr: string) => {
   font-size: 0.74rem;
   color: #DC2626;
   cursor: pointer;
+}
+
+.access-blocked-banner {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  color: #991B1B;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.access-blocked-banner strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.access-blocked-banner p {
+  margin: 0;
 }
 
 .btn-submit-req {

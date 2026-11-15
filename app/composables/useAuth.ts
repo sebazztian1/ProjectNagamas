@@ -5,6 +5,11 @@ export interface User {
   username: string
   phone_number: string
   role: 'customer' | 'admin' | 'staff'
+  is_active?: boolean
+  can_order?: boolean
+  can_request?: boolean
+  can_chat?: boolean
+  restriction_reason?: string | null
 }
 
 export interface RegisterPayload {

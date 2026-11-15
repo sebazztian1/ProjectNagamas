@@ -613,5 +613,19 @@ const confirmDelete = async (cat: CategoryItem) => {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+@media (max-width: 640px) {
+  .admin-categories-page {
+    padding: 16px 12px 40px;
+  }
+  .page-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .btn-add-category {
+    width: 100%;
+    text-align: center;
+  }
+}
 </style>
 

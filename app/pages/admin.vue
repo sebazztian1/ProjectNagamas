@@ -1,22 +1,36 @@
 <template>
   <div class="admin-wrapper">
+    <!-- Backdrop for mobile sidebar drawer -->
+    <div
+      v-if="isMobileNavOpen"
+      class="sidebar-backdrop"
+      @click="isMobileNavOpen = false"
+      aria-label="Tutup menu navigasi admin"
+    ></div>
+
     <!-- Admin Sidebar -->
-    <aside class="admin-sidebar">
+    <aside class="admin-sidebar" :class="{ 'mobile-open': isMobileNavOpen }">
       <div class="sidebar-brand">
-        <NuxtLink to="/admin" class="brand-link">
+        <NuxtLink to="/admin" class="brand-link" @click="isMobileNavOpen = false">
           <div class="brand-logo-icon">D</div>
           <div class="brand-text-group">
             <span class="brand-name">DBB_LUXE</span>
             <span class="admin-tag">Admin</span>
           </div>
         </NuxtLink>
+        <button class="mobile-close-sidebar" aria-label="Tutup menu navigasi" @click="isMobileNavOpen = false">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
 
       <nav class="sidebar-nav">
         <div class="nav-section-title">MENU</div>
 
         <!-- 1. Ringkasan -->
-        <NuxtLink to="/admin" class="nav-item" exact-active-class="active">
+        <NuxtLink to="/admin" class="nav-item" exact-active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect width="7" height="9" x="3" y="3" rx="1"></rect>
             <rect width="7" height="5" x="14" y="3" rx="1"></rect>
@@ -27,7 +41,7 @@
         </NuxtLink>
 
         <!-- 2. Produk -->
-        <NuxtLink to="/admin/produk" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/produk" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
           </svg>
@@ -35,7 +49,7 @@
         </NuxtLink>
 
         <!-- 2b. Kategori Produk -->
-        <NuxtLink to="/admin/kategori" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/kategori" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M4 6h16M4 12h16M4 18h7" />
           </svg>
@@ -43,7 +57,7 @@
         </NuxtLink>
 
         <!-- 3. Jadwal Jastip (Trip) -->
-        <NuxtLink to="/admin/trip" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/trip" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"></path>
           </svg>
@@ -52,7 +66,7 @@
         </NuxtLink>
 
         <!-- 4. Pesanan & Verifikasi -->
-        <NuxtLink to="/admin/order" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/order" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="9" cy="21" r="1"></circle>
             <circle cx="20" cy="21" r="1"></circle>
@@ -63,7 +77,7 @@
         </NuxtLink>
 
         <!-- 5. Live Chat Admin -->
-        <NuxtLink to="/admin/chat" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/chat" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
           </svg>
@@ -72,7 +86,7 @@
         </NuxtLink>
 
         <!-- 6. Request Produk -->
-        <NuxtLink to="/admin/request" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/request" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
             <polyline points="14 2 14 8 20 8"></polyline>
@@ -86,7 +100,7 @@
         <div class="nav-section-title">SISTEM</div>
 
         <!-- 7. Pelanggan -->
-        <NuxtLink to="/admin/customer" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/customer" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
@@ -98,7 +112,7 @@
         </NuxtLink>
 
         <!-- 8. Pengaturan Toko -->
-        <NuxtLink to="/admin/pengaturan" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/pengaturan" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3"></circle>
             <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -107,7 +121,7 @@
         </NuxtLink>
 
         <!-- 9. Audit Log -->
-        <NuxtLink to="/admin/log" class="nav-item" active-class="active">
+        <NuxtLink to="/admin/log" class="nav-item" active-class="active" @click="isMobileNavOpen = false">
           <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
           </svg>
@@ -116,7 +130,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <NuxtLink to="/" class="back-shop-btn">
+        <NuxtLink to="/" class="back-shop-btn" @click="isMobileNavOpen = false">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
             <polyline points="9 22 9 12 15 12 15 22"></polyline>
@@ -130,7 +144,19 @@
     <div class="admin-main">
       <header class="admin-topbar">
         <div class="topbar-left">
-          <span class="role-chip">Admin Master</span>
+          <button
+            class="admin-hamburger-btn"
+            aria-label="Buka menu navigasi admin"
+            :aria-expanded="isMobileNavOpen"
+            @click="isMobileNavOpen = !isMobileNavOpen"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <span class="role-chip">Admin</span>
           <span class="store-status">&bull; Toko Sedang Buka</span>
         </div>
 
@@ -168,7 +194,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, onBeforeUnmount, watch } from 'vue'
+import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
 import Ably from 'ably'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
@@ -186,6 +212,8 @@ const route = useRoute()
 const { currentUser, logout } = useAuth()
 const { showToast } = useToast()
 const { stats, fetchAdminStats } = useAdminStats()
+
+const isMobileNavOpen = ref(false)
 
 let ablyClient: Ably.Realtime | null = null
 let inboxChannel: Ably.RealtimeChannel | null = null
@@ -227,6 +255,7 @@ onMounted(async () => {
 
 watch(() => route.fullPath, () => {
   fetchAdminStats(true)
+  isMobileNavOpen.value = false
 })
 
 onBeforeUnmount(() => {
@@ -267,6 +296,40 @@ const handleAdminLogout = async () => {
 .sidebar-brand {
   padding: 20px 22px;
   border-bottom: 1px solid var(--color-secondary, #EFE1C6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-close-sidebar {
+  display: none;
+  background: transparent;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 8px;
+  width: 32px;
+  height: 32px;
+  color: var(--color-text-muted, #7A6A55);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-backdrop {
+  display: none;
+}
+
+.admin-hamburger-btn {
+  display: none;
+  background: #ffffff;
+  border: 1px solid var(--color-secondary, #EFE1C6);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  color: var(--color-primary, #8C6D3F);
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .brand-link {
@@ -496,5 +559,57 @@ const handleAdminLogout = async () => {
 .admin-page-content {
   padding: 28px;
   flex: 1;
+}
+
+@media (max-width: 1024px) {
+  .admin-hamburger-btn {
+    display: inline-flex;
+  }
+
+  .mobile-close-sidebar {
+    display: inline-flex;
+  }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(43, 33, 22, 0.48);
+    backdrop-filter: blur(2px);
+    z-index: 90;
+  }
+
+  .admin-sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    height: 100vh;
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+  }
+
+  .admin-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .admin-topbar {
+    padding: 10px 16px;
+  }
+
+  .admin-page-content {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 600px) {
+  .store-status {
+    display: none;
+  }
+  .user-label {
+    display: none;
+  }
 }
 </style>

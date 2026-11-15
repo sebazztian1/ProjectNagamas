@@ -415,6 +415,11 @@
         </button>
       </div>
 
+      <div v-if="isChatDisabled" class="chat-blocked-banner" role="alert">
+        <strong>Live Chat Dinonaktifkan</strong>
+        <span>{{ currentUser?.restriction_reason ? `Alasan: ${currentUser.restriction_reason}` : 'Admin menonaktifkan pengiriman pesan untuk akun ini.' }}</span>
+      </div>
+
       <!-- 4. Input Row & 5. Footer -->
       <form class="chat-footer" @submit.prevent="handleSubmitMessage">
         <!-- Floating "+" Action Menu -->
@@ -491,7 +496,7 @@
             aria-label="Buka menu lampiran"
             :aria-expanded="isPlusMenuOpen ? 'true' : 'false'"
             title="Lampirkan Gambar, Produk, Jastip, atau Request"
-            :disabled="isUploadingImage"
+            :disabled="isUploadingImage || isChatDisabled"
             @click="togglePlusMenu"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -506,7 +511,8 @@
             ref="inputField"
             v-model="inputText"
             type="text"
-            placeholder="Tulis pesan ke admin..."
+            :placeholder="isChatDisabled ? 'Chat dinonaktifkan oleh admin' : 'Tulis pesan ke admin...'"
+            :disabled="isChatDisabled"
             class="chat-input"
             autocomplete="off"
           />
@@ -536,7 +542,11 @@
 <script setup lang="ts">
 import { ref, computed, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { useCustomerChat } from '../composables/useCustomerChat'
+import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+
+const { currentUser } = useAuth()
+const isChatDisabled = computed(() => currentUser.value?.can_chat === false)
 
 const {
   isChatOpen,
@@ -769,7 +779,7 @@ const handleSelectRequest = (req: any) => {
 }
 
 const canSubmit = computed(() => {
-  return Boolean(inputText.value.trim() || attachedProduct.value)
+  return !isChatDisabled.value && Boolean(inputText.value.trim() || attachedProduct.value)
 })
 
 const launcherAriaLabel = computed(() => {
@@ -2022,6 +2032,17 @@ onBeforeUnmount(() => {
   color: var(--muted);
   cursor: not-allowed;
   transform: none;
+}
+
+.chat-blocked-banner {
+  background: #FEF2F2;
+  border-top: 1px solid #FECACA;
+  color: #991B1B;
+  padding: 8px 14px;
+  font-size: 0.78rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .footer-help-note {

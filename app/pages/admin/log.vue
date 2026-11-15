@@ -227,6 +227,7 @@ const filterTabs = [
   { key: 'trip', label: 'Trip Jastip' },
   { key: 'category', label: 'Kategori' },
   { key: 'request', label: 'Request' },
+  { key: 'customer', label: 'Pelanggan' },
   { key: 'auth', label: 'Autentikasi' }
 ]
 
@@ -281,6 +282,7 @@ const formatEntityType = (type: string) => {
     trip: 'Trip',
     category: 'Kategori',
     request: 'Request',
+    customer: 'Pelanggan',
     auth: 'Akun',
     setting: 'Pengaturan'
   }
@@ -309,6 +311,9 @@ const formatActionName = (action: string) => {
     REQUEST_REVIEWED: 'Tinjau Request',
     REQUEST_REJECTED: 'Tolak Request',
     CONVERT_REQUEST_TO_PRODUCT: 'Konversi ke Produk',
+    UPDATE_CUSTOMER_ACCESS: 'Ubah Akses Pelanggan',
+    DISABLE_CUSTOMER_ACCOUNT: 'Nonaktifkan Akun Pelanggan',
+    ENABLE_CUSTOMER_ACCOUNT: 'Aktifkan Akun Pelanggan',
     LOGIN_ADMIN: 'Login Admin'
   }
 
@@ -323,13 +328,13 @@ const formatActionName = (action: string) => {
 }
 
 const getActionBadgeClass = (action: string) => {
-  if (action.includes('ACC') || action.includes('VERIFY') || action.startsWith('CREATE_') || action.includes('CONVERT')) {
+  if (action.includes('ACC') || action.includes('VERIFY') || action.startsWith('CREATE_') || action.includes('CONVERT') || action.startsWith('ENABLE_')) {
     return 'badge-success'
   }
-  if (action.includes('REJECT') || action.includes('REFUND') || action.startsWith('DELETE_')) {
+  if (action.includes('REJECT') || action.includes('REFUND') || action.startsWith('DELETE_') || action.startsWith('DISABLE_')) {
     return 'badge-danger'
   }
-  if (action.includes('STOCK') || action.includes('QUOTE')) {
+  if (action.includes('STOCK') || action.includes('QUOTE') || action.includes('CUSTOMER')) {
     return 'badge-warning'
   }
   if (action.includes('LOGIN')) {
@@ -812,5 +817,21 @@ const getDetailSummary = (l: AuditLogItem) => {
   font-size: 0.84rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+@media (max-width: 680px) {
+  .admin-logs-page {
+    padding: 16px 12px 40px;
+  }
+  .filter-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-box {
+    width: 100%;
+  }
+  .modal-box {
+    padding: 16px;
+  }
 }
 </style>

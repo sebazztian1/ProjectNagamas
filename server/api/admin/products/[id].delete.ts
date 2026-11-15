@@ -43,6 +43,6 @@ export default defineEventHandler(async (event) => {
 
   return {
     success: true,
-    message: 'Produk berhasil dihapus (soft delete)'
+    message: 'Produk berhasil dihapus'
   }
 })

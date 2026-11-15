@@ -279,6 +279,7 @@
           class="category-row-section"
         >
           <div class="category-row-header">
+            <div class="category-header-spacer" aria-hidden="true"></div>
             <h2 class="category-row-title">{{ catRow.name }}</h2>
             <NuxtLink
               :to="`/ready?category=${encodeURIComponent(catRow.name)}`"
@@ -1638,10 +1639,12 @@ const formatDate = (dateStr: string) => {
 }
 
 @media (max-width: 560px) {
+  .hero-carousel-section,
   .trust-bar-section,
   .category-chips-section,
   .open-trips-section,
-  .request-feature-section {
+  .request-feature-section,
+  .main-catalog-container {
     padding: 0 16px;
   }
   .trust-bar {
@@ -1661,7 +1664,7 @@ const formatDate = (dateStr: string) => {
 
 /* Main Catalog Area */
 .main-catalog-container {
-  max-width: 1440px;
+  max-width: 1240px;
   margin: 48px auto 0;
   padding: 0 24px;
 }
@@ -1679,21 +1682,31 @@ const formatDate = (dateStr: string) => {
 }
 
 .category-row-header {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 16px;
   padding: 0 4px;
+  margin-bottom: 4px;
+}
+
+.category-header-spacer {
+  /* Kolom penyeimbang agar judul kategori presisi di tengah */
 }
 
 .category-row-title {
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   font-weight: 800;
   color: var(--color-text);
   margin: 0;
+  text-align: center;
+  grid-column: 2;
+  letter-spacing: -0.01em;
 }
 
 .category-more-link {
+  grid-column: 3;
+  justify-self: end;
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -1712,6 +1725,24 @@ const formatDate = (dateStr: string) => {
   background: var(--brand-primary);
   border-color: var(--brand-secondary);
   transform: translateX(2px);
+}
+
+@media (max-width: 640px) {
+  .category-row-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+
+  .category-header-spacer {
+    display: none;
+  }
+
+  .category-more-link {
+    justify-self: center;
+  }
 }
 
 .category-row-box {

@@ -641,4 +641,29 @@ const formatRupiah = (val: number) => {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 680px) {
+  .order-detail-page {
+    padding: 20px 14px 48px;
+  }
+  .order-hero-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 18px;
+  }
+  .hero-right {
+    align-items: flex-start;
+    width: 100%;
+  }
+  .hero-btn-row {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .btn-hero-pay, .btn-cancel-hero {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+}
 </style>

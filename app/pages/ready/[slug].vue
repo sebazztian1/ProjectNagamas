@@ -689,7 +689,6 @@ const handleChatAdmin = () => {
   justify-content: space-between;
   gap: 12px;
   padding-top: 12px;
-  border-top: 1px dashed #DFCGB0;
   border-top: 1px dashed #E2D1B3;
   flex-wrap: wrap;
 }
@@ -919,6 +918,34 @@ const handleChatAdmin = () => {
 @media (max-width: 800px) {
   .detail-layout {
     grid-template-columns: 1fr;
+    gap: 24px;
+  }
+}
+
+@media (max-width: 560px) {
+  .product-detail-page {
+    padding: 16px 12px 40px;
+  }
+  .product-name {
+    font-size: 1.35rem;
+  }
+  .price-amount {
+    font-size: 1.55rem;
+  }
+  .cta-sub-row {
+    grid-template-columns: 1fr;
+  }
+  .trust-cards {
+    grid-template-columns: 1fr;
+  }
+  .thumbnail-row {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 6px;
+  }
+  .thumb-box {
+    flex-shrink: 0;
   }
 }
 </style>

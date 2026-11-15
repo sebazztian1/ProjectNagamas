@@ -1139,4 +1139,15 @@ const formatRupiah = (val: number) => {
   font-weight: 700;
   cursor: pointer;
 }
+
+@media (max-width: 680px) {
+  .modal-body-grid {
+    grid-template-columns: 1fr;
+    padding: 16px;
+    gap: 16px;
+  }
+  .proof-image-side img {
+    max-height: 260px;
+  }
+}
 </style>

@@ -266,6 +266,11 @@
             </div>
           </div>
 
+          <div v-if="isChatDisabled" class="chat-blocked-banner" role="alert">
+            <strong>Live Chat Dinonaktifkan</strong>
+            <span>{{ currentUser?.restriction_reason ? `Alasan: ${currentUser.restriction_reason}` : 'Admin menonaktifkan pengiriman pesan untuk akun ini.' }}</span>
+          </div>
+
           <!-- Input Bar -->
           <form @submit.prevent="handleSend" class="chat-input-bar">
             <!-- Floating "+" Action Menu -->
@@ -338,7 +343,7 @@
               class="btn-plus-attach"
               :class="{ 'is-open': isPlusMenuOpen }"
               title="Lampirkan Gambar, Produk, Jastip, atau Request"
-              :disabled="isUploading"
+              :disabled="isUploading || isChatDisabled"
               @click="togglePlusMenu"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -350,9 +355,10 @@
               ref="inputField"
               v-model="inputMessage"
               type="text"
-              placeholder="Tulis pesan atau pertanyaan ke admin..."
+              :placeholder="isChatDisabled ? 'Chat dinonaktifkan oleh admin' : 'Tulis pesan atau pertanyaan ke admin...'"
+              :disabled="isChatDisabled"
             />
-            <button type="submit" class="btn-send" :disabled="isSending || (!inputMessage.trim() && !attachedProduct)">
+            <button type="submit" class="btn-send" :disabled="isSending || isChatDisabled || (!inputMessage.trim() && !attachedProduct)">
               {{ isSending ? '...' : 'Kirim' }}
             </button>
           </form>
@@ -373,6 +379,7 @@ definePageMeta({
 })
 
 const { currentUser } = useAuth()
+const isChatDisabled = computed(() => currentUser.value?.can_chat === false)
 const {
   customerMessages,
   attachedProduct,
@@ -614,6 +621,10 @@ onMounted(async () => {
 })
 
 const handleSend = async () => {
+  if (isChatDisabled.value) {
+    showToast('Akses Dibatasi', 'Fitur live chat pada akun Anda dinonaktifkan oleh admin.', 'warning')
+    return
+  }
   if (!inputMessage.value.trim() && !attachedProduct.value) return
   isSending.value = true
   try {
@@ -627,6 +638,7 @@ const handleSend = async () => {
 }
 
 const handleFileSelect = async (e: Event) => {
+  if (isChatDisabled.value) return
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
@@ -1236,6 +1248,17 @@ const handleFileSelect = async (e: Event) => {
   flex-shrink: 0;
 }
 
+.chat-blocked-banner {
+  background: #FEF2F2;
+  border-top: 1px solid #FECACA;
+  color: #991B1B;
+  padding: 10px 16px;
+  font-size: 0.82rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .chat-input-bar input[type="text"] {
   flex: 1;
   padding: 10px 14px;
@@ -1268,5 +1291,24 @@ const handleFileSelect = async (e: Event) => {
 .btn-send:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+@media (max-width: 600px) {
+  .chat-page {
+    padding: 12px 8px 30px;
+  }
+  .bubble {
+    max-width: 88%;
+  }
+  .chat-conv-header {
+    padding: 12px 14px;
+  }
+  .chat-input-bar {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+  .messages-flow {
+    padding: 14px 12px;
+  }
 }
 </style>

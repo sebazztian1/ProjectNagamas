@@ -1,13 +1,22 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import crypto from 'crypto'
 import { prisma } from '../../../utils/prisma'
-import { getSessionFromEvent } from '../../../utils/session'
+import { getSessionFromEvent, clearSessionCookie } from '../../../utils/session'
 import { autoExpireOverdueOrders, formatOrderResponse } from '../../../utils/orders'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
   if (!session) {
     throw createError({ statusCode: 401, message: 'Harap masuk ke akun Anda terlebih dahulu.' })
+  }
+
+  const currentUser = await prisma.users.findUnique({
+    where: { id: session.userId },
+    select: { id: true, is_active: true }
+  })
+  if (!currentUser || !currentUser.is_active) {
+    clearSessionCookie(event)
+    throw createError({ statusCode: 403, message: 'Akun Anda telah dinonaktifkan.' })
   }
 
   const orderCode = getRouterParam(event, 'orderCode')

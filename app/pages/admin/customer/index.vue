@@ -22,10 +22,11 @@
         <input
           v-model="searchQuery"
           type="text"
+          aria-label="Cari username atau nomor WhatsApp pelanggan"
           placeholder="Cari username atau no. WhatsApp..."
           @input="handleSearchInput"
         />
-        <button v-if="searchQuery" type="button" class="clear-search" @click="searchQuery = ''">&times;</button>
+        <button v-if="searchQuery" type="button" class="clear-search" aria-label="Hapus pencarian" @click="searchQuery = ''">&times;</button>
       </div>
       <div class="count-tag">
         {{ filteredCustomers.length }} Pelanggan
@@ -42,30 +43,50 @@
           <tr>
             <th>Username</th>
             <th>No. WhatsApp</th>
-            <th>Total Order</th>
-            <th>Status</th>
+            <th>Aktivitas</th>
+            <th>Status &amp; Akses</th>
+            <th class="col-actions-head">Aksi</th>
           </tr>
         </thead>
         <tbody v-if="filteredCustomers.length > 0">
           <tr v-for="c in filteredCustomers" :key="c.id">
             <td class="col-user">
               <div class="avatar">{{ (c.username || 'U').charAt(0).toUpperCase() }}</div>
-              <strong>@{{ c.username }}</strong>
+              <div class="user-identity">
+                <strong>@{{ c.username }}</strong>
+                <span class="joined-date">{{ formatJoinedDate(c.joinedAt) }}</span>
+              </div>
             </td>
             <td>{{ c.phone }}</td>
             <td>
-              <span class="order-count-badge">{{ c.totalOrders || 0 }} Pesanan</span>
+              <div class="activity-badges">
+                <span class="order-count-badge">{{ c.totalOrders || 0 }} Pesanan</span>
+                <span class="request-count-badge">{{ c.totalRequests || 0 }} Request</span>
+              </div>
             </td>
             <td>
-              <span class="active-badge" :class="{ inactive: !c.isActive }">
-                {{ c.isActive ? 'Aktif' : 'Nonaktif' }}
-              </span>
+              <div class="status-badges">
+                <span class="active-badge" :class="{ inactive: !c.isActive }">
+                  {{ c.isActive ? 'Aktif' : 'Nonaktif' }}
+                </span>
+                <span v-if="c.isActive && (!c.canOrder || !c.canRequest || !c.canChat)" class="restricted-badge">
+                  Terbatas
+                </span>
+              </div>
+            </td>
+            <td class="col-actions">
+              <NuxtLink :to="`/admin/customer/${c.id}`" class="btn-details">
+                <span>Details</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+                  <path d="M9 18l6-6-6-6"></path>
+                </svg>
+              </NuxtLink>
             </td>
           </tr>
         </tbody>
         <tbody v-else>
           <tr>
-            <td colspan="4" class="empty-state">
+            <td colspan="5" class="empty-state">
               {{ searchQuery.trim() ? 'Pelanggan tidak ditemukan.' : 'Belum ada data pelanggan.' }}
             </td>
           </tr>
@@ -77,8 +98,8 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useToast } from '../../composables/useToast'
-import { useAdminStats } from '../../composables/useAdminStats'
+import { useToast } from '../../../composables/useToast'
+import { useAdminStats } from '../../../composables/useAdminStats'
 
 const { showToast } = useToast()
 const { fetchAdminStats } = useAdminStats()
@@ -92,6 +113,17 @@ const handleSearchInput = (e: Event) => {
   if (target) {
     searchQuery.value = target.value
   }
+}
+
+const formatJoinedDate = (iso?: string) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  if (isNaN(d.getTime())) return ''
+  return new Intl.DateTimeFormat('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  }).format(d)
 }
 
 const fetchCustomers = async () => {
@@ -234,6 +266,7 @@ const filteredCustomers = computed(() => {
   background: var(--color-canvas, #FFFBF2);
   font-size: 0.85rem;
   color: var(--color-text, #2B2116);
+  box-sizing: border-box;
 }
 
 .search-box input:focus {
@@ -279,6 +312,7 @@ const filteredCustomers = computed(() => {
   width: 100%;
   border-collapse: collapse;
   text-align: left;
+  min-width: 640px;
 }
 
 .data-table th {
@@ -288,6 +322,7 @@ const filteredCustomers = computed(() => {
   color: var(--color-text-muted, #7A6A55);
   padding: 12px 16px;
   border-bottom: 1px solid var(--color-secondary, #EFE1C6);
+  white-space: nowrap;
 }
 
 .data-table td {
@@ -315,21 +350,57 @@ const filteredCustomers = computed(() => {
   justify-content: center;
   font-weight: 800;
   font-size: 0.82rem;
+  flex-shrink: 0;
+}
+
+.user-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.joined-date {
+  font-size: 0.72rem;
+  color: var(--color-text-muted, #7A6A55);
+}
+
+.activity-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .order-count-badge {
   background: var(--color-secondary, #EFE1C6);
-  color: var(--color-primary, #8C6D3F);
+  color: #6B502A;
   padding: 3px 8px;
   border-radius: 6px;
   font-weight: 700;
   font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.request-count-badge {
+  background: #F4EFE6;
+  color: #5C4930;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-weight: 700;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
 }
 
 .active-badge {
   background: #DCFCE7;
   color: #166534;
-  padding: 3px 8px;
+  padding: 3px 9px;
   border-radius: 12px;
   font-size: 0.72rem;
   font-weight: 700;
@@ -339,4 +410,59 @@ const filteredCustomers = computed(() => {
   background: #FEE2E2;
   color: #991B1B;
 }
+
+.restricted-badge {
+  background: #FEF3C7;
+  color: #92400E;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.col-actions-head,
+.col-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.btn-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 13px;
+  min-height: 36px;
+  border-radius: 8px;
+  background: #FFFBF2;
+  border: 1px solid #DFC99F;
+  color: #6B502A;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s;
+}
+
+.btn-details:hover {
+  background: #8C6D3F;
+  border-color: #8C6D3F;
+  color: #FFFFFF;
+}
+
+.btn-details:focus-visible,
+.btn-refresh:focus-visible {
+  outline: 2px solid #8C6D3F;
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .search-box {
+    max-width: 100%;
+    min-width: 100%;
+  }
+}
 </style>
+

@@ -17,6 +17,11 @@
       <form class="checkout-layout" novalidate @submit.prevent="handleCreateOrder">
         <!-- Left: Address Form (design_address.md) & Order Items -->
         <div class="checkout-form-col">
+          <div v-if="isOrderDisabled" class="order-blocked-banner" role="alert">
+            <strong>Fitur Pemesanan Dinonaktifkan</strong>
+            <p>{{ currentUser?.restriction_reason ? `Alasan: ${currentUser.restriction_reason}` : 'Akses pengajuan pesanan baru pada akun Anda sedang dibatasi oleh admin.' }}</p>
+          </div>
+
           <!-- Error Summary (role="alert") -->
           <div v-if="errorSummaryList.length > 0" ref="errorSummaryRef" class="error-summary-box" role="alert" tabindex="-1">
             <strong>Mohon periksa kembali data berikut:</strong>
@@ -667,9 +672,9 @@
               <button
                 type="submit"
                 class="btn-create-order"
-                :disabled="isSubmitting || checkoutItems.length === 0"
+                :disabled="isSubmitting || checkoutItems.length === 0 || isOrderDisabled"
               >
-                {{ isSubmitting ? 'Memproses Pesanan…' : 'Lanjutkan' }}
+                {{ isOrderDisabled ? 'Pemesanan Dinonaktifkan' : (isSubmitting ? 'Memproses Pesanan…' : 'Lanjutkan') }}
               </button>
             </div>
           </div>
@@ -692,6 +697,7 @@ definePageMeta({
 const route = useRoute()
 const router = useRouter()
 const { currentUser } = useAuth()
+const isOrderDisabled = computed(() => currentUser.value?.can_order === false)
 const { showToast } = useToast()
 
 const productId = route.query.productId as string
@@ -1455,6 +1461,10 @@ const jastipSubtotal = computed(() =>
 )
 
 const handleCreateOrder = async () => {
+  if (isOrderDisabled.value) {
+    showToast('Pemesanan Dibatasi', 'Fitur pemesanan pada akun Anda sedang dinonaktifkan oleh admin.', 'warning')
+    return
+  }
   if (!validateAllAddressFields()) {
     useCustomAddress.value = true
     await nextTick()
@@ -2420,6 +2430,26 @@ const formatRupiah = (val: number) => {
     z-index: 900;
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.08);
   }
+}
+
+.order-blocked-banner {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 12px;
+  color: #991B1B;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.order-blocked-banner strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.order-blocked-banner p {
+  margin: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {

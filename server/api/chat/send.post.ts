@@ -9,18 +9,26 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Harus login untuk mengirim pesan' })
   }
 
-  // Ensure sender still exists in database
+  // Ensure sender still exists and has access in database
   const currentUser = await prisma.users.findUnique({
     where: { id: session.userId },
-    select: { id: true, is_active: true }
+    select: { id: true, is_active: true, can_chat: true, restriction_reason: true }
   })
   if (!currentUser || !currentUser.is_active) {
     clearSessionCookie(event)
-    throw createError({ statusCode: 401, message: 'Sesi akun kedaluwarsa. Silakan masuk kembali.' })
+    throw createError({ statusCode: 401, message: 'Sesi akun kedaluwarsa atau akun dinonaktifkan. Silakan masuk kembali.' })
   }
 
   const body = await readBody(event)
   const isAdmin = session.role === 'admin' || session.role === 'staff'
+
+  if (!isAdmin && !currentUser.can_chat) {
+    const reasonText = currentUser.restriction_reason ? ` Alasan: ${currentUser.restriction_reason}` : ''
+    throw createError({
+      statusCode: 403,
+      message: `Fitur live chat pada akun Anda sedang dinonaktifkan oleh admin.${reasonText}`
+    })
+  }
 
   const allowedTypes = ['text', 'image', 'product', 'jastip', 'request'] as const
   const messageType: 'text' | 'image' | 'product' | 'jastip' | 'request' =

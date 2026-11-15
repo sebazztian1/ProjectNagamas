@@ -13,7 +13,7 @@
       </button>
     </div>
 
-    <div class="chat-inbox-card">
+    <div class="chat-inbox-card" :class="{ 'has-active-room': !!activeRoom }">
       <!-- Conversation List -->
       <div class="inbox-sidebar">
         <div class="inbox-search">
@@ -50,9 +50,17 @@
       <!-- Active Conversation Area -->
       <div v-if="activeRoom" class="inbox-conversation">
         <div class="conv-header">
-          <div class="user-info">
-            <strong>@{{ activeRoom.customerUsername }}</strong>
-            <span class="user-phone">{{ activeRoom.customerPhone }}</span>
+          <div class="conv-header-left">
+            <button type="button" class="mobile-back-to-rooms" @click="activeRoom = null" aria-label="Kembali ke daftar pesan">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+              </svg>
+            </button>
+            <div class="user-info">
+              <strong>@{{ activeRoom.customerUsername }}</strong>
+              <span class="user-phone">{{ activeRoom.customerPhone }}</span>
+            </div>
           </div>
           <span class="active-badge">&bull; Realtime Aktif</span>
         </div>
@@ -844,5 +852,43 @@ const handleAdminImageUpload = async (e: Event) => {
 .btn-reply:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.mobile-back-to-rooms {
+  display: none;
+}
+
+.conv-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+@media (max-width: 768px) {
+  .chat-inbox-card {
+    grid-template-columns: 1fr;
+    height: calc(100vh - 170px);
+    min-height: 520px;
+  }
+
+  .chat-inbox-card.has-active-room .inbox-sidebar {
+    display: none;
+  }
+
+  .chat-inbox-card:not(.has-active-room) .inbox-conversation {
+    display: none;
+  }
+
+  .mobile-back-to-rooms {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid var(--color-secondary, #EFE1C6);
+    border-radius: 8px;
+    padding: 6px;
+    color: var(--color-primary, #8C6D3F);
+    cursor: pointer;
+  }
 }
 </style>

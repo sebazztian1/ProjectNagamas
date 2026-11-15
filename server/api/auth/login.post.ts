@@ -71,7 +71,8 @@ export default defineEventHandler(async (event) => {
   }
 
   if (!user.is_active) {
-    throw createError({ statusCode: 403, message: 'Akun Anda telah dinonaktifkan. Silakan hubungi admin.' })
+    const reasonText = user.restriction_reason ? ` Alasan: ${user.restriction_reason}` : ' Silakan hubungi admin.'
+    throw createError({ statusCode: 403, message: `Akun Anda telah dinonaktifkan.${reasonText}` })
   }
 
   // Verify password with bcrypt
@@ -119,7 +120,12 @@ export default defineEventHandler(async (event) => {
       id: user.id,
       username: user.username,
       phone_number: user.phone_number,
-      role: user.role
+      role: user.role,
+      is_active: user.is_active,
+      can_order: user.can_order,
+      can_request: user.can_request,
+      can_chat: user.can_chat,
+      restriction_reason: user.restriction_reason || null
     }
   }
 })

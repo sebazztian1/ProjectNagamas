@@ -109,12 +109,33 @@
         <NuxtLink to="/ready">Ready Stock</NuxtLink>
         <NuxtLink to="/jastip">Jadwal Jastip</NuxtLink>
         <NuxtLink to="/request">Request Titip</NuxtLink>
-        <NuxtLink v-if="!isAdmin" to="/notifikasi">
-          Notifikasi
-          <span v-if="unreadCount > 0" class="mobile-badge">{{ unreadCount }}</span>
-        </NuxtLink>
-        <NuxtLink v-if="!isAdmin" :to="currentUser ? '/chat' : '/register'">Live Chat</NuxtLink>
-        <NuxtLink v-if="!currentUser" to="/login">Masuk</NuxtLink>
+
+        <template v-if="currentUser">
+          <NuxtLink v-if="isAdmin" to="/admin" class="mobile-highlight">
+            Panel Admin
+          </NuxtLink>
+          <template v-else>
+            <NuxtLink to="/orders">Pesanan Saya</NuxtLink>
+            <NuxtLink to="/wishlist">
+              Wishlist
+              <span v-if="wishlistCount > 0" class="mobile-badge">{{ wishlistCount }}</span>
+            </NuxtLink>
+            <NuxtLink to="/notifikasi">
+              Notifikasi
+              <span v-if="unreadCount > 0" class="mobile-badge">{{ unreadCount }}</span>
+            </NuxtLink>
+            <NuxtLink to="/chat">Live Chat Admin</NuxtLink>
+          </template>
+          <NuxtLink to="/akun">Akun Saya (@{{ currentUser.username }})</NuxtLink>
+          <button type="button" class="mobile-logout-btn" @click.stop="mobileOpen = false; handleLogout()">
+            Keluar Akun
+          </button>
+        </template>
+        <template v-else>
+          <NuxtLink to="/wishlist">Wishlist</NuxtLink>
+          <NuxtLink to="/login">Masuk Akun</NuxtLink>
+          <NuxtLink to="/register" class="mobile-highlight">Daftar Akun Baru</NuxtLink>
+        </template>
       </nav>
     </transition>
   </header>
@@ -486,6 +507,39 @@ const handleLogout = async () => {
   font-weight: 500;
   color: var(--color-text);
   border-bottom: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.mobile-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-accent);
+  color: #ffffff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 999px;
+  margin-left: 8px;
+}
+
+.mobile-highlight {
+  color: var(--brand-accent) !important;
+  font-weight: 700 !important;
+}
+
+.mobile-logout-btn {
+  background: transparent;
+  border: none;
+  text-align: left;
+  padding: 14px 0 6px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #DC2626;
+  cursor: pointer;
+  width: 100%;
 }
 
 .mobile-menu a:last-child {

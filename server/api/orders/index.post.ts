@@ -1,6 +1,6 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
-import { getSessionFromEvent } from '../../utils/session'
+import { getSessionFromEvent, clearSessionCookie } from '../../utils/session'
 import { generateOrderCode, formatOrderResponse } from '../../utils/orders'
 import { validateAndBuildAddressSnapshot, saveUserAddress } from '../../utils/addresses'
 import { normalizeIndonesianPhone } from '../../utils/indonesiaRegions'
@@ -22,6 +22,31 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, message: 'Akun admin tidak dapat mengajukan pesanan customer.' })
   }
 
+  const customerAccount = await prisma.users.findUnique({
+    where: { id: session.userId },
+    select: {
+      id: true,
+      username: true,
+      phone_number: true,
+      is_active: true,
+      can_order: true,
+      restriction_reason: true
+    }
+  })
+
+  if (!customerAccount || !customerAccount.is_active) {
+    clearSessionCookie(event)
+    throw createError({ statusCode: 403, message: 'Akun Anda telah dinonaktifkan.' })
+  }
+
+  if (!customerAccount.can_order) {
+    const reasonText = customerAccount.restriction_reason ? ` Alasan: ${customerAccount.restriction_reason}` : ''
+    throw createError({
+      statusCode: 403,
+      message: `Fitur pemesanan pada akun Anda sedang dinonaktifkan oleh admin.${reasonText}`
+    })
+  }
+
   const body = await readBody(event)
 
   const fulfillmentMethod: 'pickup' | 'delivery' =
@@ -38,12 +63,11 @@ export default defineEventHandler(async (event) => {
   const requestedPaymentType: 'full' | 'dp' = body?.paymentType === 'dp' ? 'dp' : 'full'
 
   if (fulfillmentMethod === 'pickup') {
-    const userRow = await prisma.users.findUnique({ where: { id: session.userId } })
     if (!recipientName || recipientName.length < 2) {
-      recipientName = userRow?.username || session.username
+      recipientName = customerAccount.username || session.username
     }
-    const normPhone = normalizeIndonesianPhone(recipientPhone || userRow?.phone_number || '')
-    recipientPhone = normPhone || recipientPhone || userRow?.phone_number || '-'
+    const normPhone = normalizeIndonesianPhone(recipientPhone || customerAccount.phone_number || '')
+    recipientPhone = normPhone || recipientPhone || customerAccount.phone_number || '-'
     shippingAddress = 'Ambil sendiri di Pasar Baru'
   } else if (body?.provinceCode || body?.province_code) {
     // Full server-side validation according to design_address.md

@@ -1,11 +1,29 @@
 import { defineEventHandler, readBody, createError } from 'h3'
 import { prisma } from '../../utils/prisma'
-import { getSessionFromEvent } from '../../utils/session'
+import { getSessionFromEvent, clearSessionCookie } from '../../utils/session'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
   if (!session) {
     throw createError({ statusCode: 401, message: 'Silakan masuk ke akun Anda untuk mengajukan request titip barang.' })
+  }
+
+  const customer = await prisma.users.findUnique({
+    where: { id: session.userId },
+    select: { id: true, is_active: true, can_request: true, restriction_reason: true }
+  })
+
+  if (!customer || !customer.is_active) {
+    clearSessionCookie(event)
+    throw createError({ statusCode: 403, message: 'Akun Anda telah dinonaktifkan.' })
+  }
+
+  if (!customer.can_request) {
+    const reasonText = customer.restriction_reason ? ` Alasan: ${customer.restriction_reason}` : ''
+    throw createError({
+      statusCode: 403,
+      message: `Fitur request produk pada akun Anda sedang dinonaktifkan oleh admin.${reasonText}`
+    })
   }
 
   const body = await readBody(event)

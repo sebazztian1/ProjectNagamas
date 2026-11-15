@@ -1861,4 +1861,24 @@ const formatRupiah = (val: number) => {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+@media (max-width: 768px) {
+  .trip-head-bar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .head-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .btn-add-product, .btn-export-csv, .btn-refresh {
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+  }
+  .form-row-2 {
+    grid-template-columns: 1fr !important;
+  }
+}
 </style>

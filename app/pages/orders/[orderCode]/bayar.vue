@@ -733,4 +733,29 @@ const formatRupiah = (val: number) => {
     grid-template-columns: 1fr;
   }
 }
+
+@media (max-width: 560px) {
+  .payment-upload-page {
+    padding: 20px 14px 48px;
+  }
+  .tagihan-amount-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .btn-copy {
+    width: 100%;
+    text-align: center;
+    padding: 8px;
+  }
+  .bank-list-card,
+  .upload-card,
+  .total-tagihan-card {
+    padding: 16px;
+  }
+  .bank-acc-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+}
 </style>

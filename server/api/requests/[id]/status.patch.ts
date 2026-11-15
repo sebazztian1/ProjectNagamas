@@ -1,11 +1,21 @@
 import { defineEventHandler, getRouterParam, readBody, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
-import { getSessionFromEvent } from '../../../utils/session'
+import { getSessionFromEvent, clearSessionCookie } from '../../../utils/session'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
   if (!session) {
     throw createError({ statusCode: 401, message: 'Silakan masuk ke akun Anda.' })
+  }
+
+  const currentUser = await prisma.users.findUnique({
+    where: { id: session.userId },
+    select: { id: true, is_active: true, can_request: true, restriction_reason: true }
+  })
+
+  if (!currentUser || !currentUser.is_active) {
+    clearSessionCookie(event)
+    throw createError({ statusCode: 403, message: 'Akun Anda telah dinonaktifkan.' })
   }
 
   const id = Number(getRouterParam(event, 'id'))
@@ -30,6 +40,14 @@ export default defineEventHandler(async (event) => {
 
   if (req.user_id !== session.userId && session.role !== 'admin' && session.role !== 'staff') {
     throw createError({ statusCode: 403, message: 'Anda tidak memiliki akses ke request ini.' })
+  }
+
+  if (session.role !== 'admin' && session.role !== 'staff' && nextStatus === 'accepted' && !currentUser.can_request) {
+    const reasonText = currentUser.restriction_reason ? ` Alasan: ${currentUser.restriction_reason}` : ''
+    throw createError({
+      statusCode: 403,
+      message: `Fitur request produk pada akun Anda sedang dinonaktifkan oleh admin.${reasonText}`
+    })
   }
 
   const updated = await prisma.product_requests.update({

@@ -18,7 +18,11 @@ export default defineEventHandler(async (event) => {
       username: true,
       phone_number: true,
       role: true,
-      is_active: true
+      is_active: true,
+      can_order: true,
+      can_request: true,
+      can_chat: true,
+      restriction_reason: true
     }
   })
 
@@ -34,7 +38,12 @@ export default defineEventHandler(async (event) => {
       id: user.id,
       username: user.username,
       phone_number: user.phone_number,
-      role: user.role
+      role: user.role,
+      is_active: user.is_active,
+      can_order: user.can_order,
+      can_request: user.can_request,
+      can_chat: user.can_chat,
+      restriction_reason: user.restriction_reason || null
     }
   }
 })
