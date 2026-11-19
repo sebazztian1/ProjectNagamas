@@ -9,6 +9,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Silakan masuk ke akun Anda untuk melihat riwayat request.' })
   }
 
+  if (session.role === 'admin' || session.role === 'staff') {
+    return []
+  }
+
   const requests = await prisma.product_requests.findMany({
     where: {
       user_id: session.userId

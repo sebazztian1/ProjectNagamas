@@ -8,14 +8,28 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Silakan masuk ke akun Anda untuk mengajukan request titip barang.' })
   }
 
+  if (session.role === 'admin' || session.role === 'staff') {
+    throw createError({
+      statusCode: 403,
+      message: 'Akun admin tidak dapat mengajukan request produk sendiri.'
+    })
+  }
+
   const customer = await prisma.users.findUnique({
     where: { id: session.userId },
-    select: { id: true, is_active: true, can_request: true, restriction_reason: true }
+    select: { id: true, role: true, is_active: true, can_request: true, restriction_reason: true }
   })
 
   if (!customer || !customer.is_active) {
     clearSessionCookie(event)
     throw createError({ statusCode: 403, message: 'Akun Anda telah dinonaktifkan.' })
+  }
+
+  if (customer.role === 'admin' || customer.role === 'staff') {
+    throw createError({
+      statusCode: 403,
+      message: 'Akun admin tidak dapat mengajukan request produk sendiri.'
+    })
   }
 
   if (!customer.can_request) {

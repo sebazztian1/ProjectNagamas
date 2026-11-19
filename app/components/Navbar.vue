@@ -25,7 +25,7 @@
         <NuxtLink to="/" class="nav-link" exact-active-class="active">Beranda</NuxtLink>
         <NuxtLink to="/ready" class="nav-link" active-class="active">Ready Stock</NuxtLink>
         <NuxtLink to="/jastip" class="nav-link" active-class="active">Jadwal Jastip</NuxtLink>
-        <NuxtLink to="/request" class="nav-link" active-class="active">Request</NuxtLink>
+        <NuxtLink v-if="!isAdmin" to="/request" class="nav-link" active-class="active">Request</NuxtLink>
       </nav>
 
       <!-- Right: Compact icon actions -->
@@ -108,7 +108,7 @@
         <NuxtLink to="/">Beranda</NuxtLink>
         <NuxtLink to="/ready">Ready Stock</NuxtLink>
         <NuxtLink to="/jastip">Jadwal Jastip</NuxtLink>
-        <NuxtLink to="/request">Request Titip</NuxtLink>
+        <NuxtLink v-if="!isAdmin" to="/request">Request Titip</NuxtLink>
 
         <template v-if="currentUser">
           <NuxtLink v-if="isAdmin" to="/admin" class="mobile-highlight">
