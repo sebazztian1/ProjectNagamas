@@ -19,7 +19,15 @@
             <h3>Form Pengajuan</h3>
           </div>
 
-          <div v-if="isRequestDisabled" class="access-blocked-banner" role="alert">
+          <div v-if="isAdmin" class="admin-blocked-banner" role="alert">
+            <div class="admin-blocked-copy">
+              <strong>Mode Admin — Khusus Pelanggan</strong>
+              <p>Akun admin/staff tidak dapat membuat request produk sendiri. Kelola permintaan pelanggan melalui Panel Admin.</p>
+            </div>
+            <NuxtLink to="/admin/request" class="btn-go-admin-req">Kelola Request di Panel Admin &rarr;</NuxtLink>
+          </div>
+
+          <div v-else-if="isRequestDisabled" class="access-blocked-banner" role="alert">
             <strong>Fitur Request Produk Dinonaktifkan</strong>
             <p v-if="currentUser?.restriction_reason">Alasan: {{ currentUser.restriction_reason }}</p>
             <p v-else>Akses pengajuan request produk pada akun Anda sedang dibatasi oleh admin.</p>
@@ -32,14 +40,14 @@
                 v-model="form.productName" 
                 type="text" 
                 placeholder="Contoh: Starbucks Japan Sakura Tumbler 2026" 
-                :disabled="isRequestDisabled"
+                :disabled="isFormBlocked"
                 required 
               />
             </div>
 
             <div class="form-group">
               <label>Trip Tujuan</label>
-              <select v-model="form.tripId" :disabled="isRequestDisabled">
+              <select v-model="form.tripId" :disabled="isFormBlocked">
                 <option :value="null">Bebas / Belum Tentu</option>
                 <option v-for="trip in openTrips" :key="trip.id" :value="trip.id">
                   {{ trip.flag }} {{ trip.title }} ({{ trip.country }})
@@ -53,7 +61,7 @@
                 v-model="form.referenceLink" 
                 type="url" 
                 placeholder="https://..." 
-                :disabled="isRequestDisabled"
+                :disabled="isFormBlocked"
               />
             </div>
 
@@ -64,11 +72,18 @@
                 type="file" 
                 accept="image/png,image/jpeg,image/webp" 
                 class="hidden-file-input" 
+                :disabled="isFormBlocked"
                 @change="handleFileUpload" 
               />
 
               <!-- Upload Box / Preview -->
-              <div v-if="!form.referenceImageUrl" class="upload-box" @click="triggerFileInput">
+              <div
+                v-if="!form.referenceImageUrl"
+                class="upload-box"
+                :class="{ 'is-disabled': isFormBlocked }"
+                :aria-disabled="isFormBlocked ? 'true' : undefined"
+                @click="triggerFileInput"
+              >
                 <div v-if="isUploading" class="upload-loading">
                   <div class="spinner"></div>
                   <span>Mengunggah foto...</span>
@@ -91,7 +106,7 @@
                   <span class="preview-label">Foto referensi siap dikirim</span>
                   <div class="btn-group-preview">
                     <button type="button" class="btn-preview-view" @click="openImageModal(form.referenceImageUrl)">Lihat Ukuran Penuh</button>
-                    <button type="button" class="btn-preview-remove" @click="removeUploadedImage">Ganti Foto</button>
+                    <button type="button" class="btn-preview-remove" :disabled="isFormBlocked" @click="removeUploadedImage">Ganti Foto</button>
                   </div>
                 </div>
               </div>
@@ -103,12 +118,13 @@
                 v-model="form.description" 
                 rows="3" 
                 placeholder="Varian, ukuran, warna..."
-                :disabled="isRequestDisabled"
+                :disabled="isFormBlocked"
               ></textarea>
             </div>
 
-            <button type="submit" class="btn-submit-req" :disabled="isSubmitting || isUploading || isRequestDisabled">
+            <button type="submit" class="btn-submit-req" :disabled="isSubmitting || isUploading || isFormBlocked">
               <span v-if="isSubmitting">Mengirim...</span>
+              <span v-else-if="isAdmin">Khusus Pelanggan</span>
               <span v-else-if="isRequestDisabled">Request Dinonaktifkan</span>
               <span v-else>Kirim Request</span>
             </button>
@@ -122,8 +138,15 @@
             <span class="count-tag">{{ requestsList.length }}</span>
           </div>
 
+          <!-- Admin State -->
+          <div v-if="isAdmin" class="empty-req admin-history-note">
+            <h4>Pengelolaan Request Pelanggan</h4>
+            <p>Riwayat di halaman ini hanya untuk pengajuan akun pelanggan. Untuk meninjau dan mengirim penawaran harga request customer, buka halaman admin.</p>
+            <NuxtLink to="/admin/request" class="btn-go-admin-req">Buka Daftar Request Admin &rarr;</NuxtLink>
+          </div>
+
           <!-- Loading State -->
-          <div v-if="pending" class="loading-state">
+          <div v-else-if="pending" class="loading-state">
             <div class="spinner"></div>
             <span>Memuat...</span>
           </div>
@@ -195,7 +218,7 @@
                 <div v-if="!req.isExpired" class="quote-actions">
                   <button 
                     class="btn-accept-quote" 
-                    :disabled="actionLoading === req.id || isRequestDisabled"
+                    :disabled="actionLoading === req.id || isFormBlocked"
                     @click="acceptQuote(req)"
                   >
                     Setujui & Buat Pesanan
@@ -266,8 +289,9 @@ definePageMeta({
 
 const router = useRouter()
 const { showToast } = useToast()
-const { currentUser } = useAuth()
+const { currentUser, isAdmin } = useAuth()
 const isRequestDisabled = computed(() => currentUser.value?.can_request === false)
+const isFormBlocked = computed(() => isAdmin.value || isRequestDisabled.value)
 
 interface RequestItem {
   id: number
@@ -313,7 +337,8 @@ const openTrips = computed<OpenTrip[]>(() => {
 
 // Fetch requests from DB
 const { data: requestsData, pending, refresh } = await useFetch<RequestItem[]>('/api/requests', {
-  headers: computed(() => token.value ? { Authorization: `Bearer ${token.value}` } : {})
+  immediate: !isAdmin.value,
+  default: () => []
 })
 
 const requestsList = computed<RequestItem[]>(() => requestsData.value || [])
@@ -334,10 +359,12 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const activeModalImage = ref<string | null>(null)
 
 const triggerFileInput = () => {
+  if (isFormBlocked.value) return
   fileInputRef.value?.click()
 }
 
 const handleFileUpload = async (event: Event) => {
+  if (isFormBlocked.value) return
   const target = event.target as HTMLInputElement
   const file = target.files?.[0]
   if (!file) return
@@ -375,6 +402,10 @@ const removeUploadedImage = () => {
 }
 
 const submitRequest = async () => {
+  if (isAdmin.value) {
+    showToast('Khusus Pelanggan', 'Akun admin tidak dapat mengajukan request produk sendiri.', 'warning')
+    return
+  }
   if (isRequestDisabled.value) {
     showToast('Akses Dibatasi', 'Fitur request produk pada akun Anda dinonaktifkan oleh admin.', 'warning')
     return
@@ -415,6 +446,10 @@ const submitRequest = async () => {
 }
 
 const acceptQuote = async (req: RequestItem) => {
+  if (isAdmin.value) {
+    showToast('Khusus Pelanggan', 'Akun admin tidak dapat menyetujui penawaran request sendiri.', 'warning')
+    return
+  }
   if (isRequestDisabled.value) {
     showToast('Akses Dibatasi', 'Fitur request produk pada akun Anda dinonaktifkan oleh admin.', 'warning')
     return
@@ -677,6 +712,15 @@ const formatDate = (dateStr: string) => {
   border-color: var(--color-primary, #8C6D3F);
 }
 
+.upload-box.is-disabled,
+.upload-box.is-disabled:hover {
+  opacity: 0.55;
+  cursor: not-allowed;
+  pointer-events: none;
+  background: var(--color-canvas, #FFFBF2);
+  border-color: var(--color-secondary, #EFE1C6);
+}
+
 .upload-content {
   display: flex;
   flex-direction: column;
@@ -753,6 +797,62 @@ const formatDate = (dateStr: string) => {
   font-size: 0.74rem;
   color: #DC2626;
   cursor: pointer;
+}
+
+.admin-blocked-banner {
+  background: #FFFBF2;
+  border: 1px solid #D8B978;
+  border-radius: 10px;
+  color: #2B2116;
+  padding: 14px 16px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.admin-blocked-copy strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #2B2116;
+}
+
+.admin-blocked-copy p {
+  margin: 0;
+  color: #5C4930;
+}
+
+.btn-go-admin-req {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: flex-start;
+  padding: 9px 16px;
+  border-radius: 999px;
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btn-go-admin-req:hover {
+  background: var(--color-primary-hover, #6F5530);
+}
+
+.admin-history-note {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-history-note .btn-go-admin-req {
+  align-self: center;
+  margin-top: 4px;
 }
 
 .access-blocked-banner {
