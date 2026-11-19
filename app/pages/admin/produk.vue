@@ -11,7 +11,7 @@
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          <span>Export CSV</span>
+          <span>Ekspor laporan</span>
         </button>
         <button class="btn-refresh" @click="refresh()" :disabled="status === 'pending'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': status === 'pending' }">
@@ -489,7 +489,7 @@
 
     <AdminCsvExportModal
       :show="showExportModal"
-      title="Export Katalog & Valuasi Produk (.csv)"
+      title="Ekspor Katalog & Valuasi Produk"
       subtitle="Ekspor daftar SKU produk, harga valas vs IDR, sisa stok/kuota, dan estimasi nilai aset persediaan berdasarkan timestamp pembuatan."
       v-model:start-date="exportStartDate"
       v-model:end-date="exportEndDate"
@@ -500,7 +500,7 @@
       :max-timestamp="exportPreview.maxTimestamp"
       :summary-metrics="exportMetrics"
       @close="showExportModal = false"
-      @export="handleExportCsv"
+      :prepare-files="prepareFiles"
     />
   </div>
 </template>
@@ -510,9 +510,8 @@ import { ref, computed, watch } from 'vue'
 import { useToast } from '../../composables/useToast'
 import type { CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
 import {
-  downloadCsvFile,
-  filterByDateRange,
-  formatCsvTimestamp
+  prepareReportFiles,
+  filterByDateRange
 } from '../../utils/csvExport'
 
 definePageMeta({
@@ -1113,7 +1112,7 @@ const formatRupiah = (val: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 
-// --- Accounting CSV Export ---
+// --- Accounting report export ---
 const showExportModal = ref(false)
 const exportStartDate = ref('')
 const exportEndDate = ref('')
@@ -1180,14 +1179,14 @@ const exportMetrics = computed<CsvPreviewMetric[]>(() => {
   ]
 })
 
-const handleExportCsv = () => {
+const prepareFiles = () => {
   const { items, minTimestamp, maxTimestamp } = exportPreview.value
   if (!items.length) return
 
   const totalAsset = items.reduce((s, p) => s + getProductAssetValuation(p), 0)
   const totalUnits = items.reduce((s, p) => s + getProductAvailableUnits(p), 0)
 
-  const res = downloadCsvFile({
+  return prepareReportFiles({
     filenamePrefix: 'produk_valuasi_stok',
     reportTitle: 'Laporan Katalog & Valuasi Stok Produk',
     rows: items,
@@ -1200,10 +1199,10 @@ const handleExportCsv = () => {
       { label: 'Total Potensi Nilai Aset (IDR)', value: totalAsset }
     ],
     columns: [
-      { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
-      { header: 'Timestamp Update (WIB)', format: r => formatCsvTimestamp(r.updatedAt) },
-      { header: 'ID SKU', key: 'id' },
-      { header: 'Nama Produk', key: 'name' },
+      { header: 'Waktu Pembuatan (WIB)', kind: 'datetime', key: 'createdAt' },
+      { header: 'Waktu Pembaruan (WIB)', kind: 'datetime', key: 'updatedAt' },
+      { header: 'ID SKU', kind: 'identifier', key: 'id' },
+      { header: 'Nama Produk', minWidth: 25, key: 'name' },
       { header: 'Slug', key: 'slug' },
       { header: 'Kategori', key: 'categoryName' },
       { header: 'Tipe Produk', format: r => (r.productType === 'ready' ? 'Ready Stock' : 'Jastip PO') },
@@ -1211,18 +1210,16 @@ const handleExportCsv = () => {
       { header: 'Negara Asal', format: r => r.tripCountry || '-' },
       { header: 'Toko Sumber', format: r => r.sourceStore || '-' },
       { header: 'Mata Uang Asli', format: r => r.originalCurrency || 'IDR' },
-      { header: 'Harga Beli Valas', format: r => (r.originalPrice !== null ? Number(r.originalPrice) : '') },
-      { header: 'Harga Jual Utama (IDR)', format: r => Number(r.price || 0) },
+      { header: 'Harga Beli Valas', kind: 'number', key: 'originalPrice' },
+      { header: 'Harga Jual Utama (IDR)', kind: 'number', key: 'price' },
       { header: 'Stok / Kuota Tersedia', format: r => getProductAvailableUnits(r) },
       { header: 'Potensi Nilai Stok (IDR)', format: r => getProductAssetValuation(r) },
-      { header: 'Status Stok', format: r => (r.stockStatus === 'in_stock' ? 'Tersedia' : 'Habis') },
-      { header: 'Max Qty/Order', format: r => Number(r.maxQtyPerOrder || 0) },
+      { header: 'Status Stok', kind: 'status', format: r => (r.stockStatus === 'in_stock' ? 'Tersedia' : 'Habis') },
+      { header: 'Max Qty/Order', kind: 'number', key: 'maxQtyPerOrder' },
       { header: 'Rincian Variasi', format: r => getVariantsCsvText(r) },
-      { header: 'Status Aktif', format: r => (r.isActive ? 'Aktif' : 'Nonaktif') }
+      { header: 'Status Aktif', kind: 'status', format: r => (r.isActive ? 'Aktif' : 'Nonaktif') }
     ]
   })
-  showToast('CSV Berhasil Diekspor', `${res.rowCount} SKU produk diunduh (${res.filename}).`, 'success')
-  showExportModal.value = false
 }
 </script>
 

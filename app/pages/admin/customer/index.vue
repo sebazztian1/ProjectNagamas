@@ -9,7 +9,7 @@
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          <span>Export CSV</span>
+          <span>Ekspor laporan</span>
         </button>
         <button class="btn-refresh" @click="fetchCustomers" :disabled="pending">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
@@ -106,7 +106,7 @@
 
     <AdminCsvExportModal
       :show="showExportModal"
-      title="Export Data Pelanggan & Piutang (.csv)"
+      title="Ekspor Data Pelanggan & Piutang"
       subtitle="Ekspor ringkasan akun, nilai transaksi, total pembayaran masuk, dan sisa tagihan pelanggan berdasarkan tanggal bergabung (WIB)."
       v-model:start-date="exportStartDate"
       v-model:end-date="exportEndDate"
@@ -117,7 +117,7 @@
       :max-timestamp="exportPreview.maxTimestamp"
       :summary-metrics="exportMetrics"
       @close="showExportModal = false"
-      @export="handleExportCsv"
+      :prepare-files="prepareFiles"
     />
   </div>
 </template>
@@ -128,9 +128,8 @@ import { useToast } from '../../../composables/useToast'
 import { useAdminStats } from '../../../composables/useAdminStats'
 import type { CsvPreviewMetric } from '../../../components/AdminCsvExportModal.vue'
 import {
-  downloadCsvFile,
-  filterByDateRange,
-  formatCsvTimestamp
+  prepareReportFiles,
+  filterByDateRange
 } from '../../../utils/csvExport'
 
 const { showToast } = useToast()
@@ -205,7 +204,7 @@ const filteredCustomers = computed(() => {
   })
 })
 
-// --- Accounting CSV Export ---
+// --- Accounting report export ---
 const showExportModal = ref(false)
 const exportStartDate = ref('')
 const exportEndDate = ref('')
@@ -240,7 +239,7 @@ const exportMetrics = computed<CsvPreviewMetric[]>(() => {
   ]
 })
 
-const handleExportCsv = () => {
+const prepareFiles = () => {
   const { items, minTimestamp, maxTimestamp } = exportPreview.value
   if (!items.length) return
 
@@ -248,7 +247,7 @@ const handleExportCsv = () => {
   const totalPaidAmt = items.reduce((s, c) => s + Number(c.totalPaidAmount || 0), 0)
   const totalRemaining = items.reduce((s, c) => s + Number(c.totalRemainingAmount || 0), 0)
 
-  const res = downloadCsvFile({
+  return prepareReportFiles({
     filenamePrefix: 'pelanggan_rekap_accounting',
     reportTitle: 'Laporan Rekap Akun & Nilai Transaksi Pelanggan',
     rows: items,
@@ -262,25 +261,23 @@ const handleExportCsv = () => {
       { label: 'Total Sisa Piutang Pelanggan (IDR)', value: totalRemaining }
     ],
     columns: [
-      { header: 'Timestamp Bergabung (WIB)', format: r => formatCsvTimestamp(r.joinedAt) },
-      { header: 'ID Pelanggan', key: 'id' },
+      { header: 'Waktu Bergabung (WIB)', kind: 'datetime', key: 'joinedAt' },
+      { header: 'ID Pelanggan', kind: 'identifier', key: 'id' },
       { header: 'Username', key: 'username' },
-      { header: 'No HP / WA', key: 'phone' },
-      { header: 'Status Akun', format: r => (r.isActive ? 'Aktif' : 'Nonaktif') },
+      { header: 'Nomor HP / WhatsApp', key: 'phone' },
+      { header: 'Status Akun', kind: 'status', format: r => (r.isActive ? 'Aktif' : 'Nonaktif') },
       { header: 'Akses Order', format: r => (r.canOrder ? 'Ya' : 'Tidak') },
       { header: 'Akses Request', format: r => (r.canRequest ? 'Ya' : 'Tidak') },
       { header: 'Akses Chat', format: r => (r.canChat ? 'Ya' : 'Tidak') },
-      { header: 'Total Pesanan', format: r => Number(r.totalOrders || 0) },
-      { header: 'Pesanan Selesai', format: r => Number(r.completedOrdersCount || 0) },
-      { header: 'Nilai Order Aktif (IDR)', format: r => Number(r.totalOrderAmount || 0) },
-      { header: 'Sudah Dibayar (IDR)', format: r => Number(r.totalPaidAmount || 0) },
-      { header: 'Sisa Tagihan (IDR)', format: r => Number(r.totalRemainingAmount || 0) },
-      { header: 'Total Request Produk', format: r => Number(r.totalRequests || 0) },
+      { header: 'Total Pesanan', kind: 'number', key: 'totalOrders' },
+      { header: 'Pesanan Selesai', kind: 'number', key: 'completedOrdersCount' },
+      { header: 'Nilai Order Aktif (IDR)', kind: 'number', key: 'totalOrderAmount' },
+      { header: 'Sudah Dibayar (IDR)', kind: 'number', key: 'totalPaidAmount' },
+      { header: 'Sisa Tagihan (IDR)', kind: 'number', key: 'totalRemainingAmount' },
+      { header: 'Total Request Produk', kind: 'number', key: 'totalRequests' },
       { header: 'Alasan Pembatasan', format: r => r.restrictionReason || '' }
     ]
   })
-  showToast('CSV Berhasil Diekspor', `${res.rowCount} data pelanggan diunduh (${res.filename}).`, 'success')
-  showExportModal.value = false
 }
 </script>
 

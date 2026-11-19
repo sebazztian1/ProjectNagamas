@@ -1,5 +1,12 @@
-export interface CsvColumn<T> {
+type ColumnKind = 'date' | 'datetime' | 'identifier' | 'status' | 'number' | 'sequence'
+
+interface ReportColumn {
   header: string
+  kind?: ColumnKind
+  minWidth?: number
+}
+
+export interface CsvColumn<T> extends ReportColumn {
   key?: keyof T
   format?: (row: T, index: number) => string | number | boolean | Date | null | undefined
 }
@@ -28,7 +35,6 @@ export interface BuildCsvOptions<T> {
   reportTitle?: string
   summaryItems?: CsvSummaryItem[]
   exportedAt?: Date
-  includeBom?: boolean
 }
 
 export interface DownloadCsvOptions<T> extends BuildCsvOptions<T> {
@@ -36,21 +42,20 @@ export interface DownloadCsvOptions<T> extends BuildCsvOptions<T> {
 }
 
 const WIB_TIMEZONE = 'Asia/Jakarta'
+const wibFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: WIB_TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23'
+})
 
 function getWibDateParts(date: Date): Record<string, string> {
-  const formatter = new Intl.DateTimeFormat('en-GB', {
-    timeZone: WIB_TIMEZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hourCycle: 'h23'
-  })
-
   const parts: Record<string, string> = {}
-  for (const part of formatter.formatToParts(date)) {
+  for (const part of wibFormatter.formatToParts(date)) {
     if (part.type !== 'literal') {
       parts[part.type] = part.value
     }
@@ -65,13 +70,6 @@ export function parseDateValue(input: string | number | Date | null | undefined)
   }
   const parsed = new Date(input)
   return Number.isNaN(parsed.getTime()) ? null : parsed
-}
-
-export function formatCsvTimestamp(input: string | number | Date | null | undefined): string {
-  const date = parseDateValue(input)
-  if (!date) return ''
-  const p = getWibDateParts(date)
-  return `${p.year}-${p.month}-${p.day} ${p.hour}:${p.minute}:${p.second}`
 }
 
 export function formatCsvDateOnly(input: string | number | Date | null | undefined): string {
@@ -198,34 +196,113 @@ export function filterByDateRange<T>(
   }
 }
 
-export function sanitizeCsvCell(value: unknown): string {
-  if (value === null || value === undefined) return ''
+interface ReportDate {
+  value: Date
+  text: string
+  withTime: boolean
+}
 
-  if (typeof value === 'number') {
-    return Number.isFinite(value) ? String(value) : ''
+export type ReportCell = string | number | ReportDate
+
+export interface ReportTable {
+  columns: ReportColumn[]
+  rows: ReportCell[][]
+}
+
+export interface ReportFile {
+  format: 'CSV' | 'XLSX'
+  filename: string
+  blob: Blob
+}
+
+const reportNumber = new Intl.NumberFormat('id-ID', { maximumFractionDigits: 20 })
+// Excel's default list separator follows the regional decimal separator.
+const csvDelimiter = new Intl.NumberFormat().format(1.1).includes(',') ? ';' : ','
+const statusLabels: Record<string, string> = {
+  pending_approval: 'Menunggu persetujuan', pending_payment: 'Menunggu pembayaran',
+  payment_uploaded: 'Bukti pembayaran diunggah', verified: 'Terverifikasi',
+  pending: 'Menunggu verifikasi', purchasing: 'Dalam pembelian', arrived: 'Tiba di Indonesia',
+  ready_handover: 'Sedang dikirim', ready_pickup: 'Sedang dikirim', completed: 'Selesai',
+  rejected: 'Ditolak', cancelled: 'Dibatalkan', expired: 'Kedaluwarsa', draft: 'Draf',
+  open: 'Dibuka', closed: 'Ditutup', in_stock: 'Tersedia', out_of_stock: 'Habis'
+}
+
+function reportCell(raw: unknown, kind?: ColumnKind): ReportCell {
+  if (kind === 'date' || kind === 'datetime' || raw instanceof Date) {
+    const date = parseDateValue(raw as string | number | Date | null | undefined)
+    if (!date) return '-'
+    const p = getWibDateParts(date)
+    const withTime = kind !== 'date'
+    const day = `${p.day}/${p.month}/${p.year}`
+    const time = `${p.hour}:${p.minute}:${p.second}`
+    // Excel stores a wall-clock time without a timezone. Encode the WIB clock as UTC.
+    const value = new Date(`${p.year}-${p.month}-${p.day}T${withTime ? time : '00:00:00'}Z`)
+    return { value, text: withTime ? `${day} ${time}` : day, withTime }
   }
-
-  if (typeof value === 'boolean') {
-    return value ? 'Ya' : 'Tidak'
+  if (raw == null || (typeof raw === 'string' && !raw.trim())) return '-'
+  if (kind === 'identifier') return String(raw)
+  if (kind === 'status' && typeof raw === 'string' && Object.hasOwn(statusLabels, raw)) {
+    return statusLabels[raw]!
   }
-
-  if (value instanceof Date) {
-    return formatCsvTimestamp(value)
+  if (kind === 'number') {
+    const number = Number(raw)
+    return Number.isFinite(number) ? number : '-'
   }
+  if (typeof raw === 'number') return Number.isFinite(raw) ? raw : '-'
+  if (typeof raw === 'boolean') return raw ? 'Ya' : 'Tidak'
+  return String(raw)
+}
 
-  let str = String(value)
-  if (!str) return ''
+export function reportCellText(cell: ReportCell): string {
+  if (typeof cell === 'number') return reportNumber.format(cell)
+  return typeof cell === 'string' ? cell : cell.text
+}
 
-  // Defend against CSV spreadsheet formula injection on string values
-  if (/^[=+\-@\t\r]/.test(str)) {
-    str = `'${str}`
+function csvField(cell: ReportCell): string {
+  let text = reportCellText(cell)
+  if (typeof cell === 'string' && text !== '-' && /^(?:\s*[=+@-]|[\t\r\n])/.test(text)) {
+    text = `'${text}`
   }
+  const singleLine = text.replace(/\s*[\r\n]+\s*/g, ' ')
+  return `"${singleLine.replace(/"/g, '""')}"`
+}
 
-  if (/[",\r\n]/.test(str)) {
-    return `"${str.replace(/"/g, '""')}"`
+function reportTable<T>({ columns, rows }: BuildCsvOptions<T>): ReportTable {
+  return {
+    columns: [{ header: 'No', kind: 'sequence' }, ...columns],
+    rows: rows.map((row, index) => {
+      const cells = columns.map(col => {
+        const value = col.format ? col.format(row, index) : col.key !== undefined ? row[col.key] : null
+        return reportCell(value, col.kind)
+      })
+      return [index + 1, ...cells]
+    })
   }
+}
 
-  return str
+function csvContent(table: ReportTable): string {
+  const headers = table.columns.map(column => column.header)
+  const lines = [headers, ...table.rows].map(row => row.map(csvField).join(csvDelimiter))
+  return '\uFEFF' + lines.join('\r\n')
+}
+
+function summaryTable<T>(options: BuildCsvOptions<T>): ReportTable {
+  const { filterStartDate, filterEndDate } = options
+  const period = filterStartDate || filterEndDate
+    ? `${filterStartDate ? reportCellText(reportCell(filterStartDate, 'date')) : 'Awal'} s/d ${filterEndDate ? reportCellText(reportCell(filterEndDate, 'date')) : 'Sekarang'}`
+    : 'Semua periode'
+  return {
+    columns: [{ header: 'Keterangan' }, { header: 'Nilai' }],
+    rows: [
+      ['Nama laporan', options.reportTitle || 'Laporan admin'],
+      ['Waktu data paling awal (WIB)', reportCell(options.minTimestamp, 'datetime')],
+      ['Waktu data paling akhir (WIB)', reportCell(options.maxTimestamp, 'datetime')],
+      ['Periode yang dipilih', period],
+      ['Waktu ekspor (WIB)', reportCell(options.exportedAt ?? new Date(), 'datetime')],
+      ['Jumlah baris data', options.rows.length],
+      ...(options.summaryItems ?? []).map(item => [item.label, reportCell(item.value)])
+    ]
+  }
 }
 
 export function buildCsvFilename(
@@ -255,90 +332,17 @@ export function buildCsvFilename(
   return `${safePrefix}_${getTodayWibDateInput()}.csv`
 }
 
-export function buildCsvContent<T>(options: BuildCsvOptions<T>): string {
-  const {
-    columns,
-    rows,
-    minTimestamp = null,
-    maxTimestamp = null,
-    filterStartDate = '',
-    filterEndDate = '',
-    reportTitle = '',
-    summaryItems = [],
-    exportedAt = new Date(),
-    includeBom = true
-  } = options
-
-  const lines: string[] = []
-  lines.push(columns.map(col => sanitizeCsvCell(col.header)).join(','))
-
-  rows.forEach((row, index) => {
-    const line = columns
-      .map((col) => {
-        const raw = col.format
-          ? col.format(row, index)
-          : col.key !== undefined
-            ? row[col.key]
-            : ''
-        return sanitizeCsvCell(raw)
-      })
-      .join(',')
-    lines.push(line)
-  })
-
-  // Append clean accounting audit footer below the data table
-  lines.push('')
-  lines.push([sanitizeCsvCell('RINGKASAN LAPORAN'), sanitizeCsvCell(reportTitle || 'Export CSV')].join(','))
-  lines.push([
-    sanitizeCsvCell('Timestamp Minimal (Data)'),
-    sanitizeCsvCell(minTimestamp ? formatCsvTimestamp(minTimestamp) + ' WIB' : '-')
-  ].join(','))
-  lines.push([
-    sanitizeCsvCell('Timestamp Maksimal (Data)'),
-    sanitizeCsvCell(maxTimestamp ? formatCsvTimestamp(maxTimestamp) + ' WIB' : '-')
-  ].join(','))
-
-  const filterLabel = filterStartDate || filterEndDate
-    ? `${filterStartDate || 'Awal'} s/d ${filterEndDate || 'Sekarang'}`
-    : 'Semua Periode'
-  lines.push([sanitizeCsvCell('Filter Tanggal Dipilih'), sanitizeCsvCell(filterLabel)].join(','))
-  lines.push([sanitizeCsvCell('Waktu Export'), sanitizeCsvCell(formatCsvTimestamp(exportedAt) + ' WIB')].join(','))
-  lines.push([sanitizeCsvCell('Total Baris Data'), sanitizeCsvCell(rows.length)].join(','))
-
-  for (const item of summaryItems) {
-    lines.push([sanitizeCsvCell(item.label), sanitizeCsvCell(item.value)].join(','))
-  }
-
-  const content = lines.join('\r\n')
-  return includeBom ? `\uFEFF${content}` : content
-}
-
-export function downloadCsvFile<T>(options: DownloadCsvOptions<T>): {
-  filename: string
-  rowCount: number
-} {
-  const csv = buildCsvContent(options)
-  const filename = buildCsvFilename(
-    options.filenamePrefix,
-    options.minTimestamp ?? null,
-    options.maxTimestamp ?? null,
-    options.filterStartDate,
-    options.filterEndDate
-  )
-
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  setTimeout(() => URL.revokeObjectURL(url), 1000)
-
-  return {
-    filename,
-    rowCount: options.rows.length
-  }
+export async function prepareReportFiles<T>(options: DownloadCsvOptions<T>): Promise<ReportFile[]> {
+  const table = reportTable(options)
+  const summary = summaryTable(options)
+  const filename = buildCsvFilename(options.filenamePrefix, options.minTimestamp, options.maxTimestamp,
+    options.filterStartDate, options.filterEndDate)
+  const csv = new Blob([csvContent(table)], { type: 'text/csv;charset=utf-8' })
+  const { buildReportWorkbook } = await import('./reportWorkbook.ts')
+  const xlsx = await buildReportWorkbook(table, summary)
+  return [
+    { format: 'CSV', filename, blob: csv },
+    { format: 'XLSX', filename: filename.replace(/\.csv$/, '.xlsx'), blob: xlsx }
+  ]
 }
 

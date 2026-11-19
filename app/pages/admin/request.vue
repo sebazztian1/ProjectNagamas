@@ -11,7 +11,7 @@
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          <span>Export CSV</span>
+          <span>Ekspor laporan</span>
         </button>
         <button class="btn-refresh" @click="refreshRequests" :disabled="pending">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
@@ -378,7 +378,7 @@
 
     <AdminCsvExportModal
       :show="showExportModal"
-      title="Export Request & Penawaran Harga (.csv)"
+      title="Ekspor Request & Penawaran Harga"
       subtitle="Ekspor pipeline permintaan jastip custom, nilai penawaran (quote), dan batas kedaluwarsa berdasarkan rentang timestamp WIB."
       v-model:start-date="exportStartDate"
       v-model:end-date="exportEndDate"
@@ -390,7 +390,7 @@
       :summary-metrics="exportMetrics"
       :loading="isExportLoading"
       @close="showExportModal = false"
-      @export="handleExportCsv"
+      :prepare-files="prepareFiles"
     />
   </div>
 </template>
@@ -401,9 +401,8 @@ import { useToast } from '../../composables/useToast'
 import { useAdminStats } from '../../composables/useAdminStats'
 import type { CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
 import {
-  downloadCsvFile,
-  filterByDateRange,
-  formatCsvTimestamp
+  prepareReportFiles,
+  filterByDateRange
 } from '../../utils/csvExport'
 
 definePageMeta({
@@ -691,7 +690,7 @@ const formatDate = (dateStr: string) => {
   })
 }
 
-// --- Accounting CSV Export ---
+// --- Accounting report export ---
 const showExportModal = ref(false)
 const exportStartDate = ref('')
 const exportEndDate = ref('')
@@ -750,12 +749,12 @@ const exportMetrics = computed<CsvPreviewMetric[]>(() => {
   ]
 })
 
-const handleExportCsv = () => {
+const prepareFiles = () => {
   const { items, minTimestamp, maxTimestamp } = exportPreview.value
   if (!items.length) return
 
   const totalQuoted = items.reduce((s, r) => s + Number(r.quotedPrice || 0), 0)
-  const res = downloadCsvFile({
+  return prepareReportFiles({
     filenamePrefix: 'request_produk_pipeline',
     reportTitle: 'Laporan Request Produk Custom & Penawaran',
     rows: items,
@@ -767,23 +766,21 @@ const handleExportCsv = () => {
       { label: 'Total Nilai Harga Penawaran (IDR)', value: totalQuoted }
     ],
     columns: [
-      { header: 'Timestamp Request (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
-      { header: 'ID Request', key: 'id' },
-      { header: 'Pelanggan', key: 'userName' },
-      { header: 'No HP / WA', key: 'customerPhone' },
+      { header: 'Waktu Permintaan (WIB)', kind: 'datetime', key: 'createdAt' },
+      { header: 'ID Request', kind: 'identifier', key: 'id' },
+      { header: 'Nama Pelanggan', minWidth: 25, key: 'userName' },
+      { header: 'Nomor HP / WhatsApp', key: 'customerPhone' },
       { header: 'Produk Diminta', key: 'productName' },
       { header: 'Trip Tujuan', key: 'tripTitle' },
       { header: 'Negara', key: 'targetCountry' },
-      { header: 'Status', format: r => formatStatus(r.status) },
-      { header: 'Harga Penawaran (IDR)', format: r => (r.quotedPrice !== null ? Number(r.quotedPrice) : '') },
+      { header: 'Status', kind: 'status', format: r => formatStatus(r.status) },
+      { header: 'Harga Penawaran (IDR)', kind: 'number', key: 'quotedPrice' },
       { header: 'Catatan Penawaran', format: r => r.quoteNote || '' },
-      { header: 'Batas Berlaku Quote (WIB)', format: r => formatCsvTimestamp(r.quoteExpiresAt) },
+      { header: 'Batas Berlaku Quote (WIB)', kind: 'datetime', key: 'quoteExpiresAt' },
       { header: 'Link Referensi', format: r => r.referenceLink || '' },
       { header: 'Catatan Admin', format: r => r.adminNote || '' }
     ]
   })
-  showToast('CSV Berhasil Diekspor', `${res.rowCount} data request diunduh (${res.filename}).`, 'success')
-  showExportModal.value = false
 }
 </script>
 

@@ -11,7 +11,7 @@
                 <line x1="8" y1="13" x2="16" y2="13" />
                 <line x1="8" y1="17" x2="16" y2="17" />
               </svg>
-              ACCOUNTING CSV EXPORT
+              CSV &amp; Excel
             </span>
             <h2 class="csv-modal-title">{{ title }}</h2>
             <p v-if="subtitle" class="csv-modal-sub">{{ subtitle }}</p>
@@ -21,7 +21,7 @@
           </button>
         </div>
 
-        <div class="csv-modal-body">
+        <fieldset v-if="!downloads.length" class="csv-modal-body" :disabled="preparing">
           <!-- Dataset Selector -->
           <div v-if="datasets && datasets.length > 1" class="csv-section">
             <label class="csv-label">Jenis Laporan / Dataset</label>
@@ -158,25 +158,36 @@
             </div>
 
             <p class="csv-preview-note">
-              Format CSV UTF-8 (BOM) siap dibuka di Microsoft Excel &amp; Google Sheets, dengan angka mentah tanpa pemisah ribuan agar mudah dihitung (<code>SUM</code>) serta baris ringkasan audit timestamp di akhir file.
+              CSV berisi tabel data. File Excel memiliki kolom yang disesuaikan, filter, dan lembar ringkasan.
             </p>
           </div>
+          <p v-if="errorMessage" class="csv-range-error" role="alert">{{ errorMessage }}</p>
+        </fieldset>
+        <div v-else class="csv-modal-body">
+          <p role="status">Kedua file siap diunduh.</p>
+          <a v-for="file in downloads" :key="file.format" class="report-link"
+             :href="file.url" :download="file.filename">
+            <strong>Unduh {{ file.format }}</strong>
+            <span>{{ file.filename }}</span>
+          </a>
         </div>
 
         <div class="csv-modal-foot">
-          <button type="button" class="csv-btn-cancel" @click="$emit('close')">Batal</button>
+          <button v-if="downloads.length" type="button" class="csv-btn-cancel" @click="resetDownloads">Ubah pilihan</button>
+          <button type="button" class="csv-btn-cancel" @click="$emit('close')">{{ downloads.length ? 'Tutup' : 'Batal' }}</button>
           <button
+            v-if="!downloads.length"
             type="button"
             class="csv-btn-download"
-            :disabled="loading || !dateRangeValid || previewCount === 0 || exportDisabled"
-            @click="$emit('export')"
+            :disabled="preparing || loading || !dateRangeValid || previewCount === 0 || exportDisabled"
+            @click="prepareDownloads"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="7 10 12 15 17 10" />
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
-            <span>{{ loading ? 'Menyiapkan...' : `Unduh .CSV (${previewCount})` }}</span>
+            <span>{{ preparing || loading ? 'Menyiapkan…' : 'Siapkan CSV dan XLSX' }}</span>
           </button>
         </div>
       </div>
@@ -185,7 +196,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import type { ReportFile } from '~/utils/csvExport'
 import {
   formatReadableTimestamp,
   getTodayWibDateInput,
@@ -210,6 +222,7 @@ export interface CsvPreviewMetric {
 const props = withDefaults(
   defineProps<{
     show: boolean
+    prepareFiles: () => Promise<ReportFile[]> | undefined
     title?: string
     subtitle?: string
     datasets?: CsvDatasetOption[]
@@ -226,7 +239,7 @@ const props = withDefaults(
     exportDisabled?: boolean
   }>(),
   {
-    title: 'Export Laporan CSV',
+    title: 'Ekspor laporan',
     subtitle: 'Ekspor data keuangan & operasional dengan rentang timestamp WIB.',
     datasets: () => [],
     selectedDataset: '',
@@ -248,8 +261,47 @@ const emit = defineEmits<{
   (e: 'update:startDate', value: string): void
   (e: 'update:endDate', value: string): void
   (e: 'update:useActiveFilters', value: boolean): void
-  (e: 'export'): void
 }>()
+
+const downloads = ref<{ format: string; filename: string; url: string }[]>([])
+const preparing = ref(false)
+const errorMessage = ref('')
+let generation = 0
+
+function resetDownloads() {
+  generation++
+  for (const file of downloads.value) URL.revokeObjectURL(file.url)
+  downloads.value = []
+  preparing.value = false
+  errorMessage.value = ''
+}
+
+async function prepareDownloads() {
+  if (preparing.value) return
+  const current = ++generation
+  preparing.value = true
+  errorMessage.value = ''
+  try {
+    const files = await props.prepareFiles()
+    if (current !== generation) return
+    if (!files?.length) {
+      errorMessage.value = 'Tidak ada data untuk pilihan ini.'
+      return
+    }
+    for (const { format, filename, blob } of files) {
+      downloads.value.push({ format, filename, url: URL.createObjectURL(blob) })
+    }
+  } catch {
+    if (current !== generation) return
+    resetDownloads()
+    errorMessage.value = 'File gagal disiapkan. Coba lagi.'
+  } finally {
+    if (current === generation) preparing.value = false
+  }
+}
+
+watch(() => props.show, visible => { if (!visible) resetDownloads() })
+onBeforeUnmount(resetDownloads)
 
 const dateRangeValid = computed(() => isValidDateRange(props.startDate, props.endDate))
 
@@ -290,6 +342,23 @@ const applyPreset = (preset: 'all' | 'today' | '7d' | '30d' | 'month') => {
 </script>
 
 <style scoped>
+fieldset.csv-modal-body {
+  border: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.report-link {
+  display: grid;
+  gap: 4px;
+  background: #FAF5EC;
+  border: 1px solid #DFCCA8;
+  border-radius: 8px;
+  padding: 12px;
+  color: #503C24;
+  overflow-wrap: anywhere;
+}
+
 .csv-modal-overlay {
   position: fixed;
   inset: 0;

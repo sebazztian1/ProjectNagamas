@@ -11,7 +11,7 @@
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          <span>Export CSV</span>
+          <span>Ekspor laporan</span>
         </button>
         <button class="btn-refresh" @click="refresh()" :disabled="status === 'pending'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': status === 'pending' }">
@@ -179,7 +179,7 @@
 
     <AdminCsvExportModal
       :show="showExportModal"
-      title="Export Audit Log (.csv)"
+      title="Ekspor Audit Log"
       subtitle="Ekspor jejak audit aktivitas admin & transaksi berdasarkan tanggal minimal hingga tanggal maksimal (WIB)."
       v-model:start-date="exportStartDate"
       v-model:end-date="exportEndDate"
@@ -191,7 +191,7 @@
       :summary-metrics="exportMetrics"
       :loading="isExportLoading"
       @close="showExportModal = false"
-      @export="handleExportCsv"
+      :prepare-files="prepareFiles"
     />
   </div>
 </template>
@@ -201,9 +201,8 @@ import { ref, computed, watch } from 'vue'
 import { useToast } from '../../composables/useToast'
 import type { CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
 import {
-  downloadCsvFile,
+  prepareReportFiles,
   filterByDateRange,
-  formatCsvTimestamp,
   isValidDateRange
 } from '../../utils/csvExport'
 
@@ -408,7 +407,7 @@ const getDetailSummary = (l: AuditLogItem) => {
   return JSON.stringify(d).substring(0, 70)
 }
 
-// --- Accounting CSV Export ---
+// --- Accounting report export ---
 const { showToast } = useToast()
 const showExportModal = ref(false)
 const exportStartDate = ref('')
@@ -476,11 +475,11 @@ const exportMetrics = computed<CsvPreviewMetric[]>(() => {
   ]
 })
 
-const handleExportCsv = () => {
+const prepareFiles = () => {
   const { items, minTimestamp, maxTimestamp } = exportPreview.value
   if (!items.length) return
 
-  const res = downloadCsvFile({
+  return prepareReportFiles({
     filenamePrefix: 'audit_log_nagamas',
     reportTitle: 'Laporan Audit Log Aktivitas Admin',
     rows: items,
@@ -489,8 +488,8 @@ const handleExportCsv = () => {
     filterStartDate: exportStartDate.value,
     filterEndDate: exportEndDate.value,
     columns: [
-      { header: 'Timestamp (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
-      { header: 'ID Log', key: 'id' },
+      { header: 'Waktu Aktivitas (WIB)', kind: 'datetime', key: 'createdAt' },
+      { header: 'ID Log', kind: 'identifier', key: 'id' },
       { header: 'Aktor / User', key: 'user' },
       { header: 'Role', key: 'userRole' },
       { header: 'Kategori Entitas', format: r => formatEntityType(r.entityType) },
@@ -501,8 +500,6 @@ const handleExportCsv = () => {
       { header: 'Detail JSON', format: r => (r.detail ? JSON.stringify(r.detail) : '-') }
     ]
   })
-  showToast('CSV Berhasil Diekspor', `${res.rowCount} catatan audit diunduh (${res.filename}).`, 'success')
-  showExportModal.value = false
 }
 </script>
 

@@ -32,7 +32,7 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          Export CSV
+          Ekspor laporan
         </button>
         <button class="btn-add-product" @click="openCreateProductModal">
           + Tambah Produk ke Trip
@@ -490,7 +490,7 @@
       :max-timestamp="exportPreview.maxTimestamp"
       :summary-metrics="exportMetrics"
       @close="showExportModal = false"
-      @export="handleExportCsv"
+      :prepare-files="prepareFiles"
     />
   </div>
 </template>
@@ -500,10 +500,8 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { useToast } from '../../../composables/useToast'
 import type { CsvDatasetOption, CsvPreviewMetric } from '../../../components/AdminCsvExportModal.vue'
 import {
-  downloadCsvFile,
-  filterByDateRange,
-  formatCsvDateOnly,
-  formatCsvTimestamp
+  prepareReportFiles,
+  filterByDateRange
 } from '../../../utils/csvExport'
 
 definePageMeta({
@@ -864,7 +862,7 @@ const formatRupiah = (val: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 
-// --- Accounting CSV Export ---
+// --- Accounting report export ---
 const showExportModal = ref(false)
 const exportDataset = ref<'shopping' | 'orders' | 'products'>('orders')
 const exportStartDate = ref('')
@@ -924,7 +922,7 @@ const exportMetrics = computed<CsvPreviewMetric[]>(() => {
   ]
 })
 
-const handleExportCsv = () => {
+const prepareFiles = () => {
   if (!trip.value) return
   const { items, minTimestamp, maxTimestamp } = exportPreview.value
   if (!items.length) return
@@ -937,7 +935,7 @@ const handleExportCsv = () => {
     const totalAmt = items.reduce((s, o) => s + Number(o.totalAmount || 0), 0)
     const paidAmt = items.reduce((s, o) => s + Number(o.paidAmount || 0), 0)
     const remAmt = items.reduce((s, o) => s + Number(o.remainingAmount || 0), 0)
-    const res = downloadCsvFile({
+    return prepareReportFiles({
       filenamePrefix: `trip_${slug}_pesanan`,
       reportTitle: `Pesanan Trip ${trip.value.title}`,
       rows: items,
@@ -951,24 +949,23 @@ const handleExportCsv = () => {
         { label: 'Total Sisa Piutang (IDR)', value: remAmt }
       ],
       columns: [
-        { header: 'Timestamp Order (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
+        { header: 'Waktu Pemesanan (WIB)', kind: 'datetime', key: 'createdAt' },
         { header: 'Kode Order', key: 'orderCode' },
-        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'Nama Pelanggan', minWidth: 25, key: 'customerName' },
         { header: 'No HP', key: 'customerPhone' },
-        { header: 'Status Order', key: 'status' },
-        { header: 'Status Bayar', key: 'paymentStatus' },
+        { header: 'Status Order', kind: 'status', key: 'status' },
+        { header: 'Status Bayar', kind: 'status', key: 'paymentStatus' },
         { header: 'Skema Bayar', format: r => (r.paymentType === 'dp' ? 'DP 50%' : 'Full 100%') },
-        { header: 'Total Item', format: r => Number(r.itemsCount || 0) },
-        { header: 'Total Tagihan (IDR)', format: r => Number(r.totalAmount || 0) },
-        { header: 'Sudah Dibayar (IDR)', format: r => Number(r.paidAmount || 0) },
-        { header: 'Sisa Tagihan (IDR)', format: r => Number(r.remainingAmount || 0) }
+        { header: 'Total Item', kind: 'number', key: 'itemsCount' },
+        { header: 'Total Tagihan (IDR)', kind: 'number', key: 'totalAmount' },
+        { header: 'Sudah Dibayar (IDR)', kind: 'number', key: 'paidAmount' },
+        { header: 'Sisa Tagihan (IDR)', kind: 'number', key: 'remainingAmount' }
       ]
     })
-    showToast('CSV Berhasil Diekspor', `${res.rowCount} pesanan trip diunduh (${res.filename}).`, 'success')
   } else if (exportDataset.value === 'shopping') {
     const totalForeign = items.reduce((s, i) => s + Number(i.originalPrice || 0) * Number(i.totalQty || 0), 0)
     const totalEstIdr = Math.round(totalForeign * rate)
-    const res = downloadCsvFile({
+    return prepareReportFiles({
       filenamePrefix: `trip_${slug}_daftar_belanja`,
       reportTitle: `Daftar Belanja & Estimasi Modal Trip ${trip.value.title}`,
       rows: items,
@@ -982,22 +979,21 @@ const handleExportCsv = () => {
         { label: 'Total Estimasi Modal (IDR)', value: totalEstIdr }
       ],
       columns: [
-        { header: 'Tanggal Buka Trip', format: () => formatCsvDateOnly(trip.value?.openDate) },
+        { header: 'Tanggal Buka Trip', kind: 'date', format: () => trip.value?.openDate },
         { header: 'Nama Barang', key: 'name' },
         { header: 'Varian', key: 'variant' },
         { header: 'Toko Sumber', key: 'store' },
-        { header: 'Qty Dibutuhkan', format: r => Number(r.totalQty || 0) },
+        { header: 'Jumlah yang Dibutuhkan', kind: 'number', key: 'totalQty' },
         { header: 'Mata Uang', format: r => r.currency || curr },
-        { header: 'Harga Satuan Valas', format: r => Number(r.originalPrice || 0) },
+        { header: 'Harga Satuan Valas', kind: 'number', key: 'originalPrice' },
         { header: 'Subtotal Valas', format: r => Number(r.originalPrice || 0) * Number(r.totalQty || 0) },
         { header: 'Kurs IDR', format: () => rate },
         { header: 'Estimasi Modal IDR', format: r => Math.round(Number(r.originalPrice || 0) * Number(r.totalQty || 0) * rate) },
-        { header: 'Status Belanja', format: r => (r.bought ? 'Sudah Dibeli' : 'Belum') }
+        { header: 'Status Belanja', kind: 'status', format: r => (r.bought ? 'Sudah Dibeli' : 'Belum') }
       ]
     })
-    showToast('CSV Berhasil Diekspor', `${res.rowCount} item daftar belanja diunduh (${res.filename}).`, 'success')
   } else {
-    const res = downloadCsvFile({
+    return prepareReportFiles({
       filenamePrefix: `trip_${slug}_katalog_margin`,
       reportTitle: `Katalog & Margin Produk Trip ${trip.value.title}`,
       rows: items,
@@ -1009,27 +1005,25 @@ const handleExportCsv = () => {
         { label: `Kurs Konversi (${curr} -> IDR)`, value: rate }
       ],
       columns: [
-        { header: 'Tanggal Buka Trip', format: () => formatCsvDateOnly(trip.value?.openDate) },
-        { header: 'ID Produk', key: 'id' },
-        { header: 'Nama Produk', key: 'name' },
+        { header: 'Tanggal Buka Trip', kind: 'date', format: () => trip.value?.openDate },
+        { header: 'ID Produk', kind: 'identifier', key: 'id' },
+        { header: 'Nama Produk', minWidth: 25, key: 'name' },
         { header: 'Kategori', key: 'categoryName' },
         { header: 'Toko Sumber', key: 'sourceStore' },
         { header: 'Mata Uang Asli', format: () => curr },
-        { header: 'Harga Beli Valas', format: r => (r.originalPrice !== null ? Number(r.originalPrice) : '') },
+        { header: 'Harga Beli Valas', kind: 'number', key: 'originalPrice' },
         { header: 'Estimasi Modal IDR', format: r => (r.originalPrice !== null ? Math.round(Number(r.originalPrice) * rate) : '') },
-        { header: 'Harga Jual IDR', format: r => Number(r.price || 0) },
+        { header: 'Harga Jual IDR', kind: 'number', key: 'price' },
         {
           header: 'Estimasi Margin IDR',
           format: r => (r.originalPrice !== null ? Number(r.price || 0) - Math.round(Number(r.originalPrice) * rate) : '')
         },
-        { header: 'Kuota', format: r => Number(r.quota || 0) },
-        { header: 'Status Stok', key: 'stockStatus' }
+        { header: 'Kuota', kind: 'number', key: 'quota' },
+        { header: 'Status Stok', kind: 'status', key: 'stockStatus' }
       ]
     })
-    showToast('CSV Berhasil Diekspor', `${res.rowCount} produk katalog diunduh (${res.filename}).`, 'success')
-  }
 
-  showExportModal.value = false
+  }
 }
 </script>
 

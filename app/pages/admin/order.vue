@@ -11,7 +11,7 @@
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          <span>Export CSV</span>
+          <span>Ekspor laporan</span>
         </button>
         <button class="btn-refresh" @click="refresh()" :disabled="pending">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
@@ -393,7 +393,7 @@
 
     <AdminCsvExportModal
       :show="showExportModal"
-      title="Export Data Pesanan & Pembayaran (.csv)"
+      title="Ekspor Data Pesanan & Pembayaran"
       subtitle="Ekspor rekap omzet pesanan, rincian SKU item terjual, atau mutasi kas masuk dengan rentang timestamp WIB."
       :datasets="exportDatasetOptions"
       v-model:selected-dataset="exportDataset"
@@ -406,7 +406,7 @@
       :max-timestamp="exportPreview.maxTimestamp"
       :summary-metrics="exportMetrics"
       @close="showExportModal = false"
-      @export="handleExportCsv"
+      :prepare-files="prepareFiles"
     />
   </div>
 </template>
@@ -417,9 +417,8 @@ import { useToast } from '../../composables/useToast'
 import { useAdminStats } from '../../composables/useAdminStats'
 import type { CsvDatasetOption, CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
 import {
-  downloadCsvFile,
-  filterByDateRange,
-  formatCsvTimestamp
+  prepareReportFiles,
+  filterByDateRange
 } from '../../utils/csvExport'
 
 const { showToast } = useToast()
@@ -709,7 +708,7 @@ const formatRupiah = (val: number) => {
   return 'Rp ' + Number(val || 0).toLocaleString('id-ID')
 }
 
-// --- Accounting CSV Export ---
+// --- Accounting report export ---
 const showExportModal = ref(false)
 const exportDataset = ref<'orders' | 'items' | 'payments'>('orders')
 const exportStartDate = ref('')
@@ -816,13 +815,13 @@ const exportMetrics = computed<CsvPreviewMetric[]>(() => {
   ]
 })
 
-const handleExportCsv = () => {
+const prepareFiles = () => {
   const { items, minTimestamp, maxTimestamp } = exportPreview.value
   if (!items.length) return
 
   if (exportDataset.value === 'orders') {
     const valid = items.filter(o => !['cancelled', 'rejected', 'expired'].includes(o.orderStatus))
-    const res = downloadCsvFile({
+    return prepareReportFiles({
       filenamePrefix: 'pesanan_rekap',
       reportTitle: 'Rekap Pesanan Pelanggan (Accounting)',
       rows: items,
@@ -836,35 +835,34 @@ const handleExportCsv = () => {
         { label: 'Total Sisa Piutang (IDR)', value: valid.reduce((s, o) => s + Number(o.remainingAmount || 0), 0) }
       ],
       columns: [
-        { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAtIso) },
+        { header: 'Waktu Pembuatan (WIB)', kind: 'datetime', key: 'createdAtIso' },
         { header: 'Kode Order', key: 'orderCode' },
-        { header: 'Status', format: r => formatStatus(r.orderStatus) },
+        { header: 'Status', kind: 'status', format: r => formatStatus(r.orderStatus) },
         { header: 'Kode Status Sistem', key: 'orderStatus' },
         { header: 'Tipe', format: r => (r.orderType === 'ready' ? 'Ready Stock' : 'Pre-Order Jastip') },
         { header: 'Trip', format: r => r.tripTitle || '-' },
-        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'Nama Pelanggan', minWidth: 25, key: 'customerName' },
         { header: 'Username', key: 'customerUsername' },
         { header: 'No HP', key: 'customerPhone' },
         { header: 'Skema Bayar', format: r => (r.paymentType === 'dp' ? 'DP 50%' : 'Full 100%') },
         { header: 'Jumlah Item', format: r => (r.items || []).reduce((s: number, i: any) => s + Number(i.quantity || 0), 0) },
-        { header: 'Subtotal Barang (IDR)', format: r => Number(r.subtotal || 0) },
-        { header: 'Ongkir (IDR)', format: r => Number(r.shippingCost || 0) },
-        { header: 'Kode Unik (IDR)', format: r => Number(r.uniqueCode || 0) },
-        { header: 'Total Tagihan (IDR)', format: r => Number(r.totalAmount || 0) },
-        { header: 'Nominal DP (IDR)', format: r => Number(r.dpAmount || 0) },
-        { header: 'Sudah Dibayar (IDR)', format: r => Number(r.paidAmount || 0) },
-        { header: 'Sisa Tagihan (IDR)', format: r => Number(r.remainingAmount || 0) },
+        { header: 'Subtotal Barang (IDR)', kind: 'number', key: 'subtotal' },
+        { header: 'Ongkir (IDR)', kind: 'number', key: 'shippingCost' },
+        { header: 'Kode Unik (IDR)', kind: 'number', key: 'uniqueCode' },
+        { header: 'Total Tagihan (IDR)', kind: 'number', key: 'totalAmount' },
+        { header: 'Nominal DP (IDR)', kind: 'number', key: 'dpAmount' },
+        { header: 'Sudah Dibayar (IDR)', kind: 'number', key: 'paidAmount' },
+        { header: 'Sisa Tagihan (IDR)', kind: 'number', key: 'remainingAmount' },
         { header: 'Metode Kirim', key: 'fulfillmentMethod' },
-        { header: 'Timestamp ACC (WIB)', format: r => formatCsvTimestamp(r.approvedAt) },
+        { header: 'Waktu Persetujuan (WIB)', kind: 'datetime', key: 'approvedAt' },
         { header: 'Catatan Admin', format: r => r.adminNote || '' }
       ]
     })
-    showToast('CSV Berhasil Diekspor', `${res.rowCount} rekap pesanan diunduh (${res.filename}).`, 'success')
   } else if (exportDataset.value === 'items') {
     const validSum = items
       .filter(i => !['cancelled', 'rejected', 'expired'].includes(i.orderStatus))
       .reduce((s, i) => s + Number(i.subtotal || 0), 0)
-    const res = downloadCsvFile({
+    return prepareReportFiles({
       filenamePrefix: 'pesanan_detail_item',
       reportTitle: 'Detail Item Terjual per Pesanan',
       rows: items,
@@ -877,22 +875,21 @@ const handleExportCsv = () => {
         { label: 'Total Subtotal Barang Aktif (IDR)', value: validSum }
       ],
       columns: [
-        { header: 'Timestamp Order (WIB)', format: r => formatCsvTimestamp(r.orderCreatedAt) },
+        { header: 'Waktu Pemesanan (WIB)', kind: 'datetime', key: 'orderCreatedAt' },
         { header: 'Kode Order', key: 'orderCode' },
-        { header: 'Status Order', format: r => formatStatus(r.orderStatus) },
+        { header: 'Status Order', kind: 'status', format: r => formatStatus(r.orderStatus) },
         { header: 'Trip', key: 'tripTitle' },
-        { header: 'Pelanggan', key: 'customerName' },
-        { header: 'Nama Produk', key: 'productName' },
+        { header: 'Nama Pelanggan', minWidth: 25, key: 'customerName' },
+        { header: 'Nama Produk', minWidth: 25, key: 'productName' },
         { header: 'Varian', key: 'variant' },
-        { header: 'Harga Satuan (IDR)', format: r => Number(r.priceAtOrder || 0) },
-        { header: 'Qty', format: r => Number(r.quantity || 0) },
-        { header: 'Subtotal Item (IDR)', format: r => Number(r.subtotal || 0) }
+        { header: 'Harga Satuan (IDR)', kind: 'number', key: 'priceAtOrder' },
+        { header: 'Jumlah Barang', kind: 'number', key: 'quantity' },
+        { header: 'Subtotal Item (IDR)', kind: 'number', key: 'subtotal' }
       ]
     })
-    showToast('CSV Berhasil Diekspor', `${res.rowCount} baris item diunduh (${res.filename}).`, 'success')
   } else {
     const verifiedTotal = items.filter(p => p.status === 'verified').reduce((s, p) => s + Number(p.amount || 0), 0)
-    const res = downloadCsvFile({
+    return prepareReportFiles({
       filenamePrefix: 'mutasi_pembayaran',
       reportTitle: 'Laporan Mutasi Pembayaran Masuk',
       rows: items,
@@ -902,25 +899,23 @@ const handleExportCsv = () => {
       filterEndDate: exportEndDate.value,
       summaryItems: [{ label: 'Total Kas Masuk Terverifikasi (IDR)', value: verifiedTotal }],
       columns: [
-        { header: 'Timestamp Upload (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
-        { header: 'Timestamp Verifikasi (WIB)', format: r => formatCsvTimestamp(r.verifiedAt) },
-        { header: 'ID Pembayaran', key: 'id' },
+        { header: 'Waktu Unggah (WIB)', kind: 'datetime', key: 'createdAt' },
+        { header: 'Waktu Verifikasi (WIB)', kind: 'datetime', key: 'verifiedAt' },
+        { header: 'ID Pembayaran', kind: 'identifier', key: 'id' },
         { header: 'Kode Order', key: 'orderCode' },
-        { header: 'Pelanggan', key: 'customerName' },
+        { header: 'Nama Pelanggan', minWidth: 25, key: 'customerName' },
         { header: 'Trip', key: 'tripTitle' },
         { header: 'Jenis Bayar', format: r => (r.paymentKind === 'dp' ? 'DP' : r.paymentKind === 'final' ? 'Pelunasan' : 'Full') },
         { header: 'Bank Tujuan', key: 'bankName' },
         { header: 'Nama Pengirim', key: 'senderName' },
         { header: 'Bank Pengirim', key: 'senderBank' },
-        { header: 'Nominal Transfer (IDR)', format: r => Number(r.amount || 0) },
-        { header: 'Status Pembayaran', key: 'status' },
+        { header: 'Nominal Transfer (IDR)', kind: 'number', key: 'amount' },
+        { header: 'Status Pembayaran', kind: 'status', key: 'status' },
         { header: 'Catatan Admin', format: r => r.adminNote || '' }
       ]
     })
-    showToast('CSV Berhasil Diekspor', `${res.rowCount} mutasi pembayaran diunduh (${res.filename}).`, 'success')
-  }
 
-  showExportModal.value = false
+  }
 }
 </script>
 

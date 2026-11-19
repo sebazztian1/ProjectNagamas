@@ -9,7 +9,7 @@
             <polyline points="7 10 12 15 17 10" />
             <line x1="12" y1="15" x2="12" y2="3" />
           </svg>
-          <span>Export CSV</span>
+          <span>Ekspor laporan</span>
         </button>
         <button class="btn-refresh" @click="refresh()" :disabled="pending">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
@@ -368,7 +368,7 @@
 
     <AdminCsvExportModal
       :show="showExportModal"
-      title="Export Daftar Trip & Kurs (.csv)"
+      title="Ekspor Daftar Trip & Kurs"
       subtitle="Ekspor laporan batch trip, kurs valas, kuota terisi, dan nilai pesanan berdasarkan rentang timestamp pembuatan trip."
       v-model:start-date="exportStartDate"
       v-model:end-date="exportEndDate"
@@ -379,7 +379,7 @@
       :max-timestamp="exportPreview.maxTimestamp"
       :summary-metrics="exportMetrics"
       @close="showExportModal = false"
-      @export="handleExportCsv"
+      :prepare-files="prepareFiles"
     />
   </div>
 </template>
@@ -390,10 +390,8 @@ import { useToast } from '../../../composables/useToast'
 import type { ApiTrip } from '../../../composables/useTrips'
 import type { CsvPreviewMetric } from '../../../components/AdminCsvExportModal.vue'
 import {
-  downloadCsvFile,
-  filterByDateRange,
-  formatCsvDateOnly,
-  formatCsvTimestamp
+  prepareReportFiles,
+  filterByDateRange
 } from '../../../utils/csvExport'
 import { getCountryFlag, getCountryCurrency, getCountryDefaultRate, POPULAR_JASTIP_COUNTRIES, ALL_WORLD_COUNTRIES } from '../../../utils/countryFlags'
 
@@ -670,7 +668,7 @@ const formatStatusLabel = (s: string) => {
   return map[s] || s
 }
 
-// --- Accounting CSV Export ---
+// --- Accounting report export ---
 const showExportModal = ref(false)
 const exportStartDate = ref('')
 const exportEndDate = ref('')
@@ -703,12 +701,12 @@ const exportMetrics = computed<CsvPreviewMetric[]>(() => {
   ]
 })
 
-const handleExportCsv = () => {
+const prepareFiles = () => {
   const { items, minTimestamp, maxTimestamp } = exportPreview.value
   if (!items.length) return
 
   const totalOrdersAmt = items.reduce((s, t) => s + Number(t.totalOrdersAmount || 0), 0)
-  const res = downloadCsvFile({
+  return prepareReportFiles({
     filenamePrefix: 'trip_jastip_nagamas',
     reportTitle: 'Laporan Batch Trip Jastip & Kurs',
     rows: items,
@@ -720,29 +718,27 @@ const handleExportCsv = () => {
       { label: 'Total Nilai Pesanan Trip (IDR)', value: totalOrdersAmt }
     ],
     columns: [
-      { header: 'Timestamp Dibuat (WIB)', format: r => formatCsvTimestamp(r.createdAt) },
-      { header: 'ID Trip', key: 'id' },
+      { header: 'Waktu Pembuatan (WIB)', kind: 'datetime', key: 'createdAt' },
+      { header: 'ID Trip', kind: 'identifier', key: 'id' },
       { header: 'Nama Trip', key: 'title' },
       { header: 'Negara', key: 'country' },
       { header: 'Kota / Area', format: r => r.cityOrArea || '-' },
-      { header: 'Status', format: r => formatStatusLabel(r.status) },
+      { header: 'Status', kind: 'status', format: r => formatStatusLabel(r.status) },
       { header: 'Mata Uang', key: 'currency' },
-      { header: 'Kurs IDR', format: r => Number(r.exchangeRate || 0) },
+      { header: 'Kurs IDR', kind: 'number', key: 'exchangeRate' },
       { header: 'Tipe Fee', key: 'feeType' },
-      { header: 'Nilai Fee (IDR)', format: r => Number(r.feeValue || 0) },
-      { header: 'Kuota Terisi', format: r => Number(r.quotaFilled || 0) },
-      { header: 'Kuota Total', format: r => Number(r.quotaTotal || 0) },
-      { header: 'Jumlah Produk', format: r => Number(r.productsCount || 0) },
-      { header: 'Jumlah Pesanan', format: r => Number(r.ordersCount || 0) },
-      { header: 'Total Nilai Order (IDR)', format: r => Number(r.totalOrdersAmount || 0) },
-      { header: 'Tgl Buka PO', format: r => formatCsvDateOnly(r.openDate) },
-      { header: 'Tgl Tutup PO', format: r => formatCsvDateOnly(r.closeDate) },
-      { header: 'Tgl Berangkat', format: r => formatCsvDateOnly(r.departureDate) },
-      { header: 'Estimasi Tiba', format: r => formatCsvDateOnly(r.estimatedArrivalDate) }
+      { header: 'Nilai Fee (IDR)', kind: 'number', key: 'feeValue' },
+      { header: 'Kuota Terisi', kind: 'number', key: 'quotaFilled' },
+      { header: 'Kuota Total', kind: 'number', key: 'quotaTotal' },
+      { header: 'Jumlah Produk', kind: 'number', key: 'productsCount' },
+      { header: 'Jumlah Pesanan', kind: 'number', key: 'ordersCount' },
+      { header: 'Total Nilai Order (IDR)', kind: 'number', key: 'totalOrdersAmount' },
+      { header: 'Tanggal Buka PO', kind: 'date', key: 'openDate' },
+      { header: 'Tanggal Tutup PO', kind: 'date', key: 'closeDate' },
+      { header: 'Tanggal Berangkat', kind: 'date', key: 'departureDate' },
+      { header: 'Estimasi Tiba', kind: 'date', key: 'estimatedArrivalDate' }
     ]
   })
-  showToast('CSV Berhasil Diekspor', `${res.rowCount} data trip diunduh (${res.filename}).`, 'success')
-  showExportModal.value = false
 }
 </script>
 
