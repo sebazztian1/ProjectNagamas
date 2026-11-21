@@ -26,6 +26,65 @@ export function useR2(): S3Client {
   return client
 }
 
+export const PUBLIC_MEDIA_FOLDERS = new Set(['products', 'trips', 'chat', 'requests'])
+
+/**
+ * Mengubah URL publik R2 (`*.r2.dev`, `r2:<key>`, `/api/media/<key>`) menjadi URL proxy
+ * `/api/media/<key>` jika `R2_PUBLIC_URL` masih kosong atau memakai subdomain `*.r2.dev`
+ * (yang sering diblokir ISP Indonesia), atau ke custom domain jika sudah dikonfigurasi.
+ */
+export function resolvePublicMediaUrl(value: string | null | undefined): string | null {
+  if (!value || typeof value !== 'string') return null
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  if (trimmed.startsWith('private:')) return trimmed
+
+  const cfg = useRuntimeConfig()
+  const configuredPublicUrl = (typeof cfg.r2PublicUrl === 'string' ? cfg.r2PublicUrl : '').trim().replace(/\/+$/, '')
+  let configuredHost = ''
+  if (configuredPublicUrl) {
+    try {
+      configuredHost = new URL(configuredPublicUrl).hostname.toLowerCase()
+    } catch {
+      configuredHost = ''
+    }
+  }
+
+  const useProxy = !configuredPublicUrl || !configuredHost || /\.r2\.dev$/i.test(configuredHost)
+
+  let objectKey: string | null = null
+  if (trimmed.startsWith('/api/media/')) {
+    objectKey = trimmed.slice('/api/media/'.length)
+  } else if (trimmed.startsWith('r2:')) {
+    objectKey = trimmed.slice('r2:'.length)
+  } else if (/^https?:\/\//i.test(trimmed)) {
+    try {
+      const parsed = new URL(trimmed)
+      const host = parsed.hostname.toLowerCase()
+      if (/\.r2\.dev$/i.test(host) || (configuredHost && host === configuredHost)) {
+        objectKey = parsed.pathname
+      }
+    } catch {
+      return trimmed
+    }
+  }
+
+  if (objectKey !== null) {
+    const cleanKey = objectKey.replace(/^\/+/, '').split('?')[0] || ''
+    const firstSegment = cleanKey.split('/')[0] || ''
+    if (
+      cleanKey &&
+      !cleanKey.includes('..') &&
+      !cleanKey.includes('\\') &&
+      PUBLIC_MEDIA_FOLDERS.has(firstSegment)
+    ) {
+      return useProxy ? `/api/media/${cleanKey}` : `${configuredPublicUrl}/${cleanKey}`
+    }
+  }
+
+  return trimmed
+}
+
 /**
  * Mengubah nilai `private:<path>` menjadi presigned URL sementara dari bucket privat R2.
  */

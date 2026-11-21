@@ -1,9 +1,11 @@
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler, createError, setResponseHeader } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { getCountryFlag } from '../../utils/countryFlags'
 import { normalizeProductVariants } from '../../utils/variants'
+import { resolvePublicMediaUrl } from '../../utils/r2'
 
 export default defineEventHandler(async (event) => {
+  setResponseHeader(event, 'Cache-Control', 'no-store')
   const slug = event.context.params?.slug
   if (!slug) {
     throw createError({ statusCode: 400, message: 'Slug trip diperlukan' })
@@ -47,13 +49,33 @@ export default defineEventHandler(async (event) => {
   const flag = getCountryFlag(trip.country)
 
   const products = trip.products.map(p => {
-    const primaryImg = p.product_images[0]
+    const resolvedPrimary = resolvePublicMediaUrl(p.image_url)
+    const primaryImgUrl = resolvePublicMediaUrl(p.product_images[0]?.image_url)
     const gallery = Array.from(
       new Set([
-        ...(p.image_url ? [p.image_url] : []),
-        ...p.product_images.map((img) => img.image_url).filter(Boolean)
+        ...(resolvedPrimary ? [resolvedPrimary] : []),
+        ...p.product_images.map((img) => resolvePublicMediaUrl(img.image_url)).filter((u): u is string => Boolean(u))
       ])
     )
+    const isOutOfStock = p.stock_status !== 'in_stock'
+    const rawVariants = normalizeProductVariants(p.variants, Number(p.price), p.quota ?? 20)
+    const effectiveVariants =
+      isOutOfStock && rawVariants
+        ? {
+            ...rawVariants,
+            combinations: rawVariants.combinations.map((c) => ({ ...c, stock: 0 }))
+          }
+        : rawVariants
+    const hasAvailableVariant =
+      rawVariants && rawVariants.combinations.length > 0
+        ? rawVariants.combinations.some((c) => c.stock > 0)
+        : null
+    const inStock = isOutOfStock
+      ? false
+      : hasAvailableVariant !== null
+        ? hasAvailableVariant
+        : (p.quota === null || p.quota > 0)
+
     return {
       id: p.id,
       name: p.name,
@@ -65,12 +87,13 @@ export default defineEventHandler(async (event) => {
       originalPrice: p.original_price ? Number(p.original_price) : null,
       originalCurrency: p.original_currency || trip.currency,
       sourceStore: p.source_store || '',
-      image: gallery[0] || primaryImg?.image_url || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
+      image: gallery[0] || primaryImgUrl || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
       gallery,
       stockStatus: p.stock_status,
-      quota: p.quota,
+      inStock,
+      quota: isOutOfStock ? 0 : p.quota,
       maxQtyPerOrder: p.max_qty_per_order || 5,
-      variants: normalizeProductVariants(p.variants, Number(p.price), p.quota ?? 20),
+      variants: effectiveVariants,
       description: p.description || ''
     }
   })
@@ -84,7 +107,7 @@ export default defineEventHandler(async (event) => {
     cityOrArea: trip.city_or_area || '',
     description: trip.description || '',
     terms: trip.terms || '',
-    coverImageUrl: trip.cover_image_url || null,
+    coverImageUrl: resolvePublicMediaUrl(trip.cover_image_url) || null,
     currency: trip.currency,
     exchangeRate: Number(trip.exchange_rate),
     feeType: trip.fee_type,

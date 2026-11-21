@@ -1,9 +1,11 @@
-import { defineEventHandler, createError } from 'h3'
+import { defineEventHandler, createError, setResponseHeader } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { getSessionFromEvent } from '../../utils/session'
 import { getCountryFlag } from '../../utils/countryFlags'
+import { resolvePublicMediaUrl } from '../../utils/r2'
 
 export default defineEventHandler(async (event) => {
+  setResponseHeader(event, 'Cache-Control', 'no-store')
   const session = getSessionFromEvent(event)
 
   if (!session) {
@@ -49,20 +51,23 @@ export default defineEventHandler(async (event) => {
     let availabilityReason = ''
 
     if (isReady) {
-      isAvailable = p.stock_status === 'in_stock' && p.is_active
+      isAvailable = p.stock_status === 'in_stock' && p.is_active && (p.stock_quantity === null || p.stock_quantity > 0)
       availabilityReason = isAvailable ? 'Ready Stock' : 'Stok Habis'
     } else if (isJastip && trip) {
       const isTripOpen = trip.status === 'open'
       const isBeforeClose = new Date(trip.close_date) > now
-      isAvailable = isTripOpen && isBeforeClose && p.is_active
+      const isProductInStock = p.stock_status === 'in_stock' && (p.quota === null || p.quota > 0)
+      isAvailable = isTripOpen && isBeforeClose && p.is_active && isProductInStock
       if (!isTripOpen || !isBeforeClose) {
         availabilityReason = 'PO Telah Ditutup'
+      } else if (!isProductInStock || !p.is_active) {
+        availabilityReason = 'Stok Habis'
       } else {
         availabilityReason = `Open PO s/d ${new Date(trip.close_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}`
       }
     }
 
-    const firstImage = p.product_images?.[0]?.image_url || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'
+    const firstImage = resolvePublicMediaUrl(p.image_url || p.product_images?.[0]?.image_url) || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=600&q=80'
 
     return {
       wishlistId: w.id,

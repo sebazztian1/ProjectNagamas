@@ -50,13 +50,15 @@
 
       <!-- Products Grid -->
       <div v-if="filteredProducts.length > 0" class="products-grid">
-        <div 
-          v-for="product in filteredProducts" 
+        <div
+          v-for="product in filteredProducts"
           :key="product.id"
           class="ready-card"
+          :class="{ 'is-out-of-stock': !product.inStock }"
         >
           <NuxtLink :to="`/ready/${product.slug}`" class="card-image">
             <img :src="product.image" :alt="product.name" loading="lazy" />
+            <span v-if="!product.inStock" class="badge-out-of-stock">Stok Habis</span>
           </NuxtLink>
 
           <div class="card-body">
@@ -67,9 +69,12 @@
 
             <div class="price-val">{{ formatRupiah(product.price) }}</div>
 
-            <NuxtLink :to="`/checkout?productId=${product.id}&qty=1`" class="btn-checkout">
+            <NuxtLink v-if="product.inStock" :to="`/checkout?productId=${product.id}&qty=1`" class="btn-checkout">
               Beli
             </NuxtLink>
+            <button v-else type="button" disabled class="btn-checkout disabled">
+              Stok Habis
+            </button>
           </div>
         </div>
       </div>
@@ -85,6 +90,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import type { ApiProduct } from '../../composables/useProducts'
+import { useProductStockSync } from '../../composables/useProductStockSync'
 
 const route = useRoute()
 const searchQuery = ref('')
@@ -119,7 +125,7 @@ const categories = computed(() => {
   return ['Semua', ...names]
 })
 
-const { data: productsData, status } = await useFetch<ApiProduct[]>('/api/products', {
+const { data: productsData, status, refresh: refreshProducts } = await useFetch<ApiProduct[]>('/api/products', {
   query: computed(() => ({
     type: 'ready',
     category: selectedCat.value !== 'Semua' ? selectedCat.value : undefined,
@@ -127,6 +133,8 @@ const { data: productsData, status } = await useFetch<ApiProduct[]>('/api/produc
     sort: sortBy.value !== 'default' ? sortBy.value : undefined
   }))
 })
+
+useProductStockSync(() => refreshProducts())
 
 const filteredProducts = computed(() => {
   return productsData.value || []
@@ -265,11 +273,30 @@ const resetFilter = () => {
   border-color: var(--brand-secondary);
 }
 
+.ready-card.is-out-of-stock {
+  opacity: 0.72;
+}
+
 .card-image {
+  position: relative;
   display: block;
   aspect-ratio: 1 / 1;
   background: var(--brand-neutral);
   overflow: hidden;
+}
+
+.badge-out-of-stock {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: var(--color-danger, #A33A2A);
+  color: #FFFBF2;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(28, 20, 12, 0.22);
 }
 
 .card-image img {
@@ -344,9 +371,16 @@ const resetFilter = () => {
   transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.btn-checkout:hover {
+.btn-checkout:hover:not(.disabled) {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
+}
+
+.btn-checkout.disabled {
+  background: #E8E3DA;
+  color: #7A6A55;
+  border-color: #D6CEBE;
+  cursor: not-allowed;
 }
 
 @media (max-width: 600px) {

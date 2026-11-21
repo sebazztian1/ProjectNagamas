@@ -1,8 +1,10 @@
-import { defineEventHandler, getRouterParam, createError } from 'h3'
+import { defineEventHandler, getRouterParam, createError, setResponseHeader } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { normalizeProductVariants } from '../../utils/variants'
+import { resolvePublicMediaUrl } from '../../utils/r2'
 
 export default defineEventHandler(async (event) => {
+  setResponseHeader(event, 'Cache-Control', 'no-store')
   const slug = getRouterParam(event, 'slug')
 
   if (!slug) {
@@ -45,10 +47,38 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, message: 'Produk tidak ditemukan' })
   }
 
-  const gallery = [
-    ...(p.image_url ? [p.image_url] : []),
-    ...p.product_images.map((img) => img.image_url).filter((u) => u !== p.image_url)
-  ]
+  const resolvedPrimary = resolvePublicMediaUrl(p.image_url)
+  const gallery = Array.from(
+    new Set([
+      ...(resolvedPrimary ? [resolvedPrimary] : []),
+      ...p.product_images.map((img) => resolvePublicMediaUrl(img.image_url)).filter((u): u is string => Boolean(u))
+    ])
+  )
+
+  const isOutOfStock = p.stock_status !== 'in_stock'
+  const rawVariants = normalizeProductVariants(
+    p.variants,
+    Number(p.price),
+    p.product_type === 'ready' ? (p.stock_quantity ?? 10) : (p.quota ?? 20)
+  )
+  const effectiveVariants =
+    isOutOfStock && rawVariants
+      ? {
+          ...rawVariants,
+          combinations: rawVariants.combinations.map((c) => ({ ...c, stock: 0 }))
+        }
+      : rawVariants
+  const hasAvailableVariant =
+    rawVariants && rawVariants.combinations.length > 0
+      ? rawVariants.combinations.some((c) => c.stock > 0)
+      : null
+  const inStock = isOutOfStock
+    ? false
+    : hasAvailableVariant !== null
+      ? hasAvailableVariant
+      : p.product_type === 'ready'
+        ? (p.stock_quantity === null || p.stock_quantity > 0)
+        : (p.quota === null || p.quota > 0)
 
   return {
     id: p.id,
@@ -63,18 +93,14 @@ export default defineEventHandler(async (event) => {
     originalPrice: p.original_price ? Number(p.original_price) : null,
     originalCurrency: p.original_currency || null,
     sourceStore: p.source_store || null,
-    image: p.image_url || 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80',
+    image: gallery[0] || resolvedPrimary || 'https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&w=800&q=80',
     gallery,
     stockStatus: p.stock_status,
-    stockQuantity: p.stock_quantity ?? (p.stock_status === 'in_stock' ? 10 : 0),
-    inStock: p.stock_status === 'in_stock' && (p.stock_quantity === null || p.stock_quantity > 0),
-    quota: p.quota || null,
+    stockQuantity: isOutOfStock ? 0 : (p.stock_quantity ?? 10),
+    inStock,
+    quota: isOutOfStock ? 0 : (p.quota || null),
     maxQtyPerOrder: p.max_qty_per_order || 5,
-    variants: normalizeProductVariants(
-      p.variants,
-      Number(p.price),
-      p.product_type === 'ready' ? (p.stock_quantity ?? 10) : (p.quota ?? 20)
-    ),
+    variants: effectiveVariants,
     trip: p.jastip_trips
       ? {
           id: p.jastip_trips.id,

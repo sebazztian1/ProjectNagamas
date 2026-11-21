@@ -2,6 +2,7 @@ import { defineEventHandler, getQuery, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
 import { getCountryFlag } from '../../../utils/countryFlags'
+import { resolvePublicMediaUrl } from '../../../utils/r2'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -59,7 +60,7 @@ export default defineEventHandler(async (event) => {
       id: r.id,
       productName: r.product_name,
       description: r.description || '',
-      referenceImageUrl: r.reference_image_url || '',
+      referenceImageUrl: resolvePublicMediaUrl(r.reference_image_url) || '',
       referenceLink: r.reference_link || '',
       userId: r.user_id,
       userName: r.users?.username || 'Customer',

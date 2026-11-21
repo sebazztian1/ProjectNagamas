@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery, createError } from 'h3'
 import { getSessionFromEvent, clearSessionCookie } from '../../utils/session'
 import { prisma } from '../../utils/prisma'
+import { resolvePublicMediaUrl } from '../../utils/r2'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -168,7 +169,7 @@ export default defineEventHandler(async (event) => {
       senderRole: m.sender_role,
       messageType: m.message_type,
       content: m.content,
-      imageUrl: m.image_url,
+      imageUrl: resolvePublicMediaUrl(m.image_url),
       productId: m.product_id,
       tripId: m.trip_id,
       requestId: m.request_id,
@@ -178,7 +179,7 @@ export default defineEventHandler(async (event) => {
             name: m.products.name,
             slug: m.products.slug,
             price: Number(m.products.price),
-            imageUrl: m.products.image_url,
+            imageUrl: resolvePublicMediaUrl(m.products.image_url),
             productType: m.products.product_type,
             stockStatus: m.products.stock_status,
             tripSlug: m.products.jastip_trips?.slug || null,
@@ -192,7 +193,7 @@ export default defineEventHandler(async (event) => {
             slug: m.jastip_trips.slug,
             country: m.jastip_trips.country,
             cityOrArea: m.jastip_trips.city_or_area || '',
-            coverImageUrl: m.jastip_trips.cover_image_url || null,
+            coverImageUrl: resolvePublicMediaUrl(m.jastip_trips.cover_image_url) || null,
             status: m.jastip_trips.status,
             closeDate: m.jastip_trips.close_date,
             estimatedArrivalDate: m.jastip_trips.estimated_arrival_date
@@ -203,7 +204,7 @@ export default defineEventHandler(async (event) => {
             id: m.product_requests.id,
             productName: m.product_requests.product_name,
             description: m.product_requests.description || '',
-            referenceImageUrl: m.product_requests.reference_image_url || null,
+            referenceImageUrl: resolvePublicMediaUrl(m.product_requests.reference_image_url) || null,
             referenceLink: m.product_requests.reference_link || null,
             status: m.product_requests.status,
             quotedPrice: m.product_requests.quoted_price ? Number(m.product_requests.quoted_price) : null,

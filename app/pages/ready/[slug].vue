@@ -124,7 +124,7 @@
               Beli Sekarang (Checkout)
             </NuxtLink>
             <button v-else disabled class="btn-buy-now disabled">
-              {{ variantTiers.length > 0 ? 'Stok Variasi Ini Habis' : 'Stok Habis' }}
+              {{ product.stockStatus !== 'in_stock' ? 'Stok Habis' : (variantTiers.length > 0 ? 'Stok Variasi Ini Habis' : 'Stok Habis') }}
             </button>
             <div class="cta-sub-row">
               <button v-if="!isAdmin" type="button" class="btn-chat-admin" @click="handleChatAdmin">
@@ -181,6 +181,7 @@ import { ref, computed, watch } from 'vue'
 import { useAuth } from '../../composables/useAuth'
 import { useCustomerChat } from '../../composables/useCustomerChat'
 import { useWishlist } from '../../composables/useWishlist'
+import { useProductStockSync } from '../../composables/useProductStockSync'
 
 const route = useRoute()
 const { currentUser } = useAuth()
@@ -189,7 +190,9 @@ const { openChat, openChatWithProduct } = useCustomerChat()
 const { isWishlisted, toggleWishlist } = useWishlist()
 
 const slug = route.params.slug as string
-const { data: product } = await useFetch<any>(`/api/products/${slug}`)
+const { data: product, refresh: refreshProduct } = await useFetch<any>(`/api/products/${slug}`)
+
+useProductStockSync(() => refreshProduct())
 
 const galleryList = computed<string[]>(() => {
   const g = product.value?.gallery
@@ -280,6 +283,9 @@ const activeVariantCombo = computed(() => {
 })
 
 const isOptionOutOfStock = (tierName: string, opt: string) => {
+  if (!product.value || product.value.stockStatus !== 'in_stock' || !product.value.inStock) {
+    return true
+  }
   if (variantCombinations.value.length === 0) return false
   const testSelection = {
     ...selectedTierValues.value,
@@ -318,6 +324,9 @@ const currentDisplayPrice = computed(() => {
 })
 
 const currentAvailableStock = computed(() => {
+  if (!product.value || product.value.stockStatus !== 'in_stock' || !product.value.inStock) {
+    return 0
+  }
   if (activeVariantCombo.value && activeVariantCombo.value.stock !== undefined) {
     return Math.max(0, Number(activeVariantCombo.value.stock) || 0)
   }
@@ -325,9 +334,10 @@ const currentAvailableStock = computed(() => {
 })
 
 const isCurrentSelectionInStock = computed(() => {
-  if (!product.value) return false
-  if (activeVariantCombo.value) return currentAvailableStock.value > 0
-  return product.value.inStock && currentAvailableStock.value > 0
+  if (!product.value || product.value.stockStatus !== 'in_stock' || !product.value.inStock) {
+    return false
+  }
+  return currentAvailableStock.value > 0
 })
 
 const maxOrderableQty = computed(() => {

@@ -53,13 +53,15 @@
 
       <!-- Products Grid -->
       <div v-if="tripProducts.length > 0" class="products-grid">
-        <div 
-          v-for="product in tripProducts" 
+        <div
+          v-for="product in tripProducts"
           :key="product.id"
           class="jastip-prod-card"
+          :class="{ 'is-out-of-stock': product.inStock === false || product.stockStatus === 'out_of_stock' }"
         >
           <NuxtLink :to="`/jastip/${trip.slug}/${product.slug}`" class="card-thumb">
             <img :src="product.image" :alt="product.name" loading="lazy" />
+            <span v-if="product.inStock === false || product.stockStatus === 'out_of_stock'" class="badge-out-of-stock">Stok Habis</span>
           </NuxtLink>
 
           <div class="card-body">
@@ -73,14 +75,14 @@
             </div>
 
             <div class="btn-group">
-              <NuxtLink 
-                v-if="trip.status === 'open'" 
-                :to="`/checkout?productId=${product.id}&qty=1&tripId=${trip.id}`" 
+              <NuxtLink
+                v-if="trip.status === 'open' && product.inStock !== false && product.stockStatus !== 'out_of_stock'"
+                :to="`/checkout?productId=${product.id}&qty=1&tripId=${trip.id}`"
                 class="btn-po"
               >
                 Titip
               </NuxtLink>
-              <span v-else class="btn-disabled">PO Tutup</span>
+              <span v-else class="btn-disabled">{{ trip.status !== 'open' ? 'PO Tutup' : 'Stok Habis' }}</span>
             </div>
           </div>
         </div>
@@ -97,11 +99,14 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { ApiTrip } from '../../../composables/useTrips'
+import { useProductStockSync } from '../../../composables/useProductStockSync'
 
 const route = useRoute()
 const tripSlug = route.params.tripSlug as string
 
-const { data: trip } = await useFetch<ApiTrip>(`/api/trips/${tripSlug}`)
+const { data: trip, refresh: refreshTrip } = await useFetch<ApiTrip>(`/api/trips/${tripSlug}`)
+
+useProductStockSync(() => refreshTrip())
 
 const tripProducts = computed(() => {
   return trip.value?.products || []
@@ -287,12 +292,30 @@ const formatDate = (dateStr?: string | null) => {
   box-shadow: 0 10px 20px -5px rgba(140, 109, 63, 0.12);
 }
 
+.jastip-prod-card.is-out-of-stock {
+  opacity: 0.72;
+}
+
 .card-thumb {
   display: block;
   position: relative;
   aspect-ratio: 1 / 1;
   background: #F7EEDC;
   overflow: hidden;
+}
+
+.badge-out-of-stock {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: var(--color-danger, #A33A2A);
+  color: #FFFBF2;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(28, 20, 12, 0.22);
 }
 
 .card-thumb img {

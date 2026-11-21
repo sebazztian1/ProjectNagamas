@@ -198,7 +198,7 @@
 
           <div class="modal-form-group" style="margin-top: 12px">
             <label>Perkiraan Ongkos Kirim ke Alamat Customer (Rp - Opsional):</label>
-            <input v-model.number="accShippingCost" type="number" min="0" class="form-select" placeholder="Contoh: 25000" />
+            <IdrPriceInput v-model="accShippingCost" min="0" class="form-select" placeholder="Contoh: 25.000" />
           </div>
 
           <div class="modal-form-group">

@@ -143,7 +143,7 @@
               Titip Sekarang (Checkout PO)
             </NuxtLink>
             <button v-else disabled class="btn-po-now disabled">
-              {{ !isTripOpen ? 'PO Telah Ditutup' : 'Kuota Variasi Ini Habis' }}
+              {{ !isTripOpen ? 'PO Telah Ditutup' : (product.stockStatus !== 'in_stock' ? 'Stok Habis' : 'Kuota Variasi Ini Habis') }}
             </button>
             <div class="cta-sub-row">
               <button v-if="!isAdmin" type="button" class="btn-chat-admin" @click="handleChatAdmin">
@@ -207,6 +207,7 @@ import { ref, computed, watch } from 'vue'
 import { useAuth } from '../../../composables/useAuth'
 import { useCustomerChat } from '../../../composables/useCustomerChat'
 import { useWishlist } from '../../../composables/useWishlist'
+import { useProductStockSync } from '../../../composables/useProductStockSync'
 
 const route = useRoute()
 const tripSlug = route.params.tripSlug as string
@@ -216,7 +217,9 @@ const isAdmin = computed(() => currentUser.value?.role === 'admin' || currentUse
 const { openChat, openChatWithProduct } = useCustomerChat()
 const { isWishlisted, toggleWishlist } = useWishlist()
 
-const { data: product } = await useFetch<any>(`/api/products/${slug}`)
+const { data: product, refresh: refreshProduct } = await useFetch<any>(`/api/products/${slug}`)
+
+useProductStockSync(() => refreshProduct())
 
 const galleryList = computed<string[]>(() => {
   const g = product.value?.gallery
@@ -316,6 +319,9 @@ const activeVariantCombo = computed(() => {
 })
 
 const isOptionOutOfStock = (tierName: string, opt: string) => {
+  if (!product.value || product.value.stockStatus !== 'in_stock' || !product.value.inStock) {
+    return true
+  }
   if (variantCombinations.value.length === 0) return false
   const testSelection = {
     ...selectedTierValues.value,
@@ -354,6 +360,9 @@ const currentDisplayPrice = computed(() => {
 })
 
 const currentAvailableQuota = computed(() => {
+  if (!product.value || product.value.stockStatus !== 'in_stock' || !product.value.inStock) {
+    return 0
+  }
   if (activeVariantCombo.value && activeVariantCombo.value.stock !== undefined) {
     return Math.max(0, Number(activeVariantCombo.value.stock) || 0)
   }

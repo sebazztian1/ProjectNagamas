@@ -688,6 +688,7 @@
 import { ref, reactive, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { useAuth } from '../composables/useAuth'
 import { useToast } from '../composables/useToast'
+import { useProductStockSync } from '../composables/useProductStockSync'
 import type { ApiProduct } from '../composables/useProducts'
 
 definePageMeta({
@@ -708,7 +709,7 @@ const quoteImage = route.query.image as string
 const initialQty = Math.max(1, Number(route.query.qty) || 1)
 const initialVariant = (route.query.variant as string) || 'Standard'
 
-const { data: dbProducts } = await useFetch<ApiProduct[]>('/api/products', {
+const { data: dbProducts, refresh: refreshDbProducts } = await useFetch<ApiProduct[]>('/api/products', {
   query: { inStockOnly: 'true' }
 })
 
@@ -772,6 +773,8 @@ const onEntryVariantChange = (entry: CheckoutEntry) => {
   }
 }
 
+const requestedProductOutOfStock = ref(false)
+
 const initCheckoutItems = () => {
   if (quoteId) {
     checkoutItems.value = [
@@ -795,10 +798,18 @@ const initCheckoutItems = () => {
   }
 
   const list = dbProducts.value || []
-  const found =
-    list.find(p => String(p.id) === String(productId) || p.slug === String(productId)) || list[0]
+  const found = productId
+    ? list.find(p => String(p.id) === String(productId) || p.slug === String(productId))
+    : list[0]
+
+  if (productId && !found) {
+    checkoutItems.value = []
+    requestedProductOutOfStock.value = true
+    return
+  }
 
   if (found) {
+    requestedProductOutOfStock.value = false
     const resolved = resolveProductVariantInfo(found, initialVariant)
     checkoutItems.value = [
       {
@@ -822,6 +833,58 @@ const initCheckoutItems = () => {
 }
 
 initCheckoutItems()
+
+const reconcileCheckoutStock = () => {
+  if (quoteId || checkoutItems.value.length === 0) return
+  const list = dbProducts.value || []
+  const byId = new Map(list.map(p => [Number(p.id), p]))
+  const kept: CheckoutEntry[] = []
+
+  for (const item of checkoutItems.value) {
+    const liveProd = byId.get(item.productId)
+    if (!liveProd || liveProd.inStock === false) {
+      showToast('Stok Habis', `Produk "${item.name}" baru saja habis dan dihapus dari daftar checkout.`, 'warning')
+      continue
+    }
+
+    const combos = liveProd.variants?.combinations || []
+    if (combos.length > 0) {
+      const allZero = combos.every(c => Number(c.stock) <= 0)
+      if (allZero) {
+        showToast('Stok Habis', `Produk "${item.name}" baru saja habis dan dihapus dari daftar checkout.`, 'warning')
+        continue
+      }
+      item.combinations = combos
+      const matched = combos.find(c => c.label === item.variant) || combos.find(c => Number(c.stock) > 0) || combos[0]
+      if (matched) {
+        item.variant = matched.label
+        item.price = Number(matched.price || liveProd.price)
+        item.maxQty = Math.max(1, Math.min(liveProd.maxQtyPerOrder || 10, Number(matched.stock) || 1))
+        if (item.qty > item.maxQty) item.qty = item.maxQty
+      }
+    } else {
+      const avail = liveProd.productType === 'ready' ? (liveProd.stockQuantity ?? 10) : (liveProd.quota ?? 10)
+      if (avail <= 0) {
+        showToast('Stok Habis', `Produk "${item.name}" baru saja habis dan dihapus dari daftar checkout.`, 'warning')
+        continue
+      }
+      item.maxQty = Math.max(1, Math.min(liveProd.maxQtyPerOrder || 10, avail))
+      if (item.qty > item.maxQty) item.qty = item.maxQty
+    }
+    kept.push(item)
+  }
+
+  checkoutItems.value = kept
+}
+
+useProductStockSync(async () => {
+  await refreshDbProducts()
+  if (requestedProductOutOfStock.value && checkoutItems.value.length === 0 && productId) {
+    initCheckoutItems()
+  } else {
+    reconcileCheckoutStock()
+  }
+})
 
 const showAddProductPicker = ref(false)
 const pickerSearch = ref('')
@@ -1418,6 +1481,9 @@ const checkViewport = () => {
 onMounted(async () => {
   checkViewport()
   window.addEventListener('resize', checkViewport)
+  if (requestedProductOutOfStock.value) {
+    showToast('Stok Habis', 'Produk yang dipilih sedang habis dan tidak dapat dipesan.', 'warning')
+  }
   await loadProvinces()
 
   try {

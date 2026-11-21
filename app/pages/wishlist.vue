@@ -128,9 +128,9 @@
                 v-else 
                 disabled 
                 class="btn-buy-disabled" 
-                :title="item.productType === 'ready' ? 'Stok barang ini sedang habis' : 'Jadwal PO untuk trip jastip ini telah ditutup'"
+                :title="item.productType === 'ready' ? 'Stok barang ini sedang habis' : (item.availabilityReason || 'Jadwal PO untuk trip jastip ini telah ditutup')"
               >
-                {{ item.productType === 'ready' ? 'Stok Habis' : 'PO Ditutup' }}
+                {{ item.availabilityReason || (item.productType === 'ready' ? 'Stok Habis' : 'PO Ditutup') }}
               </button>
 
               <!-- Secondary Row: Chat Admin & Detail Link -->
@@ -180,6 +180,7 @@ import { useAuth } from '../composables/useAuth'
 import { useWishlist, type WishlistItem } from '../composables/useWishlist'
 import { useCustomerChat } from '../composables/useCustomerChat'
 import { useToast } from '../composables/useToast'
+import { useProductStockSync } from '../composables/useProductStockSync'
 import type { ApiProduct } from '../composables/useProducts'
 
 const { isAuthenticated, currentUser } = useAuth()
@@ -195,47 +196,61 @@ const onlyAvailable = ref(false)
 // For guest users, if wishlistItems is empty but wishlistProductIds has IDs, load product details from API
 const guestProducts = ref<WishlistItem[]>([])
 
-onMounted(async () => {
-  isLoading.value = true
+const loadWishlistData = async (showLoader = false) => {
+  if (showLoader) isLoading.value = true
   try {
     await fetchWishlist()
 
     // If guest and we have saved IDs in localStorage, fetch their product info
     if (!isAuthenticated.value && wishlistProductIds.value.length > 0) {
-      const { data: allProds } = await useFetch<ApiProduct[]>('/api/products')
-      if (allProds.value) {
+      const allProds = await $fetch<ApiProduct[]>('/api/products')
+      if (allProds) {
         const idSet = new Set(wishlistProductIds.value)
-        const matched = allProds.value.filter(p => idSet.has(p.id))
-        guestProducts.value = matched.map(p => ({
-          productId: p.id,
-          name: p.name,
-          slug: p.slug,
-          productType: p.productType,
-          category: p.category,
-          price: p.price,
-          originalPrice: p.originalPrice || null,
-          stockStatus: p.inStock ? 'in_stock' : 'out_of_stock',
-          image: p.image,
-          isAvailable: p.productType === 'ready' ? p.inStock : true,
-          availabilityReason: p.productType === 'ready' 
-            ? (p.inStock ? 'Ready Stock' : 'Stok Habis')
-            : (p.trip?.country ? `Jastip PO ${p.trip.country}` : 'Jastip PO'),
-          trip: p.trip ? {
-            id: p.trip.id,
-            title: p.trip.title,
-            slug: p.trip.slug,
-            country: p.trip.country,
-            flag: p.trip.flag || '✈️',
-            status: p.trip.status || 'open',
-            closeDate: p.trip.closeDate || ''
-          } : null
-        }))
+        const matched = allProds.filter(p => idSet.has(p.id))
+        guestProducts.value = matched.map(p => {
+          const isTripOpen = !p.trip || p.trip.status === 'open'
+          const isAvail = p.inStock && (p.productType === 'ready' || isTripOpen)
+          return {
+            productId: p.id,
+            name: p.name,
+            slug: p.slug,
+            productType: p.productType,
+            category: p.category,
+            price: p.price,
+            originalPrice: p.originalPrice || null,
+            stockStatus: p.inStock ? 'in_stock' : 'out_of_stock',
+            image: p.image,
+            isAvailable: isAvail,
+            availabilityReason: !p.inStock
+              ? 'Stok Habis'
+              : p.productType === 'ready'
+                ? 'Ready Stock'
+                : !isTripOpen
+                  ? 'PO Telah Ditutup'
+                  : (p.trip?.country ? `Jastip PO ${p.trip.country}` : 'Jastip PO'),
+            trip: p.trip ? {
+              id: p.trip.id,
+              title: p.trip.title,
+              slug: p.trip.slug,
+              country: p.trip.country,
+              flag: (p.trip as any).flag || '✈️',
+              status: p.trip.status || 'open',
+              closeDate: p.trip.closeDate || ''
+            } : null
+          }
+        })
       }
     }
   } finally {
-    isLoading.value = false
+    if (showLoader) isLoading.value = false
   }
+}
+
+onMounted(async () => {
+  await loadWishlistData(true)
 })
+
+useProductStockSync(() => loadWishlistData(false))
 
 const displayItems = computed<WishlistItem[]>(() => {
   if (isAuthenticated.value) {

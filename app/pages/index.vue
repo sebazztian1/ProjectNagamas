@@ -170,7 +170,7 @@
 
     <!-- 2. Category Chips -->
     <section v-if="categoryRows.length > 0" class="category-chips-section" aria-label="Jelajahi kategori">
-      <div class="section-head-inline">
+      <div class="section-head-inline section-head-centered">
         <h2 class="section-title-sm">Jelajahi Kategori</h2>
       </div>
       <div class="category-chips">
@@ -189,8 +189,9 @@
 
     <!-- 3. Open Jastip Schedules -->
     <section v-if="sortedOpenTrips.length > 0" class="open-trips-section" aria-label="Jadwal Jastip terbuka">
-      <div class="section-head-row">
-        <div>
+      <div class="section-head-row section-head-centered-row">
+        <div class="section-head-spacer" aria-hidden="true"></div>
+        <div class="section-head-center">
           <h2 class="section-title-sm">Jadwal Jastip Terbuka</h2>
           <p class="section-sub">Titip belanja dari luar negeri sebelum PO ditutup.</p>
         </div>
@@ -299,10 +300,12 @@
                 v-for="product in catRow.products"
                 :key="product.id"
                 class="product-card"
+                :class="{ 'is-out-of-stock': !product.inStock }"
               >
                 <NuxtLink :to="getProductLink(product)" class="card-thumb-link">
                   <div class="card-thumb">
                     <img :src="product.image" :alt="product.name" loading="lazy" />
+                    <span v-if="!product.inStock" class="badge-out-of-stock">Stok Habis</span>
                     <span v-if="product.productType === 'jastip'" class="badge-jastip">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z" />
@@ -331,9 +334,12 @@
                   </div>
 
                   <div class="card-actions">
-                    <NuxtLink :to="`/checkout?productId=${product.id}&qty=1`" class="btn-buy">
+                    <NuxtLink v-if="product.inStock" :to="`/checkout?productId=${product.id}&qty=1`" class="btn-buy">
                       {{ product.productType === 'jastip' ? 'Titip' : 'Beli' }}
                     </NuxtLink>
+                    <button v-else type="button" disabled class="btn-buy disabled">
+                      Stok Habis
+                    </button>
                   </div>
                 </div>
               </div>
@@ -378,13 +384,16 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import type { ApiProduct } from '../composables/useProducts'
 import type { ApiTrip } from '../composables/useTrips'
+import { useProductStockSync } from '../composables/useProductStockSync'
 
 const { data: openTrips } = await useFetch<ApiTrip[]>('/api/trips', {
   query: { status: 'open' }
 })
 
 const { data: dbCategories } = await useFetch<any[]>('/api/categories')
-const { data: dbAllProducts } = await useFetch<ApiProduct[]>('/api/products')
+const { data: dbAllProducts, refresh: refreshProducts } = await useFetch<ApiProduct[]>('/api/products')
+
+useProductStockSync(() => refreshProducts())
 
 const allProducts = computed(() => {
   return dbAllProducts.value || []
@@ -1208,6 +1217,45 @@ const formatDate = (dateStr: string) => {
   text-decoration: underline;
 }
 
+.section-head-inline.section-head-centered {
+  text-align: center;
+}
+
+.section-head-row.section-head-centered-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: 16px;
+}
+
+.section-head-center {
+  grid-column: 2;
+  text-align: center;
+}
+
+.section-head-row.section-head-centered-row .section-link {
+  grid-column: 3;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+@media (max-width: 720px) {
+  .section-head-row.section-head-centered-row {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .section-head-spacer {
+    display: none;
+  }
+
+  .section-head-row.section-head-centered-row .section-link {
+    justify-self: center;
+  }
+}
+
 /* ===== 1. Trust bar ===== */
 .trust-bar {
   display: grid;
@@ -1776,6 +1824,10 @@ const formatDate = (dateStr: string) => {
   border-color: var(--brand-secondary);
 }
 
+.product-card.is-out-of-stock {
+  opacity: 0.72;
+}
+
 .card-thumb-link {
   text-decoration: none;
   display: block;
@@ -1797,6 +1849,20 @@ const formatDate = (dateStr: string) => {
 
 .product-card:hover .card-thumb img {
   transform: scale(1.05);
+}
+
+.badge-out-of-stock {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  background: var(--color-danger, #A33A2A);
+  color: #FFFBF2;
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  z-index: 2;
+  box-shadow: 0 2px 8px rgba(28, 20, 12, 0.22);
 }
 
 .badge-jastip {
@@ -1930,10 +1996,17 @@ const formatDate = (dateStr: string) => {
   border: 1px solid var(--brand-accent);
 }
 
-.btn-buy:hover {
+.btn-buy:hover:not(.disabled) {
   background: var(--color-primary-hover);
   border-color: var(--color-primary-hover);
   transform: translateY(-1px);
+}
+
+.btn-buy.disabled {
+  background: #E8E3DA;
+  color: #7A6A55;
+  border-color: #D6CEBE;
+  cursor: not-allowed;
 }
 
 @media (max-width: 1400px) {

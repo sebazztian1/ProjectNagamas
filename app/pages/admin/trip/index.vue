@@ -342,7 +342,7 @@
             </div>
             <div class="f-group">
               <label for="trip-fee">Default Fee Jastip (Rp) <span class="req-mark">*</span></label>
-              <input id="trip-fee" v-model.number="form.feeValue" type="number" min="0" inputmode="numeric" placeholder="35000" required />
+              <IdrPriceInput id="trip-fee" v-model="form.feeValue" min="0" placeholder="35.000" required />
             </div>
           </div>
 

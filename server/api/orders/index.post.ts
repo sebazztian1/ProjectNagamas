@@ -230,6 +230,13 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 404, message: `Produk tidak ditemukan atau sudah tidak aktif.` })
       }
 
+      if (product.stock_status !== 'in_stock') {
+        throw createError({
+          statusCode: 400,
+          message: `Maaf, produk "${product.name}" saat ini sedang habis (Out of Stock) dan tidak dapat dipesan.`
+        })
+      }
+
       if (product.max_qty_per_order && qty > product.max_qty_per_order) {
         throw createError({
           statusCode: 400,

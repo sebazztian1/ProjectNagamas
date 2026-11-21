@@ -228,11 +228,10 @@
 
           <div class="f-group">
             <label>Total Harga Penawaran Bersih (IDR) <span class="required">*</span></label>
-            <input 
-              v-model.number="quoteForm.price" 
-              type="number" 
-              placeholder="Contoh: 450000" 
-              required 
+            <IdrPriceInput
+              v-model="quoteForm.price"
+              placeholder="Contoh: 450.000"
+              required
               min="1000"
             />
             <span class="calc-hint">*Sudah mencakup harga barang di toko luar negeri + estimasi pajak + jasa titip (fee).</span>
@@ -333,10 +332,10 @@
 
           <div class="f-group">
             <label>Harga Jual Katalog (IDR) <span class="required">*</span></label>
-            <input 
-              v-model.number="convertForm.price" 
-              type="number" 
-              required 
+            <IdrPriceInput
+              v-model="convertForm.price"
+              placeholder="Contoh: 450.000"
+              required
               min="1000"
             />
           </div>

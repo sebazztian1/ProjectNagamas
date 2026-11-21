@@ -2,6 +2,7 @@ import { defineEventHandler, readMultipartFormData, createError } from 'h3'
 import { PutObjectCommand } from '@aws-sdk/client-s3'
 import path from 'path'
 import crypto from 'crypto'
+import { useR2, resolvePublicMediaUrl } from '../utils/r2'
 
 const ALLOWED_FOLDERS = ['products', 'trips', 'chat', 'requests', 'receipts', 'purchase-proofs']
 const PRIVATE_FOLDERS = ['receipts', 'purchase-proofs']
@@ -64,10 +65,9 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 500, message: 'Gagal mengunggah ke Cloudflare R2' })
   }
 
-  const basePublicUrl = (cfg.r2PublicUrl as string || '').replace(/\/+$/, '')
   const publicUrl = isPrivate
     ? `private:${objectKey}`
-    : `${basePublicUrl}/${objectKey}`
+    : (resolvePublicMediaUrl(`r2:${objectKey}`) || `/api/media/${objectKey}`)
 
   return {
     success: true,

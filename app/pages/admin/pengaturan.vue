@@ -47,7 +47,7 @@
 
           <div class="f-group">
             <label>Default Fee Jastip per Item (IDR):</label>
-            <input v-model.number="settings.defaultFee" type="number" />
+            <IdrPriceInput v-model="settings.defaultFee" min="0" placeholder="Contoh: 35.000" />
             <span class="hint">Biaya jasa titip standar jika tidak ditentukan di trip.</span>
           </div>
 

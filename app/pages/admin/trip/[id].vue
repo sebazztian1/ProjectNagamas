@@ -275,10 +275,9 @@
                   Harga Jual Akhir (IDR):
                   <span v-if="hasActiveVariants" class="auto-calc-badge">Otomatis dari Variasi</span>
                 </label>
-                <input
-                  v-model.number="form.price"
-                  type="number"
-                  placeholder="Contoh: 250000"
+                <IdrPriceInput
+                  v-model="form.price"
+                  placeholder="Contoh: 250.000"
                   min="1"
                   :readonly="hasActiveVariants"
                   :class="{ 'input-readonly': hasActiveVariants }"
@@ -397,7 +396,7 @@
                         <td>
                           <div class="rupiah-input-box">
                             <span>Rp</span>
-                            <input v-model.number="comb.price" type="number" min="1" required @input="syncBaseTotalsFromCombinations" />
+                            <IdrPriceInput v-model="comb.price" min="1" required @update:model-value="syncBaseTotalsFromCombinations" />
                           </div>
                         </td>
                         <td>

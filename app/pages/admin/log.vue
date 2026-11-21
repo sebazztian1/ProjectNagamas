@@ -55,6 +55,12 @@
       <p>Memuat catatan log aktivitas...</p>
     </div>
 
+    <!-- Error State -->
+    <div v-else-if="error" class="error-state">
+      <p>{{ error.data?.message || error.message || 'Gagal memuat catatan audit log.' }}</p>
+      <button type="button" class="btn-retry" @click="refresh()">Coba Lagi</button>
+    </div>
+
     <!-- Table Card -->
     <div v-else class="table-card">
       <table class="data-table">
@@ -270,7 +276,7 @@ const queryParams = computed(() => ({
   search: searchQuery.value || undefined
 }))
 
-const { data: logsData, status, refresh } = await useFetch<LogsApiResponse>('/api/admin/logs', {
+const { data: logsData, status, error, refresh } = await useFetch<LogsApiResponse>('/api/admin/logs', {
   query: queryParams,
   watch: [queryParams]
 })
@@ -346,6 +352,7 @@ const formatActionName = (action: string) => {
     UPDATE_CUSTOMER_ACCESS: 'Ubah Akses Pelanggan',
     DISABLE_CUSTOMER_ACCOUNT: 'Nonaktifkan Akun Pelanggan',
     ENABLE_CUSTOMER_ACCOUNT: 'Aktifkan Akun Pelanggan',
+    RESET_USER_PASSWORD: 'Reset Kata Sandi',
     LOGIN_ADMIN: 'Login Admin'
   }
 
@@ -366,7 +373,7 @@ const getActionBadgeClass = (action: string) => {
   if (action.includes('REJECT') || action.includes('REFUND') || action.startsWith('DELETE_') || action.startsWith('DISABLE_')) {
     return 'badge-danger'
   }
-  if (action.includes('STOCK') || action.includes('QUOTE') || action.includes('CUSTOMER')) {
+  if (action.includes('STOCK') || action.includes('QUOTE') || action.includes('CUSTOMER') || action.includes('RESET')) {
     return 'badge-warning'
   }
   if (action.includes('LOGIN')) {
@@ -648,6 +655,36 @@ const prepareFiles = () => {
   border: 1px solid var(--color-secondary, #EFE1C6);
   border-radius: 12px;
   color: var(--color-text-muted, #7A6A55);
+}
+
+.error-state {
+  text-align: center;
+  padding: 48px;
+  background: #ffffff;
+  border: 1px solid #FECACA;
+  border-radius: 12px;
+  color: #991B1B;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.error-state p {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.btn-retry {
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .table-card {

@@ -1,6 +1,7 @@
 import { defineEventHandler, getQuery } from 'h3'
 import { prisma } from '../../utils/prisma'
 import { getCountryFlag } from '../../utils/countryFlags'
+import { resolvePublicMediaUrl } from '../../utils/r2'
 
 export default defineEventHandler(async (event) => {
   const query = getQuery(event)
@@ -78,7 +79,7 @@ export default defineEventHandler(async (event) => {
       cityOrArea: t.city_or_area || '',
       description: t.description || '',
       terms: t.terms || '',
-      coverImageUrl: t.cover_image_url || null,
+      coverImageUrl: resolvePublicMediaUrl(t.cover_image_url) || null,
       currency: t.currency,
       exchangeRate: Number(t.exchange_rate),
       feeType: t.fee_type,

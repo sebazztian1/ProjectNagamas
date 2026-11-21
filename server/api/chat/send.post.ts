@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import { getSessionFromEvent, clearSessionCookie } from '../../utils/session'
 import { prisma } from '../../utils/prisma'
 import { useAblyRest } from '../../utils/ably'
+import { resolvePublicMediaUrl } from '../../utils/r2'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -186,7 +187,7 @@ export default defineEventHandler(async (event) => {
     senderRole: createdMsg.sender_role,
     messageType: createdMsg.message_type,
     content: createdMsg.content,
-    imageUrl: createdMsg.image_url,
+    imageUrl: resolvePublicMediaUrl(createdMsg.image_url),
     productId: createdMsg.product_id,
     tripId: createdMsg.trip_id,
     requestId: createdMsg.request_id,
@@ -196,7 +197,7 @@ export default defineEventHandler(async (event) => {
           name: createdMsg.products.name,
           slug: createdMsg.products.slug,
           price: Number(createdMsg.products.price),
-          imageUrl: createdMsg.products.image_url,
+          imageUrl: resolvePublicMediaUrl(createdMsg.products.image_url),
           productType: createdMsg.products.product_type,
           stockStatus: createdMsg.products.stock_status,
           tripSlug: createdMsg.products.jastip_trips?.slug || null,
@@ -210,7 +211,7 @@ export default defineEventHandler(async (event) => {
           slug: createdMsg.jastip_trips.slug,
           country: createdMsg.jastip_trips.country,
           cityOrArea: createdMsg.jastip_trips.city_or_area || '',
-          coverImageUrl: createdMsg.jastip_trips.cover_image_url || null,
+          coverImageUrl: resolvePublicMediaUrl(createdMsg.jastip_trips.cover_image_url) || null,
           status: createdMsg.jastip_trips.status,
           closeDate: createdMsg.jastip_trips.close_date,
           estimatedArrivalDate: createdMsg.jastip_trips.estimated_arrival_date
@@ -221,7 +222,7 @@ export default defineEventHandler(async (event) => {
           id: createdMsg.product_requests.id,
           productName: createdMsg.product_requests.product_name,
           description: createdMsg.product_requests.description || '',
-          referenceImageUrl: createdMsg.product_requests.reference_image_url || null,
+          referenceImageUrl: resolvePublicMediaUrl(createdMsg.product_requests.reference_image_url) || null,
           referenceLink: createdMsg.product_requests.reference_link || null,
           status: createdMsg.product_requests.status,
           quotedPrice: createdMsg.product_requests.quoted_price ? Number(createdMsg.product_requests.quoted_price) : null,

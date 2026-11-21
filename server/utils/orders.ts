@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import { signPrivate } from './r2'
+import { signPrivate, resolvePublicMediaUrl } from './r2'
 import { normalizeProductVariants, findVariantCombination, syncProductVariantsTable } from './variants'
 
 const STATUS_TITLES: Record<string, string> = {
@@ -272,7 +272,7 @@ export async function formatOrderResponse(o: any) {
       productId: it.product_id,
       productSlug: it.products?.slug || '',
       productName: it.product_name_snapshot,
-      productImage: it.products?.image_url || null,
+      productImage: resolvePublicMediaUrl(it.products?.image_url) || null,
       variant: it.variant_snapshot || 'Standard',
       priceAtOrder: Number(it.price_at_order),
       quantity: it.qty,

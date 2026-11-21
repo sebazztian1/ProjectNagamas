@@ -107,17 +107,23 @@
               <span v-if="p.originalPrice" class="calc-hint">{{ p.originalCurrency }} {{ p.originalPrice }}</span>
             </td>
             <td>
-              <button 
+              <button
                 class="stock-toggle-btn"
                 :class="p.stockStatus"
+                :disabled="togglingStockIds.has(p.id)"
                 @click="toggleStockStatus(p)"
                 :title="p.stockStatus === 'in_stock' ? 'Klik untuk ubah jadi Habis' : 'Klik untuk ubah jadi Tersedia'"
               >
                 {{ p.stockStatus === 'in_stock' ? (p.productType === 'ready' ? `Tersedia (${p.stockQuantity} pcs)` : `Buka (${p.quota} slot)`) : 'Habis (Out of Stock)' }}
               </button>
               <div v-if="p.variants?.combinations?.length" class="variant-stock-mini">
-                <span v-for="c in p.variants.combinations.slice(0, 3)" :key="c.key" class="v-stock-chip" :class="{ empty: c.stock <= 0 }">
-                  {{ c.label }}: <b>{{ c.stock }}</b>
+                <span
+                  v-for="c in p.variants.combinations.slice(0, 3)"
+                  :key="c.key"
+                  class="v-stock-chip"
+                  :class="{ empty: p.stockStatus !== 'in_stock' || c.stock <= 0 }"
+                >
+                  {{ c.label }}: <b>{{ p.stockStatus === 'in_stock' ? c.stock : 0 }}</b>
                 </span>
                 <span v-if="p.variants.combinations.length > 3" class="v-stock-more">
                   +{{ p.variants.combinations.length - 3 }} lainnya
@@ -229,10 +235,9 @@
                 Harga Jual Dasar (IDR):
                 <span v-if="hasActiveVariants" class="auto-calc-badge">Otomatis dari Variasi Termurah</span>
               </label>
-              <input
-                v-model.number="form.price"
-                type="number"
-                placeholder="Contoh: 1250000"
+              <IdrPriceInput
+                v-model="form.price"
+                placeholder="Contoh: 1.250.000"
                 min="1"
                 :readonly="hasActiveVariants"
                 :class="{ 'input-readonly': hasActiveVariants }"
@@ -338,7 +343,7 @@
                 <div class="vb-bulk-bar">
                   <span class="bulk-label">Atur Massal ({{ variantCombinations.length }} Kombinasi):</span>
                   <div class="bulk-inputs">
-                    <input v-model.number="bulkPrice" type="number" placeholder="Harga (IDR)" min="1" />
+                    <IdrPriceInput v-model="bulkPrice" nullable placeholder="Harga (IDR)" min="1" />
                     <input v-model.number="bulkStock" type="number" :placeholder="form.productType === 'ready' ? 'Stok (pcs)' : 'Kuota (slot)'" min="0" />
                     <button type="button" class="btn-apply-bulk" @click="applyBulkToCombinations">
                       Terapkan ke Semua
@@ -364,12 +369,11 @@
                         <td>
                           <div class="rupiah-input-box">
                             <span>Rp</span>
-                            <input
-                              v-model.number="comb.price"
-                              type="number"
+                            <IdrPriceInput
+                              v-model="comb.price"
                               min="1"
                               required
-                              @input="syncBaseTotalsFromCombinations"
+                              @update:model-value="syncBaseTotalsFromCombinations"
                             />
                           </div>
                         </td>
@@ -508,6 +512,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
 import { useToast } from '../../composables/useToast'
+import { notifyProductStockChanged } from '../../composables/useProductStockSync'
 import type { CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
 import {
   prepareReportFiles,
@@ -959,16 +964,41 @@ const editProduct = (p: AdminProduct) => {
   showModal.value = true
 }
 
+const togglingStockIds = ref<Set<number>>(new Set())
+
 const toggleStockStatus = async (p: AdminProduct) => {
+  if (togglingStockIds.value.has(p.id)) return
+
+  const prevStatus = p.stockStatus
+  const nextStatus: 'in_stock' | 'out_of_stock' = prevStatus === 'in_stock' ? 'out_of_stock' : 'in_stock'
+  const nextSet = new Set(togglingStockIds.value)
+  nextSet.add(p.id)
+  togglingStockIds.value = nextSet
+
+  // Optimistic update for instant UI feedback
+  p.stockStatus = nextStatus
+
   try {
     const res = await $fetch<{ success: boolean; message: string; product: any }>(`/api/admin/products/${p.id}/stock`, {
       method: 'PATCH',
-      body: {}
+      body: { stockStatus: nextStatus }
     })
+    if (res?.product) {
+      p.stockStatus = res.product.stockStatus
+      if (res.product.stockQuantity !== undefined) p.stockQuantity = res.product.stockQuantity
+      if (res.product.quota !== undefined) p.quota = res.product.quota
+      if (res.product.variants !== undefined) p.variants = res.product.variants
+    }
+    notifyProductStockChanged(p.id)
     showToast('Stok Diperbarui', res.message, 'success')
     await refresh()
   } catch (err: any) {
+    p.stockStatus = prevStatus
     showToast('Gagal', err?.data?.message || 'Gagal mengubah status stok', 'warning')
+  } finally {
+    const cleaned = new Set(togglingStockIds.value)
+    cleaned.delete(p.id)
+    togglingStockIds.value = cleaned
   }
 }
 
@@ -981,6 +1011,7 @@ const duplicateProduct = async (p: AdminProduct) => {
       method: 'POST',
       body: {}
     })
+    notifyProductStockChanged()
     showToast('Sukses', res.message, 'success')
     await refresh()
   } catch (err: any) {
@@ -996,6 +1027,7 @@ const deleteProduct = async (p: AdminProduct) => {
     const res = await $fetch<{ success: boolean; message: string }>(`/api/admin/products/${p.id}`, {
       method: 'DELETE'
     })
+    notifyProductStockChanged(p.id)
     showToast('Produk Dihapus', res.message, 'info')
     await refresh()
   } catch (err: any) {
@@ -1091,12 +1123,14 @@ const saveProduct = async () => {
         method: 'PUT',
         body: payload
       })
+      notifyProductStockChanged(editingId.value)
       showToast('Berhasil', 'Perubahan produk & variasi berhasil disimpan.', 'success')
     } else {
       await $fetch('/api/admin/products', {
         method: 'POST',
         body: payload
       })
+      notifyProductStockChanged()
       showToast('Berhasil', 'Produk baru berhasil ditambahkan ke database.', 'success')
     }
     showModal.value = false
@@ -1148,6 +1182,7 @@ const exportPreview = computed(() =>
 )
 
 const getProductAvailableUnits = (p: AdminProduct) => {
+  if (p.stockStatus !== 'in_stock') return 0
   const combos = p.variants?.combinations
   if (Array.isArray(combos) && combos.length > 0) {
     return combos.reduce((s: number, c: any) => s + Number(c.stock || 0), 0)
@@ -1156,6 +1191,7 @@ const getProductAvailableUnits = (p: AdminProduct) => {
 }
 
 const getProductAssetValuation = (p: AdminProduct) => {
+  if (p.stockStatus !== 'in_stock') return 0
   const combos = p.variants?.combinations
   if (Array.isArray(combos) && combos.length > 0) {
     return combos.reduce((s: number, c: any) => s + Number(c.price || p.price || 0) * Number(c.stock || 0), 0)
@@ -1504,6 +1540,11 @@ const prepareFiles = () => {
   border-radius: 20px;
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.stock-toggle-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
 }
 
 .stock-toggle-btn.in_stock {

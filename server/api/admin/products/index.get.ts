@@ -2,6 +2,7 @@ import { defineEventHandler, getQuery, createError } from 'h3'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
 import { normalizeProductVariants } from '../../../utils/variants'
+import { resolvePublicMediaUrl } from '../../../utils/r2'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -63,10 +64,11 @@ export default defineEventHandler(async (event) => {
   })
 
   const formattedProducts = products.map((p) => {
+    const resolvedPrimary = resolvePublicMediaUrl(p.image_url)
     const galleryImages = Array.from(
       new Set([
-        ...(p.image_url ? [p.image_url] : []),
-        ...p.product_images.map((img) => img.image_url).filter(Boolean)
+        ...(resolvedPrimary ? [resolvedPrimary] : []),
+        ...p.product_images.map((img) => resolvePublicMediaUrl(img.image_url)).filter((u): u is string => Boolean(u))
       ])
     )
     return {
@@ -84,7 +86,7 @@ export default defineEventHandler(async (event) => {
       originalPrice: p.original_price ? Number(p.original_price) : null,
       originalCurrency: p.original_currency || null,
       sourceStore: p.source_store || null,
-      imageUrl: galleryImages[0] || p.image_url || '',
+      imageUrl: galleryImages[0] || resolvedPrimary || '',
       galleryImages,
       stockStatus: p.stock_status,
       stockQuantity: p.stock_quantity ?? 0,

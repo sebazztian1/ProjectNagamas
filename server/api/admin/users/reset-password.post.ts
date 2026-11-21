@@ -2,6 +2,7 @@ import { defineEventHandler, readBody, createError } from 'h3'
 import bcrypt from 'bcryptjs'
 import { prisma } from '../../../utils/prisma'
 import { getSessionFromEvent } from '../../../utils/session'
+import { recordAuditLog } from '../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -41,6 +42,16 @@ export default defineEventHandler(async (event) => {
   await prisma.users.update({
     where: { id: userId },
     data: { password_hash: newHash }
+  })
+
+  await recordAuditLog(session, {
+    action: 'RESET_USER_PASSWORD',
+    entityType: 'customer',
+    entityId: user.id,
+    detail: {
+      username: user.username,
+      phone: user.phone_number
+    }
   })
 
   return {
