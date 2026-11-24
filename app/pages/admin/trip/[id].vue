@@ -517,7 +517,28 @@ const tripId = route.params.id as string
 const currentTab = ref<'shopping' | 'products' | 'orders'>('shopping')
 
 const { data: opData, pending, refresh } = await useFetch<any>(`/api/admin/trips/${tripId}/operations`)
-const { data: categoriesData } = await useFetch<any>('/api/categories')
+
+const categoriesData = ref<any[]>([])
+const categoriesLoaded = ref(false)
+let categoriesPromise: Promise<void> | null = null
+
+const ensureCategoriesLoaded = async () => {
+  if (categoriesLoaded.value) return
+  if (!categoriesPromise) {
+    categoriesPromise = $fetch<any[]>('/api/categories')
+      .then((res) => {
+        categoriesData.value = res || []
+        categoriesLoaded.value = true
+      })
+      .catch(() => {
+        // Allow retry on next modal open
+      })
+      .finally(() => {
+        categoriesPromise = null
+      })
+  }
+  await categoriesPromise
+}
 
 const categories = computed(() => categoriesData.value || [])
 const trip = computed(() => opData.value?.trip)
@@ -608,6 +629,14 @@ const openCreateProductModal = () => {
   variantTiers.value = []
   variantCombinations.value = []
   showProductModal.value = true
+
+  if (!categoriesLoaded.value) {
+    ensureCategoriesLoaded().then(() => {
+      if (categories.value[0]?.id && form.value.categoryId === defaultCatId) {
+        form.value.categoryId = categories.value[0].id
+      }
+    })
+  }
 }
 
 onMounted(() => {

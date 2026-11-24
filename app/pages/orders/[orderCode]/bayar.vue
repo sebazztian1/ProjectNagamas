@@ -202,8 +202,13 @@ const { showToast } = useToast()
 
 const orderCode = route.params.orderCode as string
 
-const { data: order } = await useFetch<any>(`/api/orders/${orderCode}`)
-const { data: bankAccountsData } = await useFetch<any[]>('/api/bank-accounts')
+const [
+  { data: order },
+  { data: bankAccountsData }
+] = await Promise.all([
+  useFetch<any>(`/api/orders/${orderCode}`),
+  useFetch<any[]>('/api/bank-accounts')
+])
 
 const bankAccounts = computed(() => bankAccountsData.value || [])
 

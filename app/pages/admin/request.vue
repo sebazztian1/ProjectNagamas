@@ -395,7 +395,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed } from 'vue'
 import { useToast } from '../../composables/useToast'
 import { useAdminStats } from '../../composables/useAdminStats'
 import type { CsvPreviewMetric } from '../../components/AdminCsvExportModal.vue'
@@ -460,8 +460,8 @@ const statusTabs = [
 const currentStatus = ref('all')
 const searchQuery = ref('')
 
-// Fetch requests from DB
-const { data: requestsData, pending, refresh: fetchRequests } = await useFetch<AdminRequestItem[]>('/api/admin/requests', {
+// Fetch requests from DB (non-blocking)
+const { data: requestsData, pending, refresh: fetchRequests } = useLazyFetch<AdminRequestItem[]>('/api/admin/requests', {
   query: {
     status: currentStatus,
     search: searchQuery
@@ -471,10 +471,6 @@ const { data: requestsData, pending, refresh: fetchRequests } = await useFetch<A
 const refreshRequests = async () => {
   await Promise.all([fetchRequests(), fetchAdminStats(true)])
 }
-
-onMounted(() => {
-  refreshRequests()
-})
 
 const rawRequests = computed<AdminRequestItem[]>(() => requestsData.value || [])
 
@@ -488,8 +484,34 @@ const getCountByStatus = (statusVal: string) => {
   return null
 }
 
-// Fetch trips for Convert Modal
-const { data: rawTrips } = await useFetch<any[]>('/api/trips')
+// Lazy-load trips and categories only when Convert Modal is opened
+const rawTrips = ref<any[]>([])
+const rawCategories = ref<any[]>([])
+const convertOptionsLoaded = ref(false)
+let convertOptionsPromise: Promise<void> | null = null
+
+const ensureConvertOptionsLoaded = async () => {
+  if (convertOptionsLoaded.value) return
+  if (!convertOptionsPromise) {
+    convertOptionsPromise = Promise.all([
+      $fetch<any[]>('/api/trips'),
+      $fetch<any[]>('/api/categories')
+    ])
+      .then(([tripsRes, catsRes]) => {
+        rawTrips.value = tripsRes || []
+        rawCategories.value = catsRes || []
+        convertOptionsLoaded.value = true
+      })
+      .catch(() => {
+        // Allow retry on next modal open
+      })
+      .finally(() => {
+        convertOptionsPromise = null
+      })
+  }
+  await convertOptionsPromise
+}
+
 const allTrips = computed<TripOption[]>(() => {
   if (!rawTrips.value) return []
   return rawTrips.value.map(t => ({
@@ -501,8 +523,6 @@ const allTrips = computed<TripOption[]>(() => {
   }))
 })
 
-// Fetch categories for Convert Modal
-const { data: rawCategories } = await useFetch<any[]>('/api/categories')
 const categories = computed<CategoryOption[]>(() => {
   if (!rawCategories.value) return []
   return rawCategories.value.map(c => ({
@@ -600,6 +620,17 @@ const openConvertModal = (r: AdminRequestItem) => {
     description: r.description || `Produk titip request khusus dari ${r.targetCountry}.`
   }
   showConvertModal.value = true
+
+  if (!convertOptionsLoaded.value) {
+    ensureConvertOptionsLoaded().then(() => {
+      if (!convertForm.value.tripId && allTrips.value[0]?.id) {
+        convertForm.value.tripId = allTrips.value[0].id
+      }
+      if (!convertForm.value.categoryId && categories.value[0]?.id) {
+        convertForm.value.categoryId = categories.value[0].id
+      }
+    })
+  }
 }
 
 const closeConvertModal = () => {

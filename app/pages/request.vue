@@ -321,8 +321,17 @@ interface OpenTrip {
   slug: string
 }
 
-// Fetch open trips from DB for selection
-const { data: rawTrips } = await useFetch<any[]>('/api/trips?status=open')
+// Fetch open trips and requests in parallel
+const [
+  { data: rawTrips },
+  { data: requestsData, pending, refresh }
+] = await Promise.all([
+  useFetch<any[]>('/api/trips?status=open'),
+  useFetch<RequestItem[]>('/api/requests', {
+    immediate: !isAdmin.value,
+    default: () => []
+  })
+])
 
 const openTrips = computed<OpenTrip[]>(() => {
   if (!rawTrips.value) return []
@@ -333,12 +342,6 @@ const openTrips = computed<OpenTrip[]>(() => {
     flag: t.flag || '✈️',
     slug: t.slug
   }))
-})
-
-// Fetch requests from DB
-const { data: requestsData, pending, refresh } = await useFetch<RequestItem[]>('/api/requests', {
-  immediate: !isAdmin.value,
-  default: () => []
 })
 
 const requestsList = computed<RequestItem[]>(() => requestsData.value || [])

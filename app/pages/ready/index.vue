@@ -105,7 +105,21 @@ watch(() => route.query.category, (newCat) => {
   }
 })
 
-const { data: dbCategories } = await useFetch<any[]>('/api/categories')
+const productQuery = computed(() => ({
+  type: 'ready',
+  category: selectedCat.value !== 'Semua' ? selectedCat.value : undefined,
+  search: searchQuery.value.trim() || undefined,
+  sort: sortBy.value !== 'default' ? sortBy.value : undefined
+}))
+
+const [
+  { data: dbCategories },
+  { data: productsData, status, refresh: refreshProducts }
+] = await Promise.all([
+  useFetch<any[]>('/api/categories'),
+  useFetch<ApiProduct[]>('/api/products', { query: productQuery })
+])
+
 const categories = computed(() => {
   const names: string[] = []
   if (dbCategories.value && dbCategories.value.length > 0) {
@@ -123,15 +137,6 @@ const categories = computed(() => {
     return a.localeCompare(b, 'id')
   })
   return ['Semua', ...names]
-})
-
-const { data: productsData, status, refresh: refreshProducts } = await useFetch<ApiProduct[]>('/api/products', {
-  query: computed(() => ({
-    type: 'ready',
-    category: selectedCat.value !== 'Semua' ? selectedCat.value : undefined,
-    search: searchQuery.value.trim() || undefined,
-    sort: sortBy.value !== 'default' ? sortBy.value : undefined
-  }))
 })
 
 useProductStockSync(() => refreshProducts())

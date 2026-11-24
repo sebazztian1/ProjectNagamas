@@ -386,12 +386,15 @@ import type { ApiProduct } from '../composables/useProducts'
 import type { ApiTrip } from '../composables/useTrips'
 import { useProductStockSync } from '../composables/useProductStockSync'
 
-const { data: openTrips } = await useFetch<ApiTrip[]>('/api/trips', {
-  query: { status: 'open' }
-})
-
-const { data: dbCategories } = await useFetch<any[]>('/api/categories')
-const { data: dbAllProducts, refresh: refreshProducts } = await useFetch<ApiProduct[]>('/api/products')
+const [
+  { data: openTrips },
+  { data: dbCategories },
+  { data: dbAllProducts, refresh: refreshProducts }
+] = await Promise.all([
+  useFetch<ApiTrip[]>('/api/trips', { query: { status: 'open' } }),
+  useFetch<any[]>('/api/categories'),
+  useFetch<ApiProduct[]>('/api/products')
+])
 
 useProductStockSync(() => refreshProducts())
 
