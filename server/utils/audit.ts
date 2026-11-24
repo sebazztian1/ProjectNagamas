@@ -1,4 +1,6 @@
 import { prisma } from './prisma'
+import { auditStorageMetadata } from './auditMetadata'
+import type { Prisma } from '@prisma/client'
 import type { SessionData } from './session'
 
 export interface RecordAuditParams {
@@ -24,14 +26,11 @@ export async function recordAuditLog(
         : null
     const sanitizedDetail =
       params.detail !== undefined && params.detail !== null
-        ? JSON.parse(
-            JSON.stringify(params.detail, (_key, value) =>
-              typeof value === 'bigint' ? value.toString() : value
-            )
-          )
+        ? auditStorageMetadata(params.entityType, params.detail) as Prisma.InputJsonObject
         : undefined
     return await prisma.audit_logs.create({
       data: {
+        created_at: new Date(),
         user_id: userId ? Number(userId) : null,
         action: String(params.action || '').trim(),
         entity_type: String(params.entityType || '').trim(),

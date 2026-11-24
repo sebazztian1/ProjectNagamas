@@ -20,6 +20,23 @@ model audit_logs {
 
   @@index([entity_type, entity_id], map: "idx_audit_entity")
   @@index([user_id], map: "idx_audit_user")
+  @@index([created_at, id], map: "idx_audit_retention")
+}
+
+model audit_log_purge_history {
+  id            String    @id @db.Char(36)
+  started_at    DateTime  @db.DateTime(3)
+  finished_at   DateTime? @db.DateTime(3)
+  deadline_at   DateTime? @db.DateTime(3)
+  cutoff        DateTime? @db.DateTime(3)
+  mode          String    @db.VarChar(12)
+  status        String    @db.VarChar(12)
+  eligible      BigInt?   @db.UnsignedBigInt
+  deleted       BigInt    @default(0) @db.UnsignedBigInt
+  remaining     BigInt?   @db.UnsignedBigInt
+  error_message String?   @db.VarChar(160)
+
+  @@index([started_at], map: "idx_purge_started")
 }
 
 model bank_accounts {

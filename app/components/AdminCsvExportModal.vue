@@ -94,6 +94,7 @@
                   type="date"
                   class="csv-date-input"
                   :value="startDate"
+                  :min="minDate"
                   :max="endDate || undefined"
                   @input="$emit('update:startDate', ($event.target as HTMLInputElement).value)"
                 />
@@ -107,7 +108,7 @@
                   type="date"
                   class="csv-date-input"
                   :value="endDate"
-                  :min="startDate || undefined"
+                  :min="minDate && (!startDate || startDate < minDate) ? minDate : startDate || undefined"
                   @input="$emit('update:endDate', ($event.target as HTMLInputElement).value)"
                 />
               </div>
@@ -228,6 +229,8 @@ const props = withDefaults(
     datasets?: CsvDatasetOption[]
     selectedDataset?: string
     startDate?: string
+    minDate?: string
+    auditRowCount?: number
     endDate?: string
     useActiveFilters?: boolean
     activeFilterLabel?: string
@@ -301,6 +304,9 @@ async function prepareDownloads() {
 }
 
 watch(() => props.show, visible => { if (!visible) resetDownloads() })
+watch(() => props.auditRowCount, (count, previous) => {
+  if (previous !== undefined && count !== previous) resetDownloads()
+})
 onBeforeUnmount(resetDownloads)
 
 const dateRangeValid = computed(() => isValidDateRange(props.startDate, props.endDate))

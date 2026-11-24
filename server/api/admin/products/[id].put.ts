@@ -135,11 +135,18 @@ export default defineEventHandler(async (event) => {
     }
   }
 
+  const auditFields = (row: typeof updated) => ({
+    name: row.name, price: Number(row.price), productType: row.product_type,
+    stockQuantity: row.stock_quantity, stockStatus: row.stock_status, categoryId: row.category_id,
+    tripId: row.trip_id, quota: row.quota, maxQtyPerOrder: row.max_qty_per_order, isActive: row.is_active
+  })
   await recordAuditLog(session, {
     action: 'UPDATE_PRODUCT',
     entityType: 'product',
     entityId: updated.id,
     detail: {
+      previous: auditFields(existing),
+      current: auditFields(updated),
       name: updated.name,
       price: Number(updated.price)
     }

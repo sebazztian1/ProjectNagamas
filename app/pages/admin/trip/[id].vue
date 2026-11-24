@@ -54,6 +54,7 @@
     </div>
 
     <!-- TAB 1: SHOPPING LIST (REKAP BELANJA DI TOKO LUAR NEGERI) -->
+    <LoadingRegion :loading="pending" :has-content="!!opData" :columns="currentTab === 'shopping' ? 7 : currentTab === 'products' ? 6 : 5">
     <div v-if="currentTab === 'shopping'" class="shopping-list-section">
       <div class="table-card">
         <table class="data-table">
@@ -220,6 +221,8 @@
         </table>
       </div>
     </div>
+
+    </LoadingRegion>
 
     <!-- Modal Form Tambah Produk Langsung ke Trip -->
     <div v-if="showProductModal" class="modal-backdrop" @click.self="showProductModal = false">

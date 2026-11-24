@@ -119,6 +119,8 @@ export default defineEventHandler(async (event) => {
     entityType: 'request',
     entityId: id,
     detail: {
+      previous: { status: req.status, tripId: req.trip_id },
+      current: { status: 'available', tripId: trip.id },
       productName,
       productId: product.id,
       tripId: trip.id,

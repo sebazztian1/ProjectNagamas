@@ -186,7 +186,10 @@
       </header>
 
       <!-- Child Pages injected here -->
-      <div class="admin-page-content">
+      <div v-if="navigationSkeleton && loadingLayout" class="admin-page-content">
+        <LoadingSkeleton :layout="loadingLayout.layout" :columns="loadingLayout.columns" />
+      </div>
+      <div v-show="!(navigationSkeleton && loadingLayout)" class="admin-page-content">
         <NuxtPage />
       </div>
     </div>
@@ -212,6 +215,27 @@ const route = useRoute()
 const { currentUser, logout } = useAuth()
 const { showToast } = useToast()
 const { stats, fetchAdminStats } = useAdminStats()
+
+// Awaited useFetch pages are suspended before their own loading UI can mount.
+const pageLoading = ref(false)
+const loadingLayout = ref<{ layout: 'table' | 'grid'; columns?: number } | null>(null)
+const navigationSkeleton = useDelayedLoading(() => pageLoading.value)
+const router = useRouter()
+if (import.meta.client) {
+  const nuxt = useNuxtApp()
+  const finish = () => { pageLoading.value = false }
+  const stopStart = nuxt.hook('page:start', () => {
+    const path = router.currentRoute.value.path.replace(/\/$/, '')
+    if (path === '/admin/trip') loadingLayout.value = { layout: 'grid' }
+    else if (path === '/admin/produk') loadingLayout.value = { layout: 'table', columns: 6 }
+    else if (path === '/admin/order' || path.startsWith('/admin/trip/')) loadingLayout.value = { layout: 'table', columns: 7 }
+    else loadingLayout.value = null
+    pageLoading.value = !!loadingLayout.value
+  })
+  const stopEnd = nuxt.hook('page:loading:end', finish)
+  const stopError = nuxt.hook('vue:error', finish)
+  onBeforeUnmount(() => { stopStart(); stopEnd(); stopError() })
+}
 
 const isMobileNavOpen = ref(false)
 

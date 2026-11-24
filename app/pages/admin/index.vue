@@ -24,6 +24,7 @@
       </div>
     </div>
 
+    <LoadingRegion :loading="initialStatsPending || pending" layout="dashboard">
     <!-- Stat KPI Cards -->
     <div class="kpi-grid">
       <NuxtLink to="/admin/order" class="kpi-card kpi-clickable">
@@ -118,6 +119,8 @@
       </div>
     </div>
 
+    </LoadingRegion>
+
     <AdminCsvExportModal
       :show="showExportModal"
       title="Ekspor Laporan Akuntansi"
@@ -128,6 +131,8 @@
       v-model:end-date="exportEndDate"
       :preview-count="exportPreview.items.length"
       :min-timestamp="exportPreview.minTimestamp"
+      :min-date="exportDataset === 'logs' ? auditWindow?.minDate : undefined"
+      :audit-row-count="exportDataset === 'logs' ? exportPreview.items.length : undefined"
       :max-timestamp="exportPreview.maxTimestamp"
       :summary-metrics="exportMetrics"
       :loading="isExportLoading"
@@ -152,8 +157,13 @@ import {
 const { stats, pending, fetchAdminStats } = useAdminStats()
 const { showToast } = useToast()
 
-onMounted(() => {
-  fetchAdminStats(true)
+const initialStatsPending = ref(true)
+onMounted(async () => {
+  try {
+    await fetchAdminStats(true)
+  } finally {
+    initialStatsPending.value = false
+  }
 })
 
 const activeTrips = computed(() => stats.value?.openTrips || [])
@@ -180,6 +190,8 @@ const cachedOrders = ref<any[] | null>(null)
 const cachedTrips = ref<any[] | null>(null)
 const cachedProducts = ref<any[] | null>(null)
 const cachedLogs = ref<any[]>([])
+const auditWindow = ref<{ minDate: string; cutoff: string }>()
+const retainedLogs = useRetainedAuditRows(() => cachedLogs.value, () => auditWindow.value?.cutoff)
 
 const exportDatasetOptions: CsvDatasetOption[] = [
   { id: 'orders', label: 'Rekap Pesanan', description: 'Omzet, DP, sisa tagihan & ongkir per order' },
@@ -204,7 +216,7 @@ const loadDatasetSource = async (dataset: string) => {
         cachedLogs.value = []
         return
       }
-      const res = await $fetch<{ logs: any[] }>('/api/admin/logs', {
+      const res = await $fetch<{ logs: any[]; retention: { minDate: string; cutoff: string } }>('/api/admin/logs', {
         query: {
           exportAll: 'true',
           startDate: exportStartDate.value || undefined,
@@ -212,8 +224,10 @@ const loadDatasetSource = async (dataset: string) => {
         }
       })
       cachedLogs.value = res.logs || []
+      auditWindow.value = res.retention
     }
   } catch (err: any) {
+    if (dataset === 'logs') cachedLogs.value = []
     showToast('Gagal Memuat Data Export', err?.data?.message || 'Tidak dapat mengambil data dari server.', 'warning')
   } finally {
     isExportLoading.value = false
@@ -270,7 +284,7 @@ const exportPreview = computed(() => {
   if (exportDataset.value === 'products') {
     return filterByDateRange(cachedProducts.value || [], p => p.createdAt, exportStartDate.value, exportEndDate.value)
   }
-  return filterByDateRange(cachedLogs.value || [], l => l.createdAt, exportStartDate.value, exportEndDate.value)
+  return filterByDateRange(retainedLogs.value, l => l.createdAt, exportStartDate.value, exportEndDate.value)
 })
 
 const exportMetrics = computed<CsvPreviewMetric[]>(() => {
@@ -465,7 +479,7 @@ const prepareFiles = () => {
         { header: 'Aksi', key: 'action' },
         { header: 'Entitas', key: 'entityType' },
         { header: 'ID Entitas', kind: 'identifier', key: 'entityId' },
-        { header: 'Detail JSON', format: r => (r.detail ? JSON.stringify(r.detail) : '-') }
+        { header: 'Keterangan', key: 'summary' }
       ]
     })
 

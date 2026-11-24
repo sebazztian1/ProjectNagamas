@@ -23,7 +23,7 @@
           {{ loginError }}
         </div>
 
-        <form class="auth-form" novalidate @submit.prevent="handleLogin">
+        <form class="auth-form" :aria-busy="isLoading" novalidate @submit.prevent="handleLogin">
           <div class="form-group">
             <label for="field-identifier">
               Username atau nomor HP <span class="req-tag">(wajib)</span>
@@ -31,6 +31,7 @@
             <div class="input-wrap">
               <input
                 id="field-identifier"
+                :disabled="isLoading"
                 v-model="form.identifier"
                 type="text"
                 autocomplete="username"
@@ -46,13 +47,14 @@
               <label for="field-login-password">
                 Kata sandi <span class="req-tag">(wajib)</span>
               </label>
-              <button type="button" class="forgot-link-btn" @click="showForgotFlow = true">
+              <button type="button" class="forgot-link-btn" :disabled="isLoading" @click="showForgotFlow = true">
                 Lupa kata sandi?
               </button>
             </div>
             <div class="input-wrap">
               <input
                 id="field-login-password"
+                :disabled="isLoading"
                 v-model="form.password"
                 :type="showPassword ? 'text' : 'password'"
                 autocomplete="current-password"
@@ -73,7 +75,7 @@
           </div>
 
           <button type="submit" class="submit-btn" :disabled="isLoading">
-            <span v-if="isLoading">Memproses…</span>
+            <LoadingSpinner v-if="isLoading" />
             <span v-else>Masuk</span>
           </button>
 
@@ -230,6 +232,7 @@ const resetForm = reactive({
 })
 
 const handleLogin = async () => {
+  if (isLoading.value) return
   loginError.value = ''
   if (!form.identifier.trim() || !form.password) {
     loginError.value = 'Username atau kata sandi salah'

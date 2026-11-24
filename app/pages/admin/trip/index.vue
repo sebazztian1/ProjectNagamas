@@ -56,6 +56,7 @@
       </button>
     </div>
 
+    <LoadingRegion :loading="pending" :has-content="!!dbTrips" layout="grid">
     <!-- Trips Grid -->
     <div v-if="filteredTrips.length === 0" class="empty-state">
       <p>Belum ada trip dalam kategori ini.</p>
@@ -146,6 +147,8 @@
         </div>
       </div>
     </div>
+
+    </LoadingRegion>
 
     <!-- Modal Form Create / Edit Trip -->
     <div

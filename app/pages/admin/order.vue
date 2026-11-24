@@ -41,6 +41,7 @@
       </div>
     </div>
 
+    <LoadingRegion :loading="pending" :has-content="!!ordersData" :columns="7">
     <!-- Orders Table -->
     <div class="table-card">
       <table class="data-table">
@@ -56,10 +57,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-if="pending">
-            <td colspan="7" style="text-align: center; padding: 28px">Memuat daftar pesanan...</td>
-          </tr>
-          <tr v-else-if="filteredOrders.length === 0">
+          <tr v-if="filteredOrders.length === 0">
             <td colspan="7" style="text-align: center; padding: 28px">Tidak ada pesanan pada filter ini.</td>
           </tr>
           <tr v-else v-for="ord in filteredOrders" :key="ord.id">
@@ -173,6 +171,8 @@
         </tbody>
       </table>
     </div>
+
+    </LoadingRegion>
 
     <!-- 1. Modal ACC Pesanan + Input Ongkir (9.2) -->
     <div v-if="selectedOrderForAcc" class="modal-backdrop" @click.self="selectedOrderForAcc = null">

@@ -3,6 +3,7 @@
     <div class="page-head">
       <div>
         <h1 class="page-title">Audit Log</h1>
+        <small v-if="logsData?.retention">Log ditampilkan untuk {{ logsData.retention.days }} hari terakhir. {{ logsData.retention.active ? 'Log yang lebih lama dijadwalkan untuk dihapus otomatis.' : 'Penghapusan otomatis belum diaktifkan.' }}</small>
       </div>
       <div class="head-actions">
         <button type="button" class="btn-export-csv" @click="openExportModal">
@@ -26,6 +27,12 @@
     </div>
 
     <!-- Filter Pills & Search -->
+    <div v-if="logsData?.monitor">
+      <small>Status eksekusi terakhir · {{ logsData.monitor.lastStatus || 'Belum pernah berjalan' }}</small>
+      <p v-if="logsData.monitor.cleanup">Pembersihan terakhir · {{ formatDateTime(logsData.monitor.cleanup.at) }} WIB · {{ logsData.monitor.cleanup.deleted }} log dihapus.</p>
+      <p v-if="logsData.monitor.dry">Dry-run terakhir · {{ formatDateTime(logsData.monitor.dry.at) }} WIB · {{ logsData.monitor.dry.eligible }} kandidat.</p>
+      <p v-for="warning in logsData.monitor.warnings" :key="warning" role="status">{{ warning }}</p>
+    </div>
     <div class="filter-bar">
       <div class="tabs">
         <button
@@ -97,19 +104,17 @@
               </div>
             </td>
             <td class="col-detail-summary">
-              <span>{{ getDetailSummary(l) }}</span>
+              <span>{{ l.summary }}</span>
             </td>
             <td class="col-center">
               <button
-                v-if="l.detail"
                 type="button"
                 class="btn-detail-sm"
                 @click="openDetailModal(l)"
-                title="Lihat data rincian teknis"
+                title="Lihat detail aktivitas"
               >
                 Detail
               </button>
-              <span v-else class="dash-muted">-</span>
             </td>
           </tr>
         </tbody>
@@ -151,7 +156,7 @@
       <div class="modal-box">
         <div class="modal-head">
           <div>
-            <h3>Rincian Log #{{ selectedLog.id }}</h3>
+            <h3>Detail Aktivitas #{{ selectedLog.id }}</h3>
             <span class="modal-sub">{{ formatDateTime(selectedLog.createdAt) }} &bull; Oleh {{ selectedLog.user }}</span>
           </div>
           <button class="close-x" @click="selectedLog = null">&times;</button>
@@ -171,9 +176,20 @@
             </div>
           </div>
 
-          <div class="json-box">
-            <div class="json-head">Data Metadata (JSON):</div>
-            <pre class="json-content">{{ JSON.stringify(selectedLog.detail, null, 2) }}</pre>
+          <div class="info-meta-grid">
+            <div v-for="fact in selectedLog.facts" :key="fact.label" class="meta-row">
+              <span class="meta-lbl">{{ fact.label }}</span><span>{{ fact.value }}</span>
+            </div>
+            <table v-if="selectedLog.changes.length" class="data-table">
+              <thead><tr><th>Perubahan</th><th>Sebelum</th><th>Sesudah</th></tr></thead>
+              <tbody><tr v-for="change in selectedLog.changes" :key="change.label">
+                <th scope="row">{{ change.label }}</th><td>{{ change.before }}</td><td>{{ change.after }}</td>
+              </tr></tbody>
+            </table>
+            <p v-if="!selectedLog.facts.length && !selectedLog.changes.length">{{ selectedLog.summary }}</p>
+            <div v-if="selectedLog.ipAddress" class="meta-row">
+              <span class="meta-lbl">Alamat IP</span><span>{{ selectedLog.ipAddress }}</span>
+            </div>
           </div>
         </div>
 
@@ -193,6 +209,8 @@
       :active-filter-label="activeFilterToggleLabel"
       :preview-count="exportPreview.items.length"
       :min-timestamp="exportPreview.minTimestamp"
+      :min-date="logsData?.retention.minDate"
+      :audit-row-count="exportPreview.items.length"
       :max-timestamp="exportPreview.maxTimestamp"
       :summary-metrics="exportMetrics"
       :loading="isExportLoading"
@@ -228,11 +246,17 @@ interface AuditLogItem {
   action: string
   entityType: string
   entityId: number | null
-  detail: any
+  target: string | null
+  summary: string
+  facts: { label: string; value: string }[]
+  changes: { label: string; before: string; after: string }[]
+  ipAddress?: string | null
   createdAt: string
 }
 
 interface LogsApiResponse {
+  retention: { days: number; active: boolean; cutoff: string; minDate: string }
+  monitor: { lastStatus: string | null; cleanup: { at: string; deleted: string } | null; dry: { at: string; eligible: string } | null; warnings: string[] } | null
   success: boolean
   logs: AuditLogItem[]
   pagination: {
@@ -270,6 +294,7 @@ const filterTabs = [
 ]
 
 const queryParams = computed(() => ({
+  monitor: true,
   page: currentPage.value,
   limit: 25,
   entityType: currentEntityType.value,
@@ -281,7 +306,11 @@ const { data: logsData, status, error, refresh } = await useFetch<LogsApiRespons
   watch: [queryParams]
 })
 
-const logs = computed(() => logsData.value?.logs || [])
+const logs = useRetainedAuditRows(() => logsData.value?.logs || [], () => logsData.value?.retention.cutoff)
+watch(logs, rows => {
+  if (selectedLog.value && !rows.some(row => row.id === selectedLog.value?.id)) selectedLog.value = null
+  if (rows.length < (logsData.value?.logs.length ?? 0)) void refresh()
+})
 const pagination = computed(() => logsData.value?.pagination || { page: 1, limit: 25, total: 0, totalPages: 1 })
 
 const selectTab = (key: string) => {
@@ -296,8 +325,19 @@ const changePage = (p: number) => {
   }
 }
 
-const openDetailModal = (item: AuditLogItem) => {
+let detailRequest = 0
+const openDetailModal = async (item: AuditLogItem) => {
+  const request = ++detailRequest
   selectedLog.value = item
+  try {
+    const res = await $fetch<LogsApiResponse>(`/audit-log/${item.id}`)
+    if (request === detailRequest && selectedLog.value?.id === item.id) selectedLog.value = res.logs[0] ?? null
+  } catch {
+    if (request === detailRequest && selectedLog.value?.id === item.id) {
+      selectedLog.value = null
+      showToast('Gagal Memuat', 'Detail aktivitas tidak tersedia.', 'warning')
+    }
+  }
 }
 
 const formatDateTime = (iso: string) => {
@@ -305,6 +345,7 @@ const formatDateTime = (iso: string) => {
   const d = new Date(iso)
   if (isNaN(d.getTime())) return iso
   return new Intl.DateTimeFormat('id-ID', {
+    timeZone: 'Asia/Jakarta',
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -382,37 +423,7 @@ const getActionBadgeClass = (action: string) => {
   return 'badge-info'
 }
 
-const getTargetDisplay = (l: AuditLogItem) => {
-  const d = l.detail
-  if (d && typeof d === 'object') {
-    if (d.orderCode) return `#${d.orderCode}`
-    if (d.name) return d.name
-    if (d.title) return d.title
-    if (d.productName) return d.productName
-    if (d.username) return `@${d.username}`
-  }
-  if (l.entityId) return `#${l.entityId}`
-  return '-'
-}
-
-const getDetailSummary = (l: AuditLogItem) => {
-  const d = l.detail
-  if (!d) return '-'
-  if (typeof d === 'string') return d
-  if (typeof d === 'object') {
-    const parts: string[] = []
-    if (d.totalAmount) parts.push(`Total: Rp ${Number(d.totalAmount).toLocaleString('id-ID')}`)
-    if (d.price) parts.push(`Rp ${Number(d.price).toLocaleString('id-ID')}`)
-    if (d.stockStatus) parts.push(d.stockStatus === 'in_stock' ? 'Tersedia' : 'Habis')
-    if (d.toStatus) parts.push(`Ke: ${d.toStatus}`)
-    if (d.country) parts.push(`Negara: ${d.country}`)
-    if (d.reason) parts.push(`Alasan: ${d.reason}`)
-    if (d.note) parts.push(d.note)
-    if (d.ip) parts.push(`IP: ${d.ip}`)
-    if (parts.length > 0) return parts.join(' • ')
-  }
-  return JSON.stringify(d).substring(0, 70)
-}
+const getTargetDisplay = (log: AuditLogItem) => log.target || (log.entityId ? `#${log.entityId}` : '-')
 
 // --- Accounting report export ---
 const { showToast } = useToast()
@@ -434,6 +445,8 @@ const activeFilterToggleLabel = computed(() => {
   return parts.length ? `Terapkan filter aktif (${parts.join(', ')})` : ''
 })
 
+const exportCutoff = ref<string>()
+const retainedExportLogs = useRetainedAuditRows(() => exportLogsSource.value, () => exportCutoff.value)
 const fetchExportLogs = async () => {
   if (!isValidDateRange(exportStartDate.value, exportEndDate.value)) {
     exportLogsSource.value = []
@@ -451,7 +464,9 @@ const fetchExportLogs = async () => {
       }
     })
     exportLogsSource.value = res.logs || []
+    exportCutoff.value = res.retention.cutoff
   } catch (err: any) {
+    exportLogsSource.value = []
     showToast('Gagal Memuat Audit Log', err?.data?.message || 'Tidak dapat memuat data export audit log.', 'warning')
   } finally {
     isExportLoading.value = false
@@ -470,7 +485,7 @@ watch([exportStartDate, exportEndDate, exportUseActiveFilters], async () => {
 })
 
 const exportPreview = computed(() =>
-  filterByDateRange(exportLogsSource.value, l => l.createdAt, exportStartDate.value, exportEndDate.value)
+  filterByDateRange(retainedExportLogs.value, l => l.createdAt, exportStartDate.value, exportEndDate.value)
 )
 
 const exportMetrics = computed<CsvPreviewMetric[]>(() => {
@@ -503,8 +518,7 @@ const prepareFiles = () => {
       { header: 'Kode Aksi', key: 'action' },
       { header: 'Label Aksi', format: r => formatActionName(r.action) },
       { header: 'Target', format: r => getTargetDisplay(r) },
-      { header: 'Ringkasan Detail', format: r => getDetailSummary(r) },
-      { header: 'Detail JSON', format: r => (r.detail ? JSON.stringify(r.detail) : '-') }
+      { header: 'Keterangan', key: 'summary' }
     ]
   })
 }
@@ -972,27 +986,9 @@ const prepareFiles = () => {
   font-weight: 700;
 }
 
-.json-box {
-  background: #1E1B18;
-  color: #E6E1D9;
-  border-radius: 8px;
-  padding: 12px;
-  font-family: monospace;
-  font-size: 0.78rem;
-  overflow-x: auto;
-}
-
-.json-head {
-  font-size: 0.72rem;
-  color: #9C9488;
-  margin-bottom: 6px;
-  font-weight: 700;
-}
-
-.json-content {
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
+.modal-body .data-table {
+  table-layout: fixed;
+  overflow-wrap: anywhere;
 }
 
 .modal-foot {

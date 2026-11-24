@@ -84,6 +84,8 @@ export default defineEventHandler(async (event) => {
     entityId: updated.id,
     detail: {
       name: updated.name,
+      previous: { stockStatus: existing.stock_status, stockQuantity: existing.stock_quantity },
+      current: { stockStatus: updated.stock_status, stockQuantity: updated.stock_quantity },
       stockStatus: updated.stock_status,
       stockQuantity: updated.stock_quantity
     }

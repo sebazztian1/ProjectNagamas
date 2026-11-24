@@ -32,9 +32,7 @@
     </div>
 
     <!-- Loading / Error -->
-    <div v-if="pending && !detail" class="state-card">
-      Memuat detail pelanggan...
-    </div>
+    <LoadingSkeleton v-if="detailSkeleton || (pending && !detail)" layout="dashboard" :visible="detailSkeleton" />
 
     <div v-else-if="loadError" class="state-card error">
       <p>{{ loadError }}</p>
@@ -525,6 +523,7 @@ const { showToast } = useToast()
 const customerId = computed(() => Number(route.params.id))
 const detail = ref<any>(null)
 const pending = ref(true)
+const detailSkeleton = useDelayedLoading(() => pending.value)
 const loadError = ref('')
 
 const activeTab = ref<'orders' | 'requests'>('orders')

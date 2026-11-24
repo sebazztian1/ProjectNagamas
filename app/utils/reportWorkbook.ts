@@ -67,15 +67,15 @@ function addReportSheet(workbook: Workbook, name: string, table: ReportTable) {
   })
 
   for (const values of table.rows) {
-    const row = sheet.addRow(values.map(value => typeof value === 'object' ? value.value : value))
+    const row = sheet.addRow(values.map(value => typeof value === 'object' ? value.value : value === '' ? null : value))
     let lines = 1
-    row.eachCell((cell, i) => {
+    row.eachCell({ includeEmpty: true }, (cell, i) => {
       const value = values[i - 1]!
       const isDate = typeof value === 'object'
       const isNumber = typeof value === 'number'
       const kind = table.columns[i - 1]!.kind
       const center = isDate || kind === 'status' || kind === 'sequence' || kind === 'date' || kind === 'datetime'
-      if (isDate) cell.numFmt = value.withTime ? 'dd/mm/yyyy hh:mm:ss' : 'dd/mm/yyyy'
+      if (isDate) cell.numFmt = table.columns[i - 1]!.numberFormat ?? (value.withTime ? 'dd/mm/yyyy hh:mm:ss' : 'dd/mm/yyyy')
       if (isNumber) cell.numFmt = Number.isInteger(value) ? '#,##0' : '#,##0.###############'
       cell.alignment = { horizontal: center ? 'center' : isNumber ? 'right' : 'left', vertical: 'middle', wrapText: true }
       cell.font = { name: 'Calibri', size: 11, color: { argb: 'FF172B40' } }

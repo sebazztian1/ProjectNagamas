@@ -49,6 +49,8 @@ export default defineEventHandler(async (event) => {
     entityId: updated.id,
     detail: {
       name: updated.name,
+      previous: { name: existing.name, slug: existing.slug },
+      current: { name: updated.name, slug: updated.slug },
       slug: updated.slug
     }
   })

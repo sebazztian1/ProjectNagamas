@@ -4,6 +4,7 @@ interface ReportColumn {
   header: string
   kind?: ColumnKind
   minWidth?: number
+  numberFormat?: string
 }
 
 export interface CsvColumn<T> extends ReportColumn {
@@ -267,23 +268,61 @@ function csvField(cell: ReportCell): string {
   return `"${singleLine.replace(/"/g, '""')}"`
 }
 
-function reportTable<T>({ columns, rows }: BuildCsvOptions<T>): ReportTable {
+function reportTable<T>({ columns, rows }: BuildCsvOptions<T>, dateIndex: number): ReportTable {
   return {
-    columns: [{ header: 'No', kind: 'sequence' }, ...columns],
+    columns: [
+      { header: 'Timestamp (WIB)', kind: 'datetime', numberFormat: 'yyyy-mm-dd hh:mm:ss' },
+      { header: 'No', kind: 'sequence' }, ...columns
+    ],
     rows: rows.map((row, index) => {
       const cells = columns.map(col => {
         const value = col.format ? col.format(row, index) : col.key !== undefined ? row[col.key] : null
         return reportCell(value, col.kind)
       })
-      return [index + 1, ...cells]
+      const date = cells[dateIndex]
+      // ReportDate.value already represents the WIB wall clock.
+      const timestamp = typeof date === 'object'
+        ? { ...date, text: date.value.toISOString().slice(0, 19).replace('T', ' '), withTime: true }
+        : ''
+      return [timestamp, index + 1, ...cells]
     })
   }
 }
 
 function csvContent(table: ReportTable): string {
   const headers = table.columns.map(column => column.header)
-  const lines = [headers, ...table.rows].map(row => row.map(csvField).join(csvDelimiter))
+  const lines = [headers.map(csvField).join(csvDelimiter)]
+  for (const row of table.rows) {
+    lines.push(row.map(csvField).join(csvDelimiter))
+  }
   return '\uFEFF' + lines.join('\r\n')
+}
+
+function timestampedCsvFilename<T>(options: DownloadCsvOptions<T>): string {
+  const names: Record<string, string> = {
+    nagamas_rekap_pesanan: 'dashboard_rekap-pesanan',
+    nagamas_mutasi_pembayaran: 'dashboard_mutasi-pembayaran',
+    nagamas_laporan_trip: 'dashboard_batch-trip-kurs',
+    nagamas_valuasi_produk: 'dashboard_valuasi-stok',
+    nagamas_audit_log: 'dashboard_audit-log',
+    trip_jastip_nagamas: 'trip_daftar-trip',
+    produk_valuasi_stok: 'produk_valuasi-stok',
+    pelanggan_rekap_accounting: 'pelanggan_rekap-pelanggan',
+    pesanan_rekap: 'pesanan_rekap-pesanan',
+    pesanan_detail_item: 'pesanan_detail-item',
+    mutasi_pembayaran: 'pesanan_mutasi-pembayaran',
+    audit_log_nagamas: 'log_audit-log',
+    request_produk_pipeline: 'request_permintaan-produk'
+  }
+  const prefix = options.filenamePrefix
+  const detail = /^(trip|pelanggan)_.+_(pesanan|request|daftar_belanja|katalog_margin)$/.exec(prefix)
+  const name = detail ? `${detail[1]}_${detail[2]!.replace(/_/g, '-')}` : names[prefix] ?? 'laporan_export'
+  const start = options.filterStartDate?.replace(/-/g, '')
+  const end = options.filterEndDate?.replace(/-/g, '')
+  const range = [start && `dari-${start}`, end && `sampai-${end}`].filter(Boolean).join('_sd_')
+  const p = getWibDateParts(options.exportedAt ?? new Date())
+  const time = `${p.year}${p.month}${p.day}-${p.hour}${p.minute}${p.second}`
+  return [name, range, time].filter(Boolean).join('_') + '.csv'
 }
 
 function summaryTable<T>(options: BuildCsvOptions<T>): ReportTable {
@@ -333,16 +372,19 @@ export function buildCsvFilename(
 }
 
 export async function prepareReportFiles<T>(options: DownloadCsvOptions<T>): Promise<ReportFile[]> {
-  const table = reportTable(options)
-  const summary = summaryTable(options)
-  const filename = buildCsvFilename(options.filenamePrefix, options.minTimestamp, options.maxTimestamp,
-    options.filterStartDate, options.filterEndDate)
+  const exportedAt = options.exportedAt ?? new Date()
+  // Each admin dataset exports its range-filter date as its first date column.
+  const dateIndex = options.columns.findIndex(column => column.kind === 'datetime' || column.kind === 'date')
+  const table = reportTable(options, dateIndex)
+  const summary = summaryTable({ ...options, exportedAt })
+  if (dateIndex >= 0) summary.rows.push(['Dasar Timestamp (WIB)', options.columns[dateIndex]!.header])
+  const csvFilename = timestampedCsvFilename({ ...options, exportedAt })
   const csv = new Blob([csvContent(table)], { type: 'text/csv;charset=utf-8' })
   const { buildReportWorkbook } = await import('./reportWorkbook.ts')
   const xlsx = await buildReportWorkbook(table, summary)
   return [
-    { format: 'CSV', filename, blob: csv },
-    { format: 'XLSX', filename: filename.replace(/\.csv$/, '.xlsx'), blob: xlsx }
+    { format: 'CSV', filename: csvFilename, blob: csv },
+    { format: 'XLSX', filename: csvFilename.replace(/\.csv$/, '.xlsx'), blob: xlsx }
   ]
 }
 

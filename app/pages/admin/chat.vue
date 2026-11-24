@@ -13,7 +13,8 @@
       </button>
     </div>
 
-    <div class="chat-inbox-card" :class="{ 'has-active-room': !!activeRoom }">
+    <div v-if="isReconnecting" class="connection-notice" role="status">Menghubungkan kembali…</div>
+    <div class="chat-inbox-card" :class="{ 'has-active-room': !!displayRoom || showLoadingPane }">
       <!-- Conversation List -->
       <div class="inbox-sidebar">
         <div class="inbox-search">
@@ -21,16 +22,19 @@
         </div>
 
         <div class="customer-room-list">
-          <div v-if="filteredRooms.length === 0" class="empty-rooms">
-            Belum ada ruang percakapan.
+          <div v-if="filteredRooms.length === 0 && roomsState === 'ready' && !showLoadingPane" class="empty-rooms">
+            {{ rooms.length ? 'Belum ada ruang percakapan.' : 'Belum ada percakapan' }}
+          </div>
+          <div v-if="roomsState === 'error'" class="empty-rooms" role="status">
+            Daftar percakapan gagal dimuat. Coba Refresh.
           </div>
 
           <div
             v-for="r in filteredRooms"
             :key="r.id"
             class="cust-room-item"
-            :class="{ active: activeRoom?.id === r.id }"
-            @click="selectRoom(r)"
+            :class="{ active: displayRoom?.id === r.id }"
+            @click="chooseRoom(r)"
           >
             <div class="cust-avatar">{{ r.customerUsername.charAt(0).toUpperCase() }}</div>
             <div class="cust-meta">
@@ -48,31 +52,38 @@
       </div>
 
       <!-- Active Conversation Area -->
-      <div v-if="activeRoom" class="inbox-conversation">
+      <div v-if="displayRoom || showLoadingPane" class="inbox-conversation">
         <div class="conv-header">
           <div class="conv-header-left">
-            <button type="button" class="mobile-back-to-rooms" @click="activeRoom = null" aria-label="Kembali ke daftar pesan">
+            <button v-if="displayRoom" type="button" class="mobile-back-to-rooms" @click="backToRooms" aria-label="Kembali ke daftar pesan">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="19" y1="12" x2="5" y2="12"></line>
                 <polyline points="12 19 5 12 12 5"></polyline>
               </svg>
             </button>
             <div class="user-info">
-              <strong>@{{ activeRoom.customerUsername }}</strong>
-              <span class="user-phone">{{ activeRoom.customerPhone }}</span>
+              <strong v-if="displayRoom">{{ displayRoom.customerUsername ? '@' + displayRoom.customerUsername : 'Pelanggan #' + displayRoom.customerId }}</strong>
+              <span v-if="showLoadingPane || historyState === 'loading'" class="user-phone" role="status">Memuat percakapan…</span>
+              <span v-else class="user-phone">{{ displayRoom?.customerPhone }}</span>
             </div>
           </div>
-          <span class="active-badge">&bull; Realtime Aktif</span>
+          <span v-if="displayRoom && isConnected" class="active-badge">&bull; Realtime Aktif</span>
         </div>
 
         <!-- Chat Stream -->
-        <div ref="messagesArea" class="chat-bubbles-area">
-          <div v-if="messages.length === 0" class="empty-stream">
-            Belum ada pesan pada ruang chat ini.
+        <div ref="messagesArea" class="chat-bubbles-area" :aria-busy="showLoadingPane || historyState === 'loading'">
+          <template v-if="showSkeleton">
+            <div v-for="i in 4" :key="i" class="bubble-skeleton" aria-hidden="true"></div>
+          </template>
+          <div v-else-if="historyState === 'error' && !hasTargetHistory" class="empty-stream" role="status">
+            Riwayat percakapan gagal dimuat. Coba Refresh.
+          </div>
+          <div v-else-if="hasTargetHistory && messages.length === 0" class="empty-stream">
+            Belum ada percakapan
           </div>
 
           <div
-            v-for="m in messages"
+            v-for="m in hasTargetHistory && !showLoadingPane ? messages : []"
             :key="m.id"
             class="bubble-row"
             :class="{ 'admin-reply': m.senderRole === 'admin' || m.senderRole === 'staff' }"
@@ -144,6 +155,7 @@
           <input
             ref="fileInput"
             type="file"
+            :disabled="!canReply"
             accept="image/jpeg,image/png,image/webp"
             style="display: none"
             @change="handleAdminImageUpload"
@@ -152,7 +164,7 @@
             type="button"
             class="btn-attach"
             title="Kirim gambar"
-            :disabled="isUploading"
+            :disabled="isUploading || !canReply"
             @click="fileInput?.click()"
           >
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -166,21 +178,21 @@
             type="text"
             placeholder="Ketik balasan admin ke customer..."
           />
-          <button type="submit" class="btn-reply" :disabled="isSending || !replyText.trim()">
+          <button type="submit" class="btn-reply" :disabled="!canReply || isSending || !replyText.trim()">
             {{ isSending ? '...' : 'Kirim Balasan' }}
           </button>
         </form>
       </div>
 
       <div v-else class="inbox-empty-placeholder">
-        <p>Pilih percakapan untuk membalas.</p>
+        <p v-if="roomsState === 'ready'">Pilih percakapan untuk membalas.</p>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount, watch } from 'vue'
 import Ably from 'ably'
 import { useToast } from '../../composables/useToast'
 import { useAdminStats } from '../../composables/useAdminStats'
@@ -204,6 +216,19 @@ const messagesArea = ref<HTMLElement | null>(null)
 const rooms = ref<any[]>([])
 const activeRoom = ref<any | null>(null)
 const messages = ref<any[]>([])
+const roomsState = ref<'loading' | 'ready' | 'error'>('loading')
+const historyState = ref<'idle' | 'loading' | 'error'>('idle')
+const targetRoom = ref<any | null>(null)
+const displayRoom = computed(() => targetRoom.value ?? activeRoom.value)
+const hasTargetHistory = computed(() => !!activeRoom.value && activeRoom.value.id === displayRoom.value?.id)
+const waitingForHistory = computed(() => !hasTargetHistory.value && (roomsState.value === 'loading' || historyState.value === 'loading'))
+const showSkeleton = useDelayedLoading(() => waitingForHistory.value)
+const showLoadingPane = computed(() => waitingForHistory.value || showSkeleton.value)
+const canReply = computed(() => hasTargetHistory.value && !showLoadingPane.value)
+const isConnected = ref(false)
+const isReconnecting = ref(false)
+let historyRequest = 0
+let navigationVersion = 0
 
 let ablyClient: Ably.Realtime | null = null
 let inboxChannel: Ably.RealtimeChannel | null = null
@@ -247,6 +272,10 @@ const scrollToBottom = () => {
   })
 }
 
+watch(showSkeleton, visible => {
+  if (!visible && hasTargetHistory.value) scrollToBottom()
+})
+
 const syncAdminUnreadBadge = () => {
   const totalUnreadMessages = rooms.value.reduce((acc, r) => acc + Number(r.unreadAdminCount || 0), 0)
   const totalUnreadRooms = rooms.value.filter(r => Number(r.unreadAdminCount || 0) > 0).length
@@ -283,75 +312,96 @@ const subscribeToRoom = async (roomId: number) => {
   }
 }
 
-const selectRoom = async (roomItem: any) => {
+const chooseRoom = (roomItem: any) => {
+  navigationVersion++
+  return selectRoom(roomItem)
+}
+
+const backToRooms = () => {
+  navigationVersion++
+  historyRequest++
+  targetRoom.value = null
+  activeRoom.value = null
+  historyState.value = 'idle'
+}
+
+const selectRoom = async (roomItem: any, customerId?: number) => {
+  const request = ++historyRequest
+  targetRoom.value = roomItem
+  historyState.value = 'loading'
   try {
     const res = await $fetch<{ room: any; messages: any[] }>('/api/chat/room', {
-      query: { roomId: roomItem.id }
+      query: customerId ? { customerId } : { roomId: roomItem.id }
     })
-    if (res?.room) {
-      activeRoom.value = res.room
-      messages.value = res.messages || []
-      const idx = rooms.value.findIndex(r => r.id === res.room.id)
-      if (idx !== -1) {
-        rooms.value[idx].unreadAdminCount = 0
-      }
-      syncAdminUnreadBadge()
-      scrollToBottom()
-      await subscribeToRoom(res.room.id)
+    if (request !== historyRequest) return
+    if (!res?.room || !Array.isArray(res.messages)) throw new Error('Riwayat percakapan tidak tersedia')
+    activeRoom.value = res.room
+    messages.value = res.messages
+    targetRoom.value = null
+    historyState.value = 'idle'
+    const idx = rooms.value.findIndex(r => r.id === res.room.id)
+    if (idx !== -1) {
+      rooms.value[idx].unreadAdminCount = 0
+    } else if (customerId) {
+      rooms.value.unshift(res.room)
     }
+    syncAdminUnreadBadge()
+    scrollToBottom()
+    await subscribeToRoom(res.room.id)
   } catch (err: any) {
+    if (request !== historyRequest) return
+    historyState.value = 'error'
     showToast('Gagal Memuat', err?.data?.message || 'Gagal membuka percakapan', 'warning')
   }
 }
 
-const fetchRooms = async () => {
+const fetchRooms = async (navigation = navigationVersion, retryRoom = false) => {
+  if (roomsState.value === 'error') roomsState.value = 'loading'
   try {
     const list = await $fetch<any[]>('/api/chat/rooms')
-    rooms.value = list || []
+    if (!Array.isArray(list)) throw new Error('Daftar percakapan tidak tersedia')
+    rooms.value = list
+    roomsState.value = 'ready'
     syncAdminUnreadBadge()
+    if (navigation !== navigationVersion || retryRoom) return
 
     // Check if ?userId=... was passed from /admin/request or /admin/customer
     const targetUserId = route.query.userId ? Number(route.query.userId) : null
     if (targetUserId && !isNaN(targetUserId)) {
-      const res = await $fetch<{ room: any; messages: any[] }>('/api/chat/room', {
-        query: { customerId: targetUserId }
-      })
-      if (res?.room) {
-        const existIdx = rooms.value.findIndex(r => r.id === res.room.id)
-        if (existIdx === -1) {
-          rooms.value.unshift(res.room)
-        } else {
-          rooms.value[existIdx].unreadAdminCount = 0
-        }
-        activeRoom.value = res.room
-        messages.value = res.messages || []
-        syncAdminUnreadBadge()
-        scrollToBottom()
-        await subscribeToRoom(res.room.id)
-        return
-      }
+      const room = rooms.value.find(r => r.customerId === targetUserId) ?? { customerId: targetUserId }
+      await selectRoom(room, targetUserId)
+      return
     }
 
-    if (rooms.value.length > 0 && !activeRoom.value) {
+    if (rooms.value.length > 0 && !displayRoom.value) {
       await selectRoom(rooms.value[0])
     }
   } catch (err) {
-    // Non-blocking
+    roomsState.value = 'error'
   }
 }
 
 const refreshChat = async () => {
   if (isRefreshing.value) return
   isRefreshing.value = true
+  const navigation = navigationVersion
+  const retryRoom = historyState.value === 'error' ? targetRoom.value : null
   try {
-    await fetchRooms()
-    if (activeRoom.value) {
-      await selectRoom(activeRoom.value)
+    await fetchRooms(navigation, !!retryRoom)
+    if (navigation === navigationVersion) {
+      if (retryRoom) await selectRoom(retryRoom, retryRoom.id ? undefined : retryRoom.customerId)
+      else if (activeRoom.value && !targetRoom.value) await selectRoom(activeRoom.value)
     }
     await fetchAdminStats(true)
   } finally {
     isRefreshing.value = false
   }
+}
+
+const onConnectionChange = ({ current }: Ably.ConnectionStateChange) => {
+  isConnected.value = current === 'connected'
+  if (current === 'disconnected' || current === 'suspended') isReconnecting.value = true
+  else if (current !== 'connecting') isReconnecting.value = false
 }
 
 const initAblyAdmin = async () => {
@@ -360,6 +410,7 @@ const initAblyAdmin = async () => {
     ablyClient = new Ably.Realtime({
       authUrl: '/api/chat/token'
     })
+    ablyClient.connection.on(onConnectionChange)
     inboxChannel = ablyClient.channels.get('chat:admin-inbox')
     await inboxChannel.subscribe('room-updated', (event) => {
       const updated = event.data
@@ -395,18 +446,23 @@ const initAblyAdmin = async () => {
 }
 
 onMounted(async () => {
+  const navigation = navigationVersion
   await initAblyAdmin()
-  await fetchRooms()
+  await fetchRooms(navigation)
 })
 
 onBeforeUnmount(() => {
+  historyRequest++
+  navigationVersion++
+  ablyClient?.connection.off(onConnectionChange)
   activeRoomChannel?.unsubscribe()
   inboxChannel?.unsubscribe()
   ablyClient?.close()
 })
 
 const sendAdminReply = async () => {
-  if (!replyText.value.trim() || !activeRoom.value) return
+  if (!canReply.value || !replyText.value.trim() || !activeRoom.value) return
+  const roomId = activeRoom.value.id
   isSending.value = true
   try {
     const text = replyText.value.trim()
@@ -414,12 +470,12 @@ const sendAdminReply = async () => {
     const sent = await $fetch<any>('/api/chat/send', {
       method: 'POST',
       body: {
-        roomId: activeRoom.value.id,
+        roomId,
         messageType: 'text',
         content: text
       }
     })
-    if (!messages.value.some(m => String(m.id) === String(sent.id))) {
+    if (activeRoom.value?.id === roomId && !messages.value.some(m => String(m.id) === String(sent.id))) {
       messages.value.push(sent)
       scrollToBottom()
     }
@@ -433,7 +489,9 @@ const sendAdminReply = async () => {
 const handleAdminImageUpload = async (e: Event) => {
   const target = e.target as HTMLInputElement
   const file = target.files?.[0]
-  if (!file || !activeRoom.value) return
+  if (!canReply.value || !file || !activeRoom.value) return
+  const roomId = activeRoom.value.id
+  const caption = replyText.value
 
   isUploading.value = true
   try {
@@ -450,14 +508,14 @@ const handleAdminImageUpload = async (e: Event) => {
       const sent = await $fetch<any>('/api/chat/send', {
         method: 'POST',
         body: {
-          roomId: activeRoom.value.id,
+          roomId,
           messageType: 'image',
           imageUrl: uploaded.url,
-          content: replyText.value.trim() || null
+          content: caption.trim() || null
         }
       })
-      replyText.value = ''
-      if (!messages.value.some(m => String(m.id) === String(sent.id))) {
+      if (displayRoom.value?.id === roomId && replyText.value === caption) replyText.value = ''
+      if (activeRoom.value?.id === roomId && !messages.value.some(m => String(m.id) === String(sent.id))) {
         messages.value.push(sent)
         scrollToBottom()
       }
@@ -704,6 +762,32 @@ const handleAdminImageUpload = async (e: Event) => {
   flex-direction: column;
   gap: 12px;
 }
+
+.connection-notice {
+  padding: 6px 14px;
+  border-radius: 8px;
+  background: var(--color-secondary, #EFE1C6);
+  color: var(--color-text, #2B2116);
+  font-size: 0.82rem;
+}
+
+.bubble-skeleton {
+  flex: 0 0 40px;
+  width: min(48%, 230px);
+  border-radius: 12px 12px 12px 4px;
+  background: #efe3cf;
+  animation: chat-pulse 1.4s ease-in-out infinite alternate;
+}
+
+.bubble-skeleton:nth-child(even) {
+  align-self: flex-end;
+  width: min(35%, 170px);
+  border-radius: 12px 12px 4px 12px;
+  background: #e3d3ba;
+}
+
+@keyframes chat-pulse { to { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .bubble-skeleton { animation: none; } }
 
 .empty-stream {
   margin: auto;

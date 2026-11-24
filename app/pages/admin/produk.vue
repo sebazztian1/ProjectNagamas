@@ -59,13 +59,10 @@
     </div>
 
     <!-- Loading State -->
-    <div v-if="status === 'pending'" class="loading-state">
-      <div class="spinner"></div>
-      <p>Memuat produk...</p>
-    </div>
+    <LoadingRegion :loading="status === 'pending'" :has-content="!!adminData" :columns="6">
 
     <!-- Products Table -->
-    <div v-else class="table-card">
+    <div class="table-card">
       <table class="admin-table">
         <thead>
           <tr>
@@ -152,6 +149,8 @@
         </tbody>
       </table>
     </div>
+
+    </LoadingRegion>
 
     <!-- Modal Form Add/Edit Product -->
     <div v-if="showModal" class="modal-backdrop" @click.self="showModal = false">

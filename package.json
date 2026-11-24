@@ -3,6 +3,7 @@
   "type": "module",
   "private": true,
   "scripts": {
+    "audit:purge": "node --env-file-if-exists=.env --import tsx scripts/audit-purge.ts",
     "build": "prisma generate && nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",

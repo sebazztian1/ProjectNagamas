@@ -83,6 +83,8 @@ export default defineEventHandler(async (event) => {
     entityId: updated.id,
     detail: {
       productName: req.product_name,
+      previous: { status: req.status, quotedPrice: req.quoted_price === null ? null : Number(req.quoted_price) },
+      current: { status: updated.status, quotedPrice: updated.quoted_price === null ? null : Number(updated.quoted_price) },
       status,
       quotedPrice: quotedPrice ? Number(quotedPrice) : null
     }

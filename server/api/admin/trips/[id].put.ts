@@ -43,11 +43,19 @@ export default defineEventHandler(async (event) => {
     data: updateData
   })
 
+  const auditFields = (row: typeof updated) => ({
+    title: row.title, country: row.country, city: row.city_or_area, currency: row.currency,
+    exchangeRate: Number(row.exchange_rate), status: row.status, quota: row.quota_total,
+    openDate: row.open_date?.toISOString().slice(0, 10), closeDate: row.close_date?.toISOString().slice(0, 10),
+    departureDate: row.departure_date?.toISOString().slice(0, 10), arrivalDate: row.estimated_arrival_date?.toISOString().slice(0, 10)
+  })
   await recordAuditLog(session, {
     action: 'UPDATE_TRIP',
     entityType: 'trip',
     entityId: updated.id,
     detail: {
+      previous: auditFields(existing),
+      current: auditFields(updated),
       title: updated.title,
       country: updated.country,
       status: updated.status

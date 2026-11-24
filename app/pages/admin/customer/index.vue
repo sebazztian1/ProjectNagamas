@@ -39,16 +39,13 @@
         <button v-if="searchQuery" type="button" class="clear-search" aria-label="Hapus pencarian" @click="searchQuery = ''">&times;</button>
       </div>
       <div class="count-tag">
-        {{ filteredCustomers.length }} Pelanggan
+        {{ pending && !customerList.length ? '…' : filteredCustomers.length }} Pelanggan
       </div>
     </div>
 
+    <LoadingRegion :loading="pending" :has-content="customerList.length > 0" :columns="5">
     <div class="table-card">
-      <div v-if="pending && customerList.length === 0" class="empty-state">
-        Memuat...
-      </div>
-
-      <table v-else class="data-table">
+      <table class="data-table">
         <thead>
           <tr>
             <th>Username</th>
@@ -103,6 +100,8 @@
         </tbody>
       </table>
     </div>
+
+    </LoadingRegion>
 
     <AdminCsvExportModal
       :show="showExportModal"

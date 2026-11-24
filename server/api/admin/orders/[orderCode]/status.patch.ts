@@ -87,6 +87,8 @@ export default defineEventHandler(async (event) => {
       entityType: 'order',
       entityId: order.id,
       detail: {
+        previous: { status: prevStatus, shippingCost: Number(order.shipping_cost), totalAmount: Number(order.total_amount) },
+        current: { status: 'pending_payment', shippingCost, totalAmount },
         orderCode: order.order_code,
         shippingCost,
         totalAmount,
@@ -132,6 +134,8 @@ export default defineEventHandler(async (event) => {
       entityType: 'order',
       entityId: order.id,
       detail: {
+        fromStatus: prevStatus,
+        toStatus: 'rejected',
         orderCode: order.order_code,
         reason
       }
@@ -190,6 +194,8 @@ export default defineEventHandler(async (event) => {
       entityType: 'order',
       entityId: order.id,
       detail: {
+        fromStatus: prevStatus,
+        toStatus: 'verified',
         orderCode: order.order_code,
         verifiedAmount,
         totalAmount: Number(order.total_amount)
@@ -244,6 +250,8 @@ export default defineEventHandler(async (event) => {
       entityType: 'order',
       entityId: order.id,
       detail: {
+        fromStatus: prevStatus,
+        toStatus: 'pending_payment',
         orderCode: order.order_code,
         reason
       }
@@ -363,6 +371,8 @@ export default defineEventHandler(async (event) => {
       entityType: 'order',
       entityId: order.id,
       detail: {
+        fromStatus: prevStatus,
+        toStatus: 'cancelled',
         orderCode: order.order_code,
         reason: refundNote
       }

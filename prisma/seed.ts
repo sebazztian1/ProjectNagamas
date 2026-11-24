@@ -7,7 +7,9 @@ async function main() {
   console.log('Starting minimal database seeding...')
 
   // 1. Clean up existing data in foreign-key-safe reverse order
-  await prisma.audit_logs.deleteMany()
+  if (await prisma.audit_logs.findFirst({ select: { id: true } })) {
+    throw new Error('Seed dibatalkan karena database sudah memiliki audit log.')
+  }
   await prisma.order_status_logs.deleteMany()
   await prisma.payments.deleteMany()
   await prisma.order_items.deleteMany()

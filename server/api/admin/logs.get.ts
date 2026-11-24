@@ -1,4 +1,7 @@
-import { defineEventHandler, getQuery, createError } from 'h3'
+import { defineEventHandler, getQuery, getRouterParam, createError, setHeader } from 'h3'
+import { purgeConfig, retainedDates, retentionWindow } from '../../utils/auditRetention'
+import { auditPurgeSummary } from '../../utils/auditPurgeSummary'
+import { auditOwner, auditPresentation, auditDetailIp } from '../../utils/auditMetadata'
 import { prisma } from '../../utils/prisma'
 import { getSessionFromEvent } from '../../utils/session'
 
@@ -8,7 +11,7 @@ function parseWibDateBound(raw: unknown, boundary: 'start' | 'end'): Date | null
   if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return null
   const timeSuffix = boundary === 'start' ? '00:00:00.000' : '23:59:59.999'
   const parsed = new Date(`${trimmed}T${timeSuffix}+07:00`)
-  return Number.isNaN(parsed.getTime()) ? null : parsed
+  return Number.isNaN(parsed.getTime()) || new Date(parsed.getTime() + 7 * 3600000).toISOString().slice(0, 10) !== trimmed ? null : parsed
 }
 
 export default defineEventHandler(async (event) => {
@@ -18,6 +21,13 @@ export default defineEventHandler(async (event) => {
   }
 
   const query = getQuery(event)
+  const viewer = await prisma.users.findFirst({ where: { id: session.userId, is_active: true, role: session.role }, select: { id: true, role: true } })
+  if (!viewer) throw createError({ statusCode: 403, message: 'Akses khusus Admin/Staff.' })
+  setHeader(event, 'Cache-Control', 'private, no-store')
+  const now = new Date()
+  const { days, cutoff } = retentionWindow(now)
+  let active = false
+  try { active = purgeConfig().mode === 'DELETE' } catch { /* Invalid settings disable purge. */ }
   const rawPage = Number(query.page)
   const page = Number.isFinite(rawPage) && rawPage >= 1 ? Math.floor(rawPage) : 1
 
@@ -33,15 +43,17 @@ export default defineEventHandler(async (event) => {
   const startBound = parseWibDateBound(query.startDate, 'start')
   const endBound = parseWibDateBound(query.endDate, 'end')
 
-  const where: any = {}
+  if ((query.startDate !== undefined && !startBound) || (query.endDate !== undefined && !endBound) || (startBound && endBound && startBound > endBound)) {
+    throw createError({ statusCode: 400, message: 'Rentang tanggal audit log tidak valid.' })
+  }
+  const where: any = { created_at: retainedDates(cutoff, startBound, endBound) }
+  const id = getRouterParam(event, 'id')
+  if (id !== undefined) {
+    if (!/^\d{1,20}$/.test(id) || BigInt(id) > 18446744073709551615n) throw createError({ statusCode: 404 })
+    where.id = BigInt(id)
+  }
   if (entityType && entityType.toLowerCase() !== 'all') {
     where.entity_type = entityType
-  }
-
-  if (startBound || endBound) {
-    where.created_at = {}
-    if (startBound) where.created_at.gte = startBound
-    if (endBound) where.created_at.lte = endBound
   }
 
   const include = {
@@ -81,6 +93,7 @@ export default defineEventHandler(async (event) => {
     })
 
     const filtered = candidates.filter((row) => {
+      const presentation = auditPresentation(row.entity_type, row.action, row.detail)
       const haystacks = [
         row.action,
         row.entity_type,
@@ -88,7 +101,8 @@ export default defineEventHandler(async (event) => {
         row.entity_id !== null ? `#${row.entity_id}` : '',
         row.users?.username || '',
         row.users?.username ? `@${row.users.username}` : '',
-        row.detail ? JSON.stringify(row.detail) : ''
+        presentation.summary,
+        presentation.target || ''
       ]
       return haystacks.some((value) => value.toLowerCase().includes(search))
     })
@@ -107,12 +121,19 @@ export default defineEventHandler(async (event) => {
     action: row.action,
     entityType: row.entity_type,
     entityId: row.entity_id ?? null,
-    detail: row.detail ?? null,
+    ...auditPresentation(row.entity_type, row.action, row.detail),
+    ...(id !== undefined && !exportAll && auditOwner(viewer.role, viewer.id) ? { ipAddress: auditDetailIp(row.detail) } : {}),
     createdAt: row.created_at.toISOString()
   }))
 
+  if (id !== undefined && !formattedLogs.length) throw createError({ statusCode: 404 })
   return {
     success: true,
+    retention: { days, active, cutoff: cutoff.toISOString(), minDate: new Date(+cutoff + 7 * 3600000).toISOString().slice(0, 10) },
+    monitor: query.monitor === 'true' && viewer.role === 'admin'
+      ? await auditPurgeSummary(now, active).catch(() => ({
+        lastStatus: null, cleanup: null, dry: null, warnings: ['Riwayat pembersihan belum dapat dibaca.']
+      })) : null,
     logs: formattedLogs,
     pagination: {
       page: exportAll ? 1 : page,
