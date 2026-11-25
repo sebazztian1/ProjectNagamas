@@ -8,6 +8,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Silakan masuk ke akun Anda terlebih dahulu.' })
   }
 
+  if (session.role === 'admin' || session.role === 'staff') {
+    throw createError({ statusCode: 403, message: 'Notifikasi ini khusus untuk akun pelanggan.' })
+  }
+
   const body = await readBody(event).catch(() => ({}))
 
   if (body?.all === true) {

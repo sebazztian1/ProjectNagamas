@@ -12,11 +12,15 @@
           <div>
             <h1 class="page-title">Notifikasi</h1>
             <p class="page-subtitle">
-              Pantau pembaruan pesanan, verifikasi pembayaran, penawaran request produk, dan balasan live chat Anda.
+              {{
+                isAdmin
+                  ? 'Halaman notifikasi ini khusus untuk akun pelanggan. Pantau pesanan & aktivitas toko melalui Panel Admin.'
+                  : 'Pantau pembaruan pesanan, verifikasi pembayaran, penawaran request produk, dan balasan live chat Anda.'
+              }}
             </p>
           </div>
 
-          <div class="header-actions">
+          <div v-if="!isAdmin" class="header-actions">
             <button class="btn-refresh" :disabled="pending" @click="fetchNotifications(false)">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" :class="{ 'spin-icon': pending }">
                 <path d="M21 2v6h-6"></path>
@@ -46,86 +50,99 @@
         </div>
       </div>
 
-      <!-- Filter Tabs -->
-      <div class="filter-tabs">
-        <button
-          v-for="tab in filterTabs"
-          :key="tab.key"
-          type="button"
-          class="tab-pill"
-          :class="{ active: activeFilter === tab.key }"
-          @click="activeFilter = tab.key"
-        >
-          <span>{{ tab.label }}</span>
-          <span v-if="tab.count > 0" class="tab-count">{{ tab.count }}</span>
-        </button>
+      <div v-if="isAdmin" class="notif-list-card admin-notif-guard">
+        <div class="empty-notif">
+          <div class="empty-icon">🛡️</div>
+          <h3>Notifikasi Khusus Pelanggan</h3>
+          <p>
+            Akun admin/staff menerima ringkasan pesanan baru, pembayaran masuk, request produk, dan pesan chat langsung melalui badge pada Panel Admin.
+          </p>
+          <NuxtLink to="/admin" class="btn-admin-panel-link">Buka Panel Admin &rarr;</NuxtLink>
+        </div>
       </div>
 
-      <div class="notif-list-card">
-        <div v-if="pending && notifications.length === 0" class="loading-notif">
-          <div class="spinner"></div>
-          <p>Memuat notifikasi Anda...</p>
+      <template v-else>
+        <!-- Filter Tabs -->
+        <div class="filter-tabs">
+          <button
+            v-for="tab in filterTabs"
+            :key="tab.key"
+            type="button"
+            class="tab-pill"
+            :class="{ active: activeFilter === tab.key }"
+            @click="activeFilter = tab.key"
+          >
+            <span>{{ tab.label }}</span>
+            <span v-if="tab.count > 0" class="tab-count">{{ tab.count }}</span>
+          </button>
         </div>
 
-        <div v-else-if="filteredNotifications.length > 0" class="notif-items">
-          <div
-            v-for="notif in filteredNotifications"
-            :key="notif.id"
-            class="notif-item"
-            :class="{ unread: !notif.isRead }"
-            @click="handleClickNotif(notif)"
-          >
-            <div class="notif-icon-col">
-              <div class="icon-bubble" :class="getCategoryClass(notif.type)">
-                <span>{{ getCategoryEmoji(notif.type) }}</span>
-              </div>
-            </div>
+        <div class="notif-list-card">
+          <div v-if="pending && notifications.length === 0" class="loading-notif">
+            <div class="spinner"></div>
+            <p>Memuat notifikasi Anda...</p>
+          </div>
 
-            <div class="notif-body">
-              <div class="notif-title-row">
-                <div class="title-left">
-                  <span class="type-tag" :class="getCategoryClass(notif.type)">
-                    {{ getCategoryLabel(notif.type) }}
-                  </span>
-                  <h4 class="notif-title">{{ notif.title }}</h4>
-                  <span v-if="!notif.isRead" class="unread-dot" title="Belum dibaca"></span>
-                </div>
-                <div class="title-right">
-                  <span class="notif-time">{{ formatNotifTime(notif.createdAt) }}</span>
-                  <button
-                    type="button"
-                    class="btn-delete-notif"
-                    title="Hapus notifikasi"
-                    @click.stop="handleDeleteNotif(notif.id)"
-                  >
-                    &times;
-                  </button>
+          <div v-else-if="filteredNotifications.length > 0" class="notif-items">
+            <div
+              v-for="notif in filteredNotifications"
+              :key="notif.id"
+              class="notif-item"
+              :class="{ unread: !notif.isRead }"
+              @click="handleClickNotif(notif)"
+            >
+              <div class="notif-icon-col">
+                <div class="icon-bubble" :class="getCategoryClass(notif.type)">
+                  <span>{{ getCategoryEmoji(notif.type) }}</span>
                 </div>
               </div>
 
-              <p class="notif-text">{{ notif.body }}</p>
+              <div class="notif-body">
+                <div class="notif-title-row">
+                  <div class="title-left">
+                    <span class="type-tag" :class="getCategoryClass(notif.type)">
+                      {{ getCategoryLabel(notif.type) }}
+                    </span>
+                    <h4 class="notif-title">{{ notif.title }}</h4>
+                    <span v-if="!notif.isRead" class="unread-dot" title="Belum dibaca"></span>
+                  </div>
+                  <div class="title-right">
+                    <span class="notif-time">{{ formatNotifTime(notif.createdAt) }}</span>
+                    <button
+                      type="button"
+                      class="btn-delete-notif"
+                      title="Hapus notifikasi"
+                      @click.stop="handleDeleteNotif(notif.id)"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
 
-              <div class="notif-footer-row">
-                <NuxtLink :to="notif.linkUrl" class="notif-action-link" @click.stop="markAsRead(notif.id)">
-                  {{ getActionLabel(notif.type) }} &rarr;
-                </NuxtLink>
+                <p class="notif-text">{{ notif.body }}</p>
+
+                <div class="notif-footer-row">
+                  <NuxtLink :to="notif.linkUrl" class="notif-action-link" @click.stop="markAsRead(notif.id)">
+                    {{ getActionLabel(notif) }} &rarr;
+                  </NuxtLink>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div v-else class="empty-notif">
-          <div class="empty-icon">🔔</div>
-          <h3>Belum Ada Notifikasi</h3>
-          <p>
-            {{
-              activeFilter === 'unread'
-                ? 'Semua notifikasi Anda telah dibaca.'
-                : 'Belum ada pembaruan pesanan, penawaran request, atau pesan baru pada kategori ini.'
-            }}
-          </p>
+          <div v-else class="empty-notif">
+            <div class="empty-icon">🔔</div>
+            <h3>Belum Ada Notifikasi</h3>
+            <p>
+              {{
+                activeFilter === 'unread'
+                  ? 'Semua notifikasi Anda telah dibaca.'
+                  : 'Belum ada pembaruan pesanan, penawaran request, atau pesan baru pada kategori ini.'
+              }}
+            </p>
+          </div>
         </div>
-      </div>
+      </template>
     </div>
   </div>
 </template>
@@ -134,11 +151,13 @@
 import { ref, computed, onMounted } from 'vue'
 import { useNotifications, type CustomerNotification } from '../composables/useNotifications'
 import { useToast } from '../composables/useToast'
+import { useAuth } from '../composables/useAuth'
 
 definePageMeta({
   middleware: 'auth'
 })
 
+const { isAdmin } = useAuth()
 const { showToast } = useToast()
 const {
   notifications,
@@ -151,37 +170,51 @@ const {
   clearReadNotifications
 } = useNotifications()
 
-const activeFilter = ref<'all' | 'unread' | 'order' | 'request' | 'chat'>('all')
+const activeFilter = ref<'all' | 'unread' | 'order' | 'request' | 'chat' | 'account'>('all')
 
 onMounted(async () => {
+  if (isAdmin.value) return
   await fetchNotifications(false)
 })
 
-const getCategoryGroup = (type: string): 'order' | 'request' | 'chat' => {
+const getCategoryGroup = (type: string): 'order' | 'request' | 'chat' | 'account' => {
   if (type === 'chat' || type === 'chat_reply') return 'chat'
-  if (type === 'request' || type.startsWith('trip_')) return 'request'
+  if (type === 'account_access') return 'account'
+  if (type === 'request' || type.startsWith('request_') || type.startsWith('trip_')) return 'request'
   return 'order'
 }
 
-const filterTabs = computed(() => [
-  { key: 'all' as const, label: 'Semua', count: notifications.value.length },
-  { key: 'unread' as const, label: 'Belum Dibaca', count: unreadCount.value },
-  {
-    key: 'order' as const,
-    label: 'Pesanan & Pembayaran',
-    count: notifications.value.filter((n) => getCategoryGroup(n.type) === 'order').length
-  },
-  {
-    key: 'request' as const,
-    label: 'Request & Trip Jastip',
-    count: notifications.value.filter((n) => getCategoryGroup(n.type) === 'request').length
-  },
-  {
-    key: 'chat' as const,
-    label: 'Live Chat',
-    count: notifications.value.filter((n) => getCategoryGroup(n.type) === 'chat').length
+const filterTabs = computed(() => {
+  const accountCount = notifications.value.filter((n) => getCategoryGroup(n.type) === 'account').length
+  const tabs: Array<{ key: 'all' | 'unread' | 'order' | 'request' | 'chat' | 'account'; label: string; count: number }> = [
+    { key: 'all', label: 'Semua', count: notifications.value.length },
+    { key: 'unread', label: 'Belum Dibaca', count: unreadCount.value },
+    {
+      key: 'order',
+      label: 'Pesanan & Pembayaran',
+      count: notifications.value.filter((n) => getCategoryGroup(n.type) === 'order').length
+    },
+    {
+      key: 'request',
+      label: 'Request & Trip Jastip',
+      count: notifications.value.filter((n) => getCategoryGroup(n.type) === 'request').length
+    },
+    {
+      key: 'chat',
+      label: 'Live Chat',
+      count: notifications.value.filter((n) => getCategoryGroup(n.type) === 'chat').length
+    }
+  ]
+
+  if (accountCount > 0) {
+    tabs.push({
+      key: 'account',
+      label: 'Akun',
+      count: accountCount
+    })
   }
-])
+  return tabs
+})
 
 const filteredNotifications = computed(() => {
   if (activeFilter.value === 'all') return notifications.value
@@ -192,36 +225,71 @@ const filteredNotifications = computed(() => {
 const hasReadNotifications = computed(() => notifications.value.some((n) => n.isRead))
 
 const getCategoryClass = (type: string) => {
+  if (
+    type.includes('rejected') ||
+    type.includes('expired') ||
+    type.includes('cancelled') ||
+    type.includes('refunded')
+  ) {
+    return 'danger'
+  }
   if (type === 'chat' || type === 'chat_reply') return 'chat'
-  if (type === 'request') return 'request'
+  if (type === 'account_access') return 'request'
+  if (
+    type.includes('verified') ||
+    type.includes('approved') ||
+    type.includes('completed') ||
+    type === 'request_available' ||
+    type === 'request_quoted'
+  ) {
+    return 'success'
+  }
+  if (type === 'request' || type.startsWith('request_')) return 'request'
   if (type.startsWith('trip_')) return 'trip'
-  if (type.includes('rejected') || type.includes('expired') || type.includes('cancelled')) return 'danger'
-  if (type.includes('verified') || type.includes('approved')) return 'success'
   return 'order'
 }
 
 const getCategoryEmoji = (type: string) => {
   if (type === 'chat' || type === 'chat_reply') return '💬'
-  if (type === 'request') return '📋'
+  if (type === 'account_access') return '🔐'
+  if (type === 'order_refunded') return '↩️'
+  if (type === 'request_available') return '✨'
+  if (type === 'request_quoted') return '💰'
+  if (type === 'request_rejected') return '⚠️'
+  if (type === 'request' || type === 'request_reviewed') return '📋'
+  if (type === 'trip_cancelled') return '⚠️'
   if (type.startsWith('trip_')) return '✈️'
+  if (type === 'payment_rejected') return '⚠️'
+  if (type === 'payment_verified') return '✅'
   if (type.includes('payment')) return '💳'
-  if (type.includes('rejected') || type.includes('expired')) return '⚠️'
-  if (type.includes('approved') || type.includes('verified')) return '✅'
+  if (type.includes('rejected') || type.includes('expired') || type.includes('cancelled')) return '⚠️'
+  if (type.includes('approved') || type.includes('completed')) return '✅'
   return '🛍️'
 }
 
 const getCategoryLabel = (type: string) => {
   if (type === 'chat' || type === 'chat_reply') return 'Live Chat'
-  if (type === 'request') return 'Request Produk'
+  if (type === 'account_access') return 'Akses Akun'
+  if (type === 'order_refunded') return 'Refund'
+  if (type === 'request_available') return 'Katalog Trip'
+  if (type === 'request_quoted') return 'Penawaran Harga'
+  if (type === 'request_rejected') return 'Request Ditolak'
+  if (type === 'request' || type.startsWith('request_')) return 'Request Produk'
+  if (type === 'trip_cancelled') return 'Trip Dibatalkan'
   if (type.startsWith('trip_')) return 'Jadwal Trip'
   if (type.includes('payment')) return 'Pembayaran'
   return 'Pesanan'
 }
 
-const getActionLabel = (type: string) => {
+const getActionLabel = (notif: CustomerNotification) => {
+  const { type, linkUrl } = notif
   if (type === 'chat' || type === 'chat_reply') return 'Buka Ruang Chat'
-  if (type === 'request') return 'Lihat Request & Penawaran'
-  if (type === 'order_approved' || type === 'payment_rejected') return 'Lanjut ke Pembayaran'
+  if (type === 'account_access' || linkUrl === '/akun') return 'Lihat Status Akun'
+  if (type === 'request_available' || linkUrl.startsWith('/jastip/')) return 'Lihat Produk di Katalog'
+  if (type === 'request_quoted') return 'Lihat Penawaran Harga'
+  if (type === 'request' || type.startsWith('request_')) return 'Lihat Status Request'
+  if (type === 'payment_rejected') return 'Unggah Ulang Bukti Transfer'
+  if (type === 'order_approved') return 'Lanjut ke Pembayaran'
   return 'Lihat Detail Pesanan'
 }
 
@@ -584,6 +652,30 @@ const handleClearRead = async () => {
 .type-tag.chat {
   background: #EDE9FE;
   color: #5B21B6;
+}
+
+.admin-notif-guard .empty-notif p {
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+.btn-admin-panel-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+  padding: 10px 20px;
+  border-radius: 999px;
+  background: var(--color-primary, #8C6D3F);
+  color: #ffffff;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+
+.btn-admin-panel-link:hover {
+  background: var(--color-primary-hover, #6F5530);
 }
 
 .notif-title {

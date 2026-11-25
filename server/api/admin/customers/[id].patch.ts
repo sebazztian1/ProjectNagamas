@@ -115,6 +115,54 @@ export default defineEventHandler(async (event) => {
         note: changedFields.join(', ')
       }
     })
+
+    if (
+      updated.is_active &&
+      (nextCanOrder !== target.can_order ||
+        nextCanRequest !== target.can_request ||
+        nextCanChat !== target.can_chat)
+    ) {
+      const restrictedFeatures: string[] = []
+      const restoredFeatures: string[] = []
+
+      if (nextCanOrder !== target.can_order) {
+        ;(nextCanOrder ? restoredFeatures : restrictedFeatures).push('Pemesanan & Checkout')
+      }
+      if (nextCanRequest !== target.can_request) {
+        ;(nextCanRequest ? restoredFeatures : restrictedFeatures).push('Request Produk')
+      }
+      if (nextCanChat !== target.can_chat) {
+        ;(nextCanChat ? restoredFeatures : restrictedFeatures).push('Live Chat Admin')
+      }
+
+      const bodyParts: string[] = []
+      if (restrictedFeatures.length > 0) {
+        bodyParts.push(`Fitur dinonaktifkan: ${restrictedFeatures.join(', ')}.`)
+      }
+      if (restoredFeatures.length > 0) {
+        bodyParts.push(`Fitur diaktifkan kembali: ${restoredFeatures.join(', ')}.`)
+      }
+      if (updated.restriction_reason) {
+        bodyParts.push(`Catatan admin: ${updated.restriction_reason}`)
+      }
+
+      try {
+        await prisma.notifications.create({
+          data: {
+            user_id: target.id,
+            type: 'account_access',
+            title:
+              restrictedFeatures.length > 0 && restoredFeatures.length === 0
+                ? 'Pembaruan Pembatasan Fitur Akun'
+                : 'Pembaruan Akses Fitur Akun',
+            body: bodyParts.join(' '),
+            link_url: '/akun'
+          }
+        })
+      } catch {
+        // Notification creation non-blocking
+      }
+    }
   }
 
   return {

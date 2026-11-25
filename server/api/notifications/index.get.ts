@@ -9,6 +9,13 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Silakan masuk ke akun Anda terlebih dahulu.' })
   }
 
+  if (session.role === 'admin' || session.role === 'staff') {
+    return {
+      notifications: [],
+      unreadCount: 0
+    }
+  }
+
   // Jalankan pengecekan kedaluwarsa pesanan agar notifikasi order_expired langsung terbuat jika ada
   await autoExpireOverdueOrders()
 

@@ -8,6 +8,10 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 401, message: 'Silakan masuk ke akun Anda terlebih dahulu.' })
   }
 
+  if (session.role === 'admin' || session.role === 'staff') {
+    throw createError({ statusCode: 403, message: 'Notifikasi ini khusus untuk akun pelanggan.' })
+  }
+
   const idParam = getRouterParam(event, 'id')
   if (!idParam) {
     throw createError({ statusCode: 400, message: 'ID notifikasi tidak valid.' })

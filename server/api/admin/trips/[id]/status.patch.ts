@@ -5,6 +5,10 @@ import { recordAuditLog } from '../../../../utils/audit'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
+  if (!session || (session.role !== 'admin' && session.role !== 'staff')) {
+    throw createError({ statusCode: 403, message: 'Akses khusus Admin/Staff.' })
+  }
+
   const idStr = event.context.params?.id
   const id = Number(idStr)
   if (!id) {
@@ -15,6 +19,9 @@ export default defineEventHandler(async (event) => {
     where: { id },
     include: {
       orders: {
+        where: {
+          order_status: { notIn: ['rejected', 'cancelled', 'expired'] }
+        },
         select: { id: true, user_id: true, order_code: true }
       }
     }
@@ -76,7 +83,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const notifTemplate = tripNotifMessages[nextStatus]
-  if (notifTemplate && existing.orders.length > 0) {
+  if (notifTemplate && existing.status !== nextStatus && existing.orders.length > 0) {
     for (const ord of existing.orders) {
       try {
         await prisma.notifications.create({

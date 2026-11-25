@@ -315,7 +315,7 @@ export default defineEventHandler(async (event) => {
     await prisma.notifications.create({
       data: {
         user_id: order.user_id,
-        type: 'order_status_updated',
+        type: targetStatus === 'completed' ? 'order_completed' : 'order_status_updated',
         title: `Update Status Pesanan #${order.order_code}`,
         body: finalNote,
         link_url: `/orders/${order.order_code}`

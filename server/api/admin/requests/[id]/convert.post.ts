@@ -107,7 +107,7 @@ export default defineEventHandler(async (event) => {
   await prisma.notifications.create({
     data: {
       user_id: req.user_id,
-      type: 'request',
+      type: 'request_available',
       title: 'Barang Request Anda Sudah Tersedia!',
       body: `Produk "${productName}" telah dimasukkan ke dalam katalog trip ${trip.title} dan siap Anda pesan!`,
       link_url: `/jastip/${trip.slug}/${product.slug}`

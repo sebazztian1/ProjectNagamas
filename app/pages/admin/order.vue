@@ -495,7 +495,7 @@ const confirmAccOrder = async () => {
     })
     showToast(
       'Pesanan Berhasil di-ACC!',
-      `Pesanan #${selectedOrderForAcc.value.orderCode} disetujui & batas bayar 24 jam aktif.`,
+      `Pesanan #${selectedOrderForAcc.value.orderCode} disetujui & batas waktu pembayaran telah aktif.`,
       'success'
     )
     selectedOrderForAcc.value = null
@@ -558,7 +558,7 @@ const confirmModalVerify = async () => {
     })
     showToast(
       'Pembayaran Terverifikasi!',
-      `Mutasi pesanan #${selectedOrderForProof.value.orderCode} telah ditandai lunas.`,
+      `Pembayaran pesanan #${selectedOrderForProof.value.orderCode} berhasil diverifikasi.`,
       'success'
     )
     selectedOrderForProof.value = null

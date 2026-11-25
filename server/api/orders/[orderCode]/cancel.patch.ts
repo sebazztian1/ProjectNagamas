@@ -60,6 +60,28 @@ export default defineEventHandler(async (event) => {
 
   await restoreOrderStock(order.id)
 
+  try {
+    const isAdminActor = session.role === 'admin' || session.role === 'staff'
+    const cancelTitle = isAdminActor
+      ? `Pesanan #${order.order_code} Dibatalkan oleh Admin`
+      : `Pesanan #${order.order_code} Dibatalkan`
+    const cancelBody = isAdminActor
+      ? `Pesanan Anda dibatalkan oleh admin. Alasan: ${reason}`
+      : `Pesanan Anda telah dibatalkan.${reason && reason !== 'Dibatalkan oleh customer' ? ' Alasan: ' + reason : ''}`
+
+    await prisma.notifications.create({
+      data: {
+        user_id: order.user_id,
+        type: 'order_cancelled',
+        title: cancelTitle,
+        body: cancelBody,
+        link_url: `/orders/${order.order_code}`
+      }
+    })
+  } catch {
+    // Notification creation non-blocking
+  }
+
   const updated = await prisma.orders.findUnique({
     where: { id: order.id },
     include: {

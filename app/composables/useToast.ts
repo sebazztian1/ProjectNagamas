@@ -3,7 +3,7 @@ import type { Toast } from '../types/product'
 export const useToast = () => {
   const toasts = useState<Toast[]>('app_toasts', () => [])
 
-  const showToast = (title: string, message: string, type: 'success' | 'info' | 'warning' = 'info') => {
+  const showToast = (title: string, message: string, type: 'success' | 'info' | 'warning' | 'error' = 'info') => {
     const id = Math.random().toString(36).substring(2, 9)
     toasts.value.push({ id, title, message, type })
     setTimeout(() => {

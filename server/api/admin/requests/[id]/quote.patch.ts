@@ -49,7 +49,7 @@ export default defineEventHandler(async (event) => {
     await prisma.notifications.create({
       data: {
         user_id: req.user_id,
-        type: 'request',
+        type: 'request_quoted',
         title: 'Penawaran Harga Masuk!',
         body: `Admin telah memberikan penawaran harga Rp ${Number(quotedPrice).toLocaleString('id-ID')} untuk request barang "${req.product_name}". Segera tinjau penawaran ini.`,
         link_url: '/request'
@@ -59,7 +59,7 @@ export default defineEventHandler(async (event) => {
     await prisma.notifications.create({
       data: {
         user_id: req.user_id,
-        type: 'request',
+        type: 'request_reviewed',
         title: 'Request Produk Sedang Ditinjau Admin',
         body: `Permintaan titip barang "${req.product_name}" sedang dicek ketersediaan & harganya oleh tim dbb_luxe.`,
         link_url: '/request'
@@ -69,7 +69,7 @@ export default defineEventHandler(async (event) => {
     await prisma.notifications.create({
       data: {
         user_id: req.user_id,
-        type: 'request',
+        type: 'request_rejected',
         title: 'Update Request Titip Barang',
         body: `Mohon maaf, permintaan titip barang "${req.product_name}" saat ini belum dapat dipenuhi.${adminNote ? ' Catatan: ' + adminNote : ''}`,
         link_url: '/request'
