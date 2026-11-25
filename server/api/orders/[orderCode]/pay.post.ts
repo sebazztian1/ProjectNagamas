@@ -66,13 +66,23 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  // Find target bank account (or default to first active bank account)
+  // Find target bank account (must be active; or default to first active bank account)
   let bankAccount = null
   if (bankAccountId && !isNaN(bankAccountId)) {
-    bankAccount = await prisma.bank_accounts.findUnique({ where: { id: bankAccountId } })
-  }
-  if (!bankAccount) {
-    bankAccount = await prisma.bank_accounts.findFirst({ where: { is_active: true } })
+    bankAccount = await prisma.bank_accounts.findFirst({
+      where: { id: bankAccountId, is_active: true }
+    })
+    if (!bankAccount) {
+      throw createError({
+        statusCode: 400,
+        message: 'Rekening tujuan yang dipilih sudah tidak aktif. Muat ulang halaman untuk memilih rekening aktif.'
+      })
+    }
+  } else {
+    bankAccount = await prisma.bank_accounts.findFirst({
+      where: { is_active: true },
+      orderBy: { id: 'asc' }
+    })
   }
   if (!bankAccount) {
     throw createError({ statusCode: 400, message: 'Rekening tujuan toko belum tersedia.' })

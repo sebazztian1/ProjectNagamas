@@ -22,6 +22,11 @@
             <p>{{ currentUser?.restriction_reason ? `Alasan: ${currentUser.restriction_reason}` : 'Akses pengajuan pesanan baru pada akun Anda sedang dibatasi oleh admin.' }}</p>
           </div>
 
+          <div v-else-if="isStoreClosed" class="store-closed-banner" role="alert">
+            <strong>Toko Sedang Tutup Sementara</strong>
+            <p>Pengajuan pesanan baru sementara ditutup oleh admin. Hubungi WhatsApp CS ({{ storeSettings.waNumber }}) untuk informasi lebih lanjut.</p>
+          </div>
+
           <!-- Error Summary (role="alert") -->
           <div v-if="errorSummaryList.length > 0" ref="errorSummaryRef" class="error-summary-box" role="alert" tabindex="-1">
             <strong>Mohon periksa kembali data berikut:</strong>
@@ -622,6 +627,25 @@
                 </div>
               </label>
             </div>
+
+            <div class="checkout-banks-box">
+              <div class="checkout-banks-head">
+                <strong>Rekening Tujuan Pembayaran Resmi</strong>
+                <span class="checkout-banks-note">
+                  Transfer dilakukan setelah admin ACC pesanan (batas waktu {{ storeSettings.paymentDuration }} jam).
+                </span>
+              </div>
+              <div v-if="activeBankAccounts.length > 0" class="checkout-bank-list">
+                <div v-for="bank in activeBankAccounts" :key="bank.id" class="checkout-bank-chip">
+                  <div class="cb-name">{{ bank.bankName }}</div>
+                  <div class="cb-num">{{ bank.accountNumber }}</div>
+                  <div class="cb-holder">a.n. {{ bank.accountHolder }}</div>
+                </div>
+              </div>
+              <p v-else class="checkout-bank-empty">
+                Rekening tujuan pembayaran belum dikonfigurasi admin.
+              </p>
+            </div>
           </div>
         </div>
 
@@ -664,7 +688,7 @@
 
             <div class="transfer-notice">
               <p>
-                Pembayaran dibuka setelah disetujui admin.
+                Pembayaran dibuka setelah disetujui admin (batas transfer {{ storeSettings.paymentDuration }} jam ke rekening resmi toko).
               </p>
             </div>
 
@@ -672,9 +696,15 @@
               <button
                 type="submit"
                 class="btn-create-order"
-                :disabled="isSubmitting || checkoutItems.length === 0 || isOrderDisabled"
+                :disabled="isSubmitting || checkoutItems.length === 0 || isOrderDisabled || isStoreClosed"
               >
-                {{ isOrderDisabled ? 'Pemesanan Dinonaktifkan' : (isSubmitting ? 'Memproses Pesanan…' : 'Lanjutkan') }}
+                {{
+                  isOrderDisabled
+                    ? 'Pemesanan Dinonaktifkan'
+                    : isStoreClosed
+                      ? 'Toko Tutup Sementara'
+                      : (isSubmitting ? 'Memproses Pesanan…' : 'Lanjutkan')
+                }}
               </button>
             </div>
           </div>
@@ -709,9 +739,25 @@ const quoteImage = route.query.image as string
 const initialQty = Math.max(1, Number(route.query.qty) || 1)
 const initialVariant = (route.query.variant as string) || 'Standard'
 
-const { data: dbProducts, refresh: refreshDbProducts } = await useFetch<ApiProduct[]>('/api/products', {
-  query: { inStockOnly: 'true' }
+const [
+  { data: dbProducts, refresh: refreshDbProducts },
+  { data: storeConfig }
+] = await Promise.all([
+  useFetch<ApiProduct[]>('/api/products', { query: { inStockOnly: 'true' } }),
+  useFetch<{
+    banks: Array<{ id: number; bankName: string; accountNumber: string; accountHolder: string; isActive: boolean }>
+    settings: { paymentDuration: '12' | '24' | '48'; defaultFee: number; waNumber: string; storeStatus: 'open' | 'trip_mode' | 'closed' }
+  }>('/api/settings')
+])
+
+const activeBankAccounts = computed(() => storeConfig.value?.banks || [])
+const storeSettings = computed(() => storeConfig.value?.settings || {
+  paymentDuration: '24' as const,
+  defaultFee: 35000,
+  waNumber: '0812-9876-5432',
+  storeStatus: 'open' as const
 })
+const isStoreClosed = computed(() => storeSettings.value.storeStatus === 'closed')
 
 interface CheckoutEntry {
   key: string
@@ -1529,6 +1575,10 @@ const jastipSubtotal = computed(() =>
 const handleCreateOrder = async () => {
   if (isOrderDisabled.value) {
     showToast('Pemesanan Dibatasi', 'Fitur pemesanan pada akun Anda sedang dinonaktifkan oleh admin.', 'warning')
+    return
+  }
+  if (isStoreClosed.value) {
+    showToast('Toko Tutup Sementara', 'Toko sedang tutup sementara dan belum menerima pengajuan pesanan baru.', 'warning')
     return
   }
   if (!validateAllAddressFields()) {
@@ -2361,6 +2411,90 @@ const formatRupiah = (val: number) => {
   display: flex;
   justify-content: space-between;
   font-size: 0.82rem;
+  color: #92400E;
+}
+
+.store-closed-banner {
+  background: #FEF3C7;
+  border: 1px solid #F59E0B;
+  color: #92400E;
+  padding: 14px 16px;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.store-closed-banner strong {
+  display: block;
+  margin-bottom: 3px;
+}
+
+.store-closed-banner p {
+  margin: 0;
+}
+
+.checkout-banks-box {
+  margin-top: 16px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--color-canvas, #FFFBF2);
+  border: 1px solid var(--color-secondary, #EFE1C6);
+}
+
+.checkout-banks-head {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 10px;
+}
+
+.checkout-banks-head strong {
+  font-size: 0.86rem;
+  color: var(--color-text, #2B2116);
+}
+
+.checkout-banks-note {
+  font-size: 0.76rem;
+  color: var(--color-text-muted, #7A6A55);
+}
+
+.checkout-bank-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px;
+}
+
+.checkout-bank-chip {
+  background: #ffffff;
+  border: 1px solid #DFCCA8;
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.cb-name {
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: var(--color-primary, #8C6D3F);
+}
+
+.cb-num {
+  font-size: 0.96rem;
+  font-weight: 800;
+  color: var(--color-text, #2B2116);
+  letter-spacing: 0.02em;
+}
+
+.cb-holder {
+  font-size: 0.74rem;
+  color: var(--color-text-muted, #7A6A55);
+}
+
+.checkout-bank-empty {
+  margin: 0;
+  font-size: 0.8rem;
   color: #92400E;
 }
 

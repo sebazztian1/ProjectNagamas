@@ -3,6 +3,7 @@ import { prisma } from '../../../../utils/prisma'
 import { getSessionFromEvent } from '../../../../utils/session'
 import { restoreOrderStock, formatOrderResponse } from '../../../../utils/orders'
 import { recordAuditLog } from '../../../../utils/audit'
+import { getStoreSettings } from '../../../../utils/storeSettings'
 
 export default defineEventHandler(async (event) => {
   const session = getSessionFromEvent(event)
@@ -34,12 +35,14 @@ export default defineEventHandler(async (event) => {
   const prevStatus = order.order_status
 
   if (action === 'acc') {
+    const storeSettings = await getStoreSettings()
+    const paymentHours = Number(storeSettings.paymentDuration) || 24
     const shippingCost = Math.max(0, Number(body?.shippingCost) || 0)
     const adminNote = body?.adminNote ? String(body.adminNote).trim() : order.admin_note
     const subtotal = Number(order.subtotal)
     const totalAmount = subtotal + shippingCost
     const dpAmount = order.payment_type === 'dp' ? Math.ceil(totalAmount / 2) : null
-    const deadline = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+    const deadline = new Date(now.getTime() + paymentHours * 60 * 60 * 1000)
 
     await prisma.orders.update({
       where: { id: order.id },
@@ -68,7 +71,7 @@ export default defineEventHandler(async (event) => {
         from_status: prevStatus,
         to_status: 'pending_payment',
         changed_by: session.userId,
-        note: `Admin menyetujui pesanan (ACC).${shippingNote} Batas waktu pembayaran 24 jam telah aktif.`
+        note: `Admin menyetujui pesanan (ACC).${shippingNote} Batas waktu pembayaran ${paymentHours} jam telah aktif.`
       }
     })
 
@@ -77,7 +80,7 @@ export default defineEventHandler(async (event) => {
         user_id: order.user_id,
         type: 'order_approved',
         title: `Pesanan #${order.order_code} Disetujui (ACC)!`,
-        body: `Pesanan Anda telah disetujui oleh admin.${shippingNote} Silakan selesaikan pembayaran dalam 24 jam.`,
+        body: `Pesanan Anda telah disetujui oleh admin.${shippingNote} Silakan selesaikan pembayaran dalam ${paymentHours} jam.`,
         link_url: `/orders/${order.order_code}/bayar`
       }
     })

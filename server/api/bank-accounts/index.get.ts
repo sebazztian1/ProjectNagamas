@@ -1,20 +1,15 @@
-import { defineEventHandler } from 'h3'
+import { defineEventHandler, setResponseHeader } from 'h3'
 import { prisma } from '../../utils/prisma'
-import { resolvePublicMediaUrl } from '../../utils/r2'
+import { formatBankAccount } from '../../utils/storeSettings'
 
-export default defineEventHandler(async () => {
+export default defineEventHandler(async (event) => {
+  setResponseHeader(event, 'Cache-Control', 'no-store')
+
   const accounts = await prisma.bank_accounts.findMany({
     where: { is_active: true },
     orderBy: { id: 'asc' }
   })
 
-  return accounts.map((b) => ({
-    id: b.id,
-    bankName: b.bank_name,
-    accountNumber: b.account_number,
-    accountHolder: b.account_holder,
-    qrisImageUrl: resolvePublicMediaUrl(b.qris_image_url) || null,
-    isActive: b.is_active
-  }))
+  return accounts.map(formatBankAccount)
 })
 

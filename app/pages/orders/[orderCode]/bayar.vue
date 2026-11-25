@@ -67,9 +67,13 @@
 
           <!-- Bank Accounts & QRIS Selection -->
           <div class="bank-list-card">
-            <h3 class="card-head-title">Rekening BCA</h3>
+            <h3 class="card-head-title">Rekening Pembayaran Toko</h3>
 
-            <div class="bank-items">
+            <div v-if="bankAccounts.length === 0" class="empty-bank-notice">
+              Rekening tujuan pembayaran belum tersedia. Hubungi admin untuk bantuan.
+            </div>
+
+            <div v-else class="bank-items">
               <div
                 v-for="bank in bankAccounts"
                 :key="bank.id"
@@ -124,7 +128,7 @@
 
               <div class="form-group">
                 <label>Bank Pengirim *</label>
-                <input v-model="form.senderBank" type="text" placeholder="Contoh: BCA" required />
+                <input v-model="form.senderBank" type="text" placeholder="Contoh: BCA, Mandiri, BNI" required />
               </div>
 
               <div class="form-group">
@@ -176,7 +180,7 @@
               <button
                 type="submit"
                 class="btn-submit-payment"
-                :disabled="isSubmitting || isUploadingFile || !form.receiptUrl"
+                :disabled="isSubmitting || isUploadingFile || !form.receiptUrl || bankAccounts.length === 0"
               >
                 {{ isSubmitting ? 'Mengirim Konfirmasi...' : 'Konfirmasi & Kirim Bukti Transfer' }}
               </button>
@@ -246,7 +250,9 @@ watch(
     if (order.value && !form.value.senderName) {
       form.value.senderName = order.value.recipientName || ''
     }
-    if (bankAccounts.value.length > 0 && !form.value.bankAccountId) {
+    if (bankAccounts.value.length === 0) {
+      form.value.bankAccountId = 0
+    } else if (!bankAccounts.value.some(b => b.id === form.value.bankAccountId)) {
       form.value.bankAccountId = bankAccounts.value[0].id
     }
   },
@@ -517,6 +523,16 @@ const formatRupiah = (val: number) => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.empty-bank-notice {
+  background: #FFFBEB;
+  border: 1px solid #FDE68A;
+  color: #92400E;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 0.84rem;
+  font-weight: 600;
 }
 
 .bank-item-box {

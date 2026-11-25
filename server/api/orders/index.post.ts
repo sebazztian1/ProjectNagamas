@@ -5,6 +5,7 @@ import { generateOrderCode, formatOrderResponse } from '../../utils/orders'
 import { validateAndBuildAddressSnapshot, saveUserAddress } from '../../utils/addresses'
 import { normalizeIndonesianPhone } from '../../utils/indonesiaRegions'
 import { normalizeProductVariants, findVariantCombination, syncProductVariantsTable } from '../../utils/variants'
+import { getStoreSettings } from '../../utils/storeSettings'
 
 interface CheckoutItemInput {
   productId?: number
@@ -44,6 +45,14 @@ export default defineEventHandler(async (event) => {
     throw createError({
       statusCode: 403,
       message: `Fitur pemesanan pada akun Anda sedang dinonaktifkan oleh admin.${reasonText}`
+    })
+  }
+
+  const storeSettings = await getStoreSettings()
+  if (storeSettings.storeStatus === 'closed') {
+    throw createError({
+      statusCode: 403,
+      message: 'Toko sedang tutup sementara dan belum menerima pesanan baru.'
     })
   }
 
